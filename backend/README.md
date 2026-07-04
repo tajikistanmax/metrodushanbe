@@ -8,7 +8,8 @@
 
 ## Предварительные требования
 
-- **JDK 21** (Temurin/Oracle). Проверка: `java -version`
+- **JDK 21+** (Temurin/Oracle). Проверка: `java -version`. Maven Wrapper требует
+  переменную окружения `JAVA_HOME` (установщик JDK её не прописывает).
 - **Docker** — для PostgreSQL + PostGIS (compose в [`../infra`](../infra))
 - Maven ставить не нужно — используется Maven Wrapper (`mvnw` / `mvnw.cmd`)
 
@@ -50,7 +51,8 @@ requestId берётся из заголовка `X-Request-Id` (или гене
 
 - `GeoJsonBuilderTest` — юнит-тест сборки FeatureCollection из фикстур (без БД).
 - `NetworkApiIntegrationTest` — интеграционный тест с Testcontainers (PostGIS);
-  помечен `@Disabled`, пока в окружении нет Docker: после установки Docker уберите аннотацию.
+  требует запущенный Docker. Testcontainers зафиксирован на ≥1.21.4 (Docker Engine 29
+  требует API ≥1.44 — старые версии падают с 400 Bad Request).
 
 ## Структура пакетов
 

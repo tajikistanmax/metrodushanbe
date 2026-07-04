@@ -600,7 +600,10 @@ export default function NetworkMap({
       ref={containerRef}
       role="region"
       aria-label={mapRegionLabel}
-      className="absolute inset-0"
+      // Не `absolute inset-0`: MapLibre вешает на контейнер .maplibregl-map
+      // (position: relative), который может перебить Tailwind-утилиту .absolute
+      // в зависимости от порядка CSS в бандле — контейнер схлопывается в h=0.
+      className="h-full w-full"
     />
   );
 }

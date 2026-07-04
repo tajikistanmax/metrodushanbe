@@ -19,7 +19,7 @@ MetroDushanbe/
 
 | Сервис | Порт | Примечание |
 |---|---|---|
-| PostgreSQL + PostGIS | `5432` | db=`metro`, user=`metro`, pass=`metro` (только dev!) |
+| PostgreSQL + PostGIS | `5433` | db=`metro`, user=`metro`, pass=`metro` (только dev!); 5433 — чтобы не конфликтовать с нативным PostgreSQL на 5432 |
 | Redis | `6379` | |
 | Keycloak | `8081` | compose-профиль `auth`, подключается на фазе admin |
 | Backend (Spring Boot) | `8080` | API base: `http://localhost:8080/api/v1` |

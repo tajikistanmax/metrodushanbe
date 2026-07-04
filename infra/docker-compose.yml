@@ -18,7 +18,8 @@ services:
     image: postgis/postgis:16-3.4
     container_name: metro-postgres
     ports:
-      - "5432:5432"
+      # Хост-порт 5433: на 5432 обычно висит нативный PostgreSQL Windows-хоста
+      - "5433:5432"
     environment:
       POSTGRES_DB: metro
       POSTGRES_USER: metro

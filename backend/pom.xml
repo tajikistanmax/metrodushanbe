@@ -24,6 +24,8 @@
     <properties>
         <java.version>21</java.version>
         <springdoc.version>2.7.0</springdoc.version>
+        <!-- Минимум 1.21.4: Docker Engine 29 требует API >= 1.44, версии из BOM Boot 3.4 падают с 400 Bad Request -->
+        <testcontainers.version>1.21.4</testcontainers.version>
     </properties>
 
     <dependencies>
