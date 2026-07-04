@@ -1,0 +1,41 @@
+# --- Java / Maven ---
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+!backend/.mvn/wrapper/maven-wrapper.jar.keep
+hs_err_pid*
+
+# --- Node / Next.js ---
+node_modules/
+web/.next/
+web/out/
+web/next-env.d.ts
+admin/.next/
+admin/out/
+*.tsbuildinfo
+npm-debug.log*
+
+# --- Flutter (будущая итерация) ---
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins*
+
+# --- IDE ---
+.idea/
+.vscode/
+*.iml
+
+# --- OS ---
+Thumbs.db
+.DS_Store
+
+# --- Env / secrets ---
+.env
+.env.local
+.env.*.local
+*.pem
+*.p12
+
+# --- Docker volumes (локальные данные) ---
+infra/.volumes/
