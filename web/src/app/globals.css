@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+/*
+ * Дизайн-токены бренда «Метро Душанбе» (docs/dev-conventions.md, §5).
+ * Шрифты — системные; Montserrat будет добавлен self-host позже.
+ * Внешние CDN/Google Fonts запрещены (офлайн-принцип, §8).
+ */
+:root {
+  --brand-navy: #082742;
+  --brand-red: #e21b2d;
+  --brand-green: #138a3d;
+  --surface-light: #ffffff;
+  --surface-muted: #f2f5f8;
+  --surface-dark: #0b1622;
+  --text-secondary: #3a4a5a;
+  --warning: #e08600;
+  --info: #0e5a8a;
+
+  /* Системный стек до self-host Montserrat */
+  --font-brand: ui-sans-serif, system-ui, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+}
+
+/* Проброс токенов в утилиты Tailwind v4 (bg-brand-navy, text-text-secondary и т.д.) */
+@theme inline {
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-red: var(--brand-red);
+  --color-brand-green: var(--brand-green);
+  --color-surface-light: var(--surface-light);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-dark: var(--surface-dark);
+  --color-text-secondary: var(--text-secondary);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --font-sans: var(--font-brand);
+}
+
+body {
+  background: var(--surface-light);
+  color: var(--brand-navy);
+  font-family: var(--font-brand);
+}
+
+/* Видимый фокус для клавиатурной навигации (WCAG 2.2 AA) */
+:focus-visible {
+  outline: 3px solid var(--info);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/*
+ * На тёмных поверхностях (шапка на navy, skip-link поверх шапки) --info даёт
+ * контраст ≈2:1 к прилегающему фону — ниже 3:1 по SC 1.4.11 (нетекстовый контраст).
+ * Поэтому индикатор фокуса здесь светлый: белый к navy #082742 ≈ 15:1.
+ */
+header :focus-visible,
+.skip-link:focus-visible {
+  outline-color: var(--surface-light);
+}
+
+/* Skip-link: скрыт, появляется при фокусе */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 0.5rem 1rem;
+  background: var(--brand-navy);
+  color: var(--surface-light);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.skip-link:focus-visible {
+  left: 0.5rem;
+  top: 0.5rem;
+}
+
+/* Уважение к prefers-reduced-motion: минимизируем анимации CSS */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Popup MapLibre: цвета бренда, достаточный контраст */
+.maplibregl-popup-content {
+  color: var(--brand-navy);
+  font-family: var(--font-brand);
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(8, 39, 66, 0.25);
+}

@@ -1,0 +1,242 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "title": "Метро Душанбе — ДЕМОНСТРАЦИОННАЯ схема проектируемой сети",
+    "disclaimer": "ВНИМАНИЕ: данные являются демонстрационными (placeholder). Реальные трассы, перечни станций и координаты НЕ утверждены и будут импортированы через конвейер импорта (ТЗ, раздел 13). Координаты приблизительные.",
+    "version": "0.1.0-demo",
+    "crs": "EPSG:4326",
+    "languages": ["tg", "ru", "en"]
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "L1",
+      "properties": {
+        "feature_type": "line",
+        "code": "L1",
+        "name": { "tg": "Хати 1", "ru": "Линия 1", "en": "Line 1" },
+        "color_hex": "#E21B2D",
+        "status": "planned",
+        "sort_order": 1
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [68.8180, 38.5210],
+          [68.8155, 38.5435],
+          [68.8060, 38.5530],
+          [68.7950, 38.5610],
+          [68.7860, 38.5737],
+          [68.7800, 38.5850],
+          [68.7750, 38.5920],
+          [68.7580, 38.6010]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "L2",
+      "properties": {
+        "feature_type": "line",
+        "code": "L2",
+        "name": { "tg": "Хати 2", "ru": "Линия 2", "en": "Line 2" },
+        "color_hex": "#138A3D",
+        "status": "planned",
+        "sort_order": 2
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [68.7280, 38.5590],
+          [68.7480, 38.5660],
+          [68.7860, 38.5737],
+          [68.8050, 38.5760],
+          [68.8300, 38.5800],
+          [68.8560, 38.5840]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ST-L1-01",
+      "properties": {
+        "feature_type": "station",
+        "code": "ST-L1-01",
+        "name": { "tg": "Дарвозаи Ҷанубӣ", "ru": "Южные ворота", "en": "Southern Gate" },
+        "status": "planned",
+        "lines": ["L1"],
+        "is_transfer": false,
+        "accessibility": ["elevator", "tactile"]
+      },
+      "geometry": { "type": "Point", "coordinates": [68.8180, 38.5210] }
+    },
+    {
+      "type": "Feature",
+      "id": "ST-L1-02",
+      "properties": {
+        "feature_type": "station",
+        "code": "ST-L1-02",
+        "name": { "tg": "Фурудгоҳ", "ru": "Аэропорт", "en": "Airport" },
+        "status": "planned",
+        "lines": ["L1"],
+        "is_transfer": false,
+        "accessibility": ["elevator", "escalator", "tactile"]
+      },
+      "geometry": { "type": "Point", "coordinates": [68.8155, 38.5435] }
+    },
+    {
+      "type": "Feature",
+      "id": "ST-L1-03",
+      "properties": {
+        "feature_type": "station",
+        "code": "ST-L1-03",
+        "name": { "tg": "Саъдии Шерозӣ", "ru": "Саади Ширази", "en": "Saadi Sherozi" },
+        "status": "planned",
+        "lines": ["L1"],
+        "is_transfer": false,
+        "accessibility": ["elevator", "ramp"]
+      },
+      "geometry": { "type": "Point", "coordinates": [68.8060, 38.5530] }
+    },
+    {
+      "type": "Feature",
+      "id": "ST-L1-04",
+      "properties": {
+        "feature_type": "station",
+        "code": "ST-L1-04",
+        "name": { "tg": "Айнӣ", "ru": "Айни", "en": "Ayni" },
+        "status": "planned",
+        "lines": ["L1"],
+        "is_transfer": false,
+        "accessibility": ["elevator", "tactile"]
+      },
+      "geometry": { "type": "Point", "coordinates": [68.7950, 38.5610] }
+    },
+    {
+      "type": "Feature",
+      "id": "ST-HUB-CENTER",
+      "properties": {
+        "feature_type": "station",
+        "code": "ST-HUB-CENTER",
+        "name": { "tg": "Маркази шаҳр", "ru": "Центр", "en": "City Center" },
+        "status": "planned",
+        "lines": ["L1", "L2"],
+        "is_transfer": true,
+        "accessibility": ["elevator", "escalator", "ramp", "tactile", "audio_assist"]
+      },
+      "geometry": { "type": "Point", "coordinates": [68.7860, 38.5737] }
+    },
+    {
+      "type": "Feature",
+      "id": "ST-L1-06",
+      "properties": {
+        "feature_type": "station",
+        "code": "ST-L1-06",
+        "name": { "tg": "Рӯдакӣ", "ru": "Рудаки", "en": "Rudaki" },
+        "status": "planned",
+        "lines": ["L1"],
+        "is_transfer": false,
+        "accessibility": ["elevator", "tactile"]
+      },
+      "geometry": { "type": "Point", "coordinates": [68.7800, 38.5850] }
+    },
+    {
+      "type": "Feature",
+      "id": "ST-L1-07",
+      "properties": {
+        "feature_type": "station",
+        "code": "ST-L1-07",
+        "name": { "tg": "Театри опера ва балет", "ru": "Театр оперы и балета", "en": "Opera & Ballet Theatre" },
+        "status": "planned",
+        "lines": ["L1"],
+        "is_transfer": false,
+        "accessibility": ["elevator", "escalator"]
+      },
+      "geometry": { "type": "Point", "coordinates": [68.7750, 38.5920] }
+    },
+    {
+      "type": "Feature",
+      "id": "ST-L1-08",
+      "properties": {
+        "feature_type": "station",
+        "code": "ST-L1-08",
+        "name": { "tg": "Сирк", "ru": "Государственный цирк", "en": "State Circus" },
+        "status": "planned",
+        "lines": ["L1"],
+        "is_transfer": false,
+        "accessibility": ["elevator", "ramp", "tactile"]
+      },
+      "geometry": { "type": "Point", "coordinates": [68.7580, 38.6010] }
+    },
+    {
+      "type": "Feature",
+      "id": "ST-L2-01",
+      "properties": {
+        "feature_type": "station",
+        "code": "ST-L2-01",
+        "name": { "tg": "Зарафшон", "ru": "Зарафшон", "en": "Zarafshon" },
+        "status": "planned",
+        "lines": ["L2"],
+        "is_transfer": false,
+        "accessibility": ["elevator", "tactile"]
+      },
+      "geometry": { "type": "Point", "coordinates": [68.7280, 38.5590] }
+    },
+    {
+      "type": "Feature",
+      "id": "ST-L2-02",
+      "properties": {
+        "feature_type": "station",
+        "code": "ST-L2-02",
+        "name": { "tg": "Донишгоҳ", "ru": "Университет", "en": "University" },
+        "status": "planned",
+        "lines": ["L2"],
+        "is_transfer": false,
+        "accessibility": ["elevator", "escalator", "tactile"]
+      },
+      "geometry": { "type": "Point", "coordinates": [68.7480, 38.5660] }
+    },
+    {
+      "type": "Feature",
+      "id": "ST-L2-04",
+      "properties": {
+        "feature_type": "station",
+        "code": "ST-L2-04",
+        "name": { "tg": "Шоҳмансур", "ru": "Шохмансур", "en": "Shohmansur" },
+        "status": "planned",
+        "lines": ["L2"],
+        "is_transfer": false,
+        "accessibility": ["elevator", "ramp"]
+      },
+      "geometry": { "type": "Point", "coordinates": [68.8050, 38.5760] }
+    },
+    {
+      "type": "Feature",
+      "id": "ST-L2-05",
+      "properties": {
+        "feature_type": "station",
+        "code": "ST-L2-05",
+        "name": { "tg": "Бозори Шарқ", "ru": "Восточный рынок", "en": "Eastern Bazaar" },
+        "status": "planned",
+        "lines": ["L2"],
+        "is_transfer": false,
+        "accessibility": ["elevator", "tactile"]
+      },
+      "geometry": { "type": "Point", "coordinates": [68.8300, 38.5800] }
+    },
+    {
+      "type": "Feature",
+      "id": "ST-L2-06",
+      "properties": {
+        "feature_type": "station",
+        "code": "ST-L2-06",
+        "name": { "tg": "Дарвозаи Шарқӣ", "ru": "Восточные ворота", "en": "Eastern Gate" },
+        "status": "planned",
+        "lines": ["L2"],
+        "is_transfer": false,
+        "accessibility": ["elevator", "escalator", "tactile"]
+      },
+      "geometry": { "type": "Point", "coordinates": [68.8560, 38.5840] }
+    }
+  ]
+}

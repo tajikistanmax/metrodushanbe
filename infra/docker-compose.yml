@@ -1,0 +1,61 @@
+# Dev-инфраструктура платформы «Метро Душанбе» (только для локальной разработки!).
+#
+# Запуск базовых сервисов (PostgreSQL + PostGIS, Redis):
+#   docker compose up -d
+# Запуск вместе с Keycloak (профиль auth, подключается на фазе admin):
+#   docker compose --profile auth up -d
+#
+# Данные PostgreSQL хранятся в именованном томе Docker `pgdata` (bind-mount каталога
+# данных на Windows/NTFS ломает initdb на chmod/chown — официальный образ postgres
+# не рекомендует bind-mount data-каталога на Windows-хостах).
+# Сброс данных: docker compose down -v (удалит том вместе с содержимым БД).
+# Порты и учётные данные — по docs/dev-conventions.md §2 (только dev-значения).
+
+name: metrodushanbe
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: metro-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: metro
+      POSTGRES_USER: metro
+      POSTGRES_PASSWORD: metro
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U metro -d metro"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: metro-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Keycloak стартует только с профилем auth: docker compose --profile auth up -d
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1
+    container_name: metro-keycloak
+    command: start-dev
+    ports:
+      - "8081:8080"
+    environment:
+      # Bootstrap-админ только для dev (в Keycloak 26 переменные KC_BOOTSTRAP_ADMIN_*)
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    profiles: ["auth"]
+
+# Именованные тома (данные живут внутри Docker, вне рабочего каталога проекта)
+volumes:
+  pgdata:
