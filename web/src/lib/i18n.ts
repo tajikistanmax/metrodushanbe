@@ -20,33 +20,54 @@ export const DEFAULT_LANG: Lang = "tg";
 /** Ключ в localStorage для сохранения выбранного языка. */
 export const LANG_STORAGE_KEY = "metro-dushanbe.lang";
 
-/** Подписи самих языков (для кнопок переключателя). */
+/** Подписи самих языков (для aria-label кнопок переключателя). */
 export const LANG_LABELS: Record<Lang, string> = {
   tg: "Тоҷикӣ",
   ru: "Русский",
   en: "English",
 };
 
+/** Короткие подписи для segmented-переключателя в шапке. */
+export const LANG_SHORT_LABELS: Record<Lang, string> = {
+  tg: "TG",
+  ru: "RU",
+  en: "EN",
+};
+
 /** Словарь строк UI одного языка. */
 export type Dict = {
   appTitle: string;
   demoBanner: string;
+  demoDismiss: string;
   skipToList: string;
   languageSwitcher: string;
   mapRegionLabel: string;
   mapLoading: string;
   stationsHeading: string;
+  searchLabel: string;
+  searchPlaceholder: string;
+  searchNoResults: string;
+  panelCollapse: string;
+  panelExpand: string;
+  themeLabel: string;
+  themeAuto: string;
+  themeLight: string;
+  themeDark: string;
   legendHeading: string;
   legendStation: string;
   legendTransfer: string;
+  /** Префикс бейджа линии: «Л» (tg/ru) или «L» (en) + номер. */
+  lineBadgePrefix: string;
   dataSourceLabel: string;
   dataSourceApi: string;
   dataSourceDemo: string;
+  dataSourceDemoShort: string;
   loading: string;
   loadError: string;
   popupLines: string;
   popupAccessibility: string;
   popupStatus: string;
+  popupClose: string;
   transferBadge: string;
   accessibility: Record<AccessibilityFeature, string>;
   status: Record<LineStatus | StationStatus, string>;
@@ -55,22 +76,35 @@ export type Dict = {
 const tg: Dict = {
   appTitle: "Метрои Душанбе",
   demoBanner: "Нақшаи намоишӣ — маълумот тасдиқ нашудааст",
+  demoDismiss: "Пинҳон кардани огоҳӣ",
   skipToList: "Гузаштан ба рӯйхати истгоҳҳо",
   languageSwitcher: "Забон",
   mapRegionLabel: "Харитаи шабакаи метро",
   mapLoading: "Харита бор мешавад…",
   stationsHeading: "Истгоҳҳо",
+  searchLabel: "Ҷустуҷӯи истгоҳ",
+  searchPlaceholder: "Ҷустуҷӯи истгоҳ…",
+  searchNoResults: "Ҳеҷ чиз ёфт нашуд",
+  panelCollapse: "Пинҳон кардани рӯйхат",
+  panelExpand: "Кушодани рӯйхат",
+  themeLabel: "Намуди зоҳирӣ",
+  themeAuto: "Худкор",
+  themeLight: "Равшан",
+  themeDark: "Торик",
   legendHeading: "Аломатҳо",
   legendStation: "Истгоҳ",
-  legendTransfer: "Истгоҳи гузариш",
+  legendTransfer: "Гузариш",
+  lineBadgePrefix: "Л",
   dataSourceLabel: "Манбаи маълумот",
   dataSourceApi: "API",
   dataSourceDemo: "намоишӣ (офлайн)",
+  dataSourceDemoShort: "намоишӣ",
   loading: "Бор шуда истодааст…",
   loadError: "Маълумот бор нашуд",
   popupLines: "Хатҳо",
   popupAccessibility: "Дастрасӣ",
   popupStatus: "Ҳолат",
+  popupClose: "Пӯшидан",
   transferBadge: "Гузариш",
   accessibility: {
     elevator: "Лифт",
@@ -93,22 +127,35 @@ const tg: Dict = {
 const ru: Dict = {
   appTitle: "Метро Душанбе",
   demoBanner: "Демонстрационная схема — данные не утверждены",
+  demoDismiss: "Скрыть предупреждение",
   skipToList: "Перейти к списку станций",
   languageSwitcher: "Язык",
   mapRegionLabel: "Карта сети метро",
   mapLoading: "Карта загружается…",
   stationsHeading: "Станции",
+  searchLabel: "Поиск станции",
+  searchPlaceholder: "Поиск станции…",
+  searchNoResults: "Ничего не найдено",
+  panelCollapse: "Свернуть список",
+  panelExpand: "Развернуть список",
+  themeLabel: "Тема оформления",
+  themeAuto: "Авто",
+  themeLight: "Светлая",
+  themeDark: "Тёмная",
   legendHeading: "Легенда",
   legendStation: "Станция",
-  legendTransfer: "Пересадочная станция",
+  legendTransfer: "Пересадка",
+  lineBadgePrefix: "Л",
   dataSourceLabel: "Источник данных",
   dataSourceApi: "API",
   dataSourceDemo: "демо (офлайн)",
+  dataSourceDemoShort: "демо",
   loading: "Загрузка…",
   loadError: "Не удалось загрузить данные",
   popupLines: "Линии",
   popupAccessibility: "Доступность",
   popupStatus: "Статус",
+  popupClose: "Закрыть",
   transferBadge: "Пересадка",
   accessibility: {
     elevator: "Лифт",
@@ -131,22 +178,35 @@ const ru: Dict = {
 const en: Dict = {
   appTitle: "Dushanbe Metro",
   demoBanner: "Demonstration diagram — data is not approved",
+  demoDismiss: "Dismiss warning",
   skipToList: "Skip to station list",
   languageSwitcher: "Language",
   mapRegionLabel: "Metro network map",
   mapLoading: "Loading map…",
   stationsHeading: "Stations",
+  searchLabel: "Search stations",
+  searchPlaceholder: "Search stations…",
+  searchNoResults: "Nothing found",
+  panelCollapse: "Collapse list",
+  panelExpand: "Expand list",
+  themeLabel: "Theme",
+  themeAuto: "Auto",
+  themeLight: "Light",
+  themeDark: "Dark",
   legendHeading: "Legend",
   legendStation: "Station",
-  legendTransfer: "Transfer station",
+  legendTransfer: "Transfer",
+  lineBadgePrefix: "L",
   dataSourceLabel: "Data source",
   dataSourceApi: "API",
   dataSourceDemo: "demo (offline)",
+  dataSourceDemoShort: "demo",
   loading: "Loading…",
   loadError: "Failed to load data",
   popupLines: "Lines",
   popupAccessibility: "Accessibility",
   popupStatus: "Status",
+  popupClose: "Close",
   transferBadge: "Transfer",
   accessibility: {
     elevator: "Elevator",
@@ -190,4 +250,12 @@ export function pickName(
     return "";
   }
   return name[lang] ?? name.tg ?? name.ru ?? name.en ?? "";
+}
+
+/**
+ * Подпись бейджа линии по текущему языку: «Л1»/«Л2» (tg, ru) или «L1» (en).
+ * Код линии стабилен и всегда начинается с латинской L (dev-conventions.md, §4).
+ */
+export function lineBadgeLabel(code: string, lang: Lang): string {
+  return code.replace(/^L/i, getDict(lang).lineBadgePrefix);
 }

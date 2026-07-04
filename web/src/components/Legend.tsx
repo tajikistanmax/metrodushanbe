@@ -1,11 +1,13 @@
 "use client";
 
 /**
- * Легенда карты: линии (цвет + название из данных), станция, пересадка.
- * Цвет не является единственным носителем смысла — есть подписи.
+ * Легенда карты: компактная карточка-строка чипов снизу-слева —
+ * бейджи линий («Л1»/«Л2»), кружок станции, двойное кольцо пересадки.
+ * Цвет не является единственным носителем смысла — есть подписи/названия.
+ * На мобильных скрыта: ту же информацию даёт bottom-sheet со списком линий.
  */
 
-import { pickName } from "@/lib/i18n";
+import { lineBadgeLabel, pickName } from "@/lib/i18n";
 import { isLineFeature, type NetworkGeoJson } from "@/lib/types";
 import { useI18n } from "./I18nProvider";
 
@@ -19,45 +21,45 @@ export default function Legend({ data }: LegendProps) {
     .filter(isLineFeature)
     .sort((a, b) => a.properties.sort_order - b.properties.sort_order);
 
+  if (lines.length === 0) {
+    return null;
+  }
+
   return (
     <section
       aria-label={dict.legendHeading}
-      className="rounded-xl border border-brand-navy/15 bg-surface-light p-4"
+      style={{ background: "var(--panel-bg)" }}
+      className="absolute bottom-4 left-4 z-10 hidden items-center gap-3 rounded-xl border border-[var(--panel-border)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)] shadow-[var(--shadow-card)] backdrop-blur-md md:flex"
     >
-      <h2 className="mb-3 text-base font-bold">{dict.legendHeading}</h2>
-      <ul className="space-y-2 text-sm">
-        {lines.map((line) => (
-          <li key={line.properties.code} className="flex items-center gap-2">
-            <span
-              aria-hidden="true"
-              className="inline-block h-1 w-8 rounded-full"
-              style={{ backgroundColor: line.properties.color_hex }}
-            />
-            <span>
-              {pickName(line.properties.name, lang)}{" "}
-              <span className="text-text-secondary">
-                ({line.properties.code})
-              </span>
-            </span>
-          </li>
-        ))}
-        <li className="flex items-center gap-2">
-          <span
-            aria-hidden="true"
-            className="ml-2 inline-block h-3 w-3 shrink-0 rounded-full bg-surface-light"
-            style={{ border: "2.5px solid var(--brand-navy)" }}
-          />
-          <span>{dict.legendStation}</span>
-        </li>
-        <li className="flex items-center gap-2">
-          <span
-            aria-hidden="true"
-            className="ml-1.5 inline-block h-4.5 w-4.5 shrink-0 rounded-full bg-surface-light"
-            style={{ border: "2.5px solid var(--brand-navy)" }}
-          />
-          <span>{dict.legendTransfer}</span>
-        </li>
-      </ul>
+      {lines.map((line) => (
+        <span
+          key={line.properties.code}
+          className="line-badge"
+          style={{ background: line.properties.color_hex }}
+          title={pickName(line.properties.name, lang)}
+        >
+          {lineBadgeLabel(line.properties.code, lang)}
+          <span className="sr-only"> — {pickName(line.properties.name, lang)}</span>
+        </span>
+      ))}
+
+      <span className="flex items-center gap-1.5">
+        <span
+          aria-hidden="true"
+          className="h-3.5 w-3.5 shrink-0 rounded-full border-[2.5px] border-[var(--diagram-ring)] bg-[var(--station-fill)]"
+        />
+        {dict.legendStation}
+      </span>
+
+      <span className="flex items-center gap-1.5">
+        <span
+          aria-hidden="true"
+          className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-[2.5px] border-[var(--diagram-ring)] bg-[var(--station-fill)]"
+        >
+          <span className="h-[7px] w-[7px] rounded-full border-2 border-[var(--diagram-ring)]" />
+        </span>
+        {dict.legendTransfer}
+      </span>
     </section>
   );
 }
