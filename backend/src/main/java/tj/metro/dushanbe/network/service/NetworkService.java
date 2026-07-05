@@ -11,15 +11,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tj.metro.dushanbe.common.error.BadRequestException;
 import tj.metro.dushanbe.common.error.NotFoundException;
+import tj.metro.dushanbe.network.domain.AccessibilityFeature;
 import tj.metro.dushanbe.network.domain.MetroLine;
 import tj.metro.dushanbe.network.domain.MetroStation;
 import tj.metro.dushanbe.network.domain.MetroStationLine;
+import tj.metro.dushanbe.network.domain.StationExit;
+import tj.metro.dushanbe.network.repository.AccessibilityFeatureRepository;
 import tj.metro.dushanbe.network.repository.MetroLineRepository;
 import tj.metro.dushanbe.network.repository.MetroStationLineRepository;
 import tj.metro.dushanbe.network.repository.MetroStationRepository;
+import tj.metro.dushanbe.network.repository.StationExitRepository;
+import tj.metro.dushanbe.network.web.dto.AccessibilityFeatureDto;
 import tj.metro.dushanbe.network.web.dto.GeoJsonFeatureCollection;
 import tj.metro.dushanbe.network.web.dto.LineDto;
+import tj.metro.dushanbe.network.web.dto.StationDetailDto;
 import tj.metro.dushanbe.network.web.dto.StationDto;
+import tj.metro.dushanbe.network.web.dto.StationExitDto;
 
 /**
  * Сервис сетевого каталога: линии, станции, GeoJSON-слой сети.
@@ -40,15 +47,21 @@ public class NetworkService {
     private final MetroLineRepository lineRepository;
     private final MetroStationRepository stationRepository;
     private final MetroStationLineRepository stationLineRepository;
+    private final StationExitRepository stationExitRepository;
+    private final AccessibilityFeatureRepository accessibilityFeatureRepository;
     private final GeoJsonBuilder geoJsonBuilder;
 
     public NetworkService(MetroLineRepository lineRepository,
                           MetroStationRepository stationRepository,
                           MetroStationLineRepository stationLineRepository,
+                          StationExitRepository stationExitRepository,
+                          AccessibilityFeatureRepository accessibilityFeatureRepository,
                           GeoJsonBuilder geoJsonBuilder) {
         this.lineRepository = lineRepository;
         this.stationRepository = stationRepository;
         this.stationLineRepository = stationLineRepository;
+        this.stationExitRepository = stationExitRepository;
+        this.accessibilityFeatureRepository = accessibilityFeatureRepository;
         this.geoJsonBuilder = geoJsonBuilder;
     }
 
@@ -98,6 +111,30 @@ public class NetworkService {
                 .orElseThrow(() -> NotFoundException.station(code));
         Map<UUID, List<String>> lineCodesByStation = lineCodesByStation(stationLineRepository.findAllWithStationAndLine());
         return toDto(station, lineCodesByStation.getOrDefault(station.getId(), List.of()));
+    }
+
+    /**
+     * Детальная карточка станции по коду (NET-02/NET-03): станция, её линии,
+     * выходы и объекты доступности. 404 — station.not_found.
+     */
+    public StationDetailDto stationDetailByCode(String code) {
+        MetroStation station = stationRepository.findByCode(code)
+                .orElseThrow(() -> NotFoundException.station(code));
+        Map<UUID, List<String>> lineCodesByStation = lineCodesByStation(stationLineRepository.findAllWithStationAndLine());
+        List<String> lineCodes = lineCodesByStation.getOrDefault(station.getId(), List.of());
+
+        List<StationExitDto> exits = stationExitRepository.findByStationCodeOrderBySortOrder(code)
+                .stream().map(this::toDto).toList();
+        List<AccessibilityFeatureDto> features = accessibilityFeatureRepository.findByStationCodeOrderByType(code)
+                .stream().map(this::toDto).toList();
+
+        List<Double> coordinates = station.getPointGeom() != null
+                ? List.of(station.getPointGeom().getX(), station.getPointGeom().getY())
+                : List.of();
+        return new StationDetailDto(station.getCode(), station.getNameI18n(), station.getStatus(),
+                lineCodes, station.isTransfer(),
+                station.getAccessibility() != null ? station.getAccessibility() : List.of(),
+                coordinates, exits, features);
     }
 
     /**
@@ -153,6 +190,17 @@ public class NetworkService {
                 lineCodes, station.isTransfer(),
                 station.getAccessibility() != null ? station.getAccessibility() : List.of(),
                 coordinates);
+    }
+
+    private StationExitDto toDto(StationExit exit) {
+        List<Double> coordinates = exit.getPointGeom() != null
+                ? List.of(exit.getPointGeom().getX(), exit.getPointGeom().getY())
+                : List.of();
+        return new StationExitDto(exit.getCode(), exit.getNameI18n(), exit.isAccessible(), coordinates);
+    }
+
+    private AccessibilityFeatureDto toDto(AccessibilityFeature feature) {
+        return new AccessibilityFeatureDto(feature.getType(), feature.getDescriptionI18n(), feature.getStatus());
     }
 
     private void requireValidStatus(String status, Set<String> allowed, String paramName) {

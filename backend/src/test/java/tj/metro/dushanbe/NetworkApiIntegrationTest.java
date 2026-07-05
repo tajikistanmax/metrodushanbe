@@ -67,6 +67,25 @@ class NetworkApiIntegrationTest {
     }
 
     @Test
+    void stationDetailReturnsExitsAndAccessibilityFeatures() {
+        ResponseEntity<String> response = rest.getForEntity("/api/v1/stations/ST-HUB-CENTER", String.class);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        String body = response.getBody();
+        assertNotNull(body);
+        assertTrue(body.contains("\"ST-HUB-CENTER\""), "карточка должна содержать код станции");
+        // структурированные детали станции (V007/V008)
+        assertTrue(body.contains("\"exits\""), "карточка должна содержать массив выходов");
+        assertTrue(body.contains("\"EX-ST-HUB-CENTER-A\""), "должен присутствовать демо-выход A");
+        assertTrue(body.contains("\"accessibilityFeatures\""), "карточка должна содержать объекты доступности");
+        assertTrue(body.contains("\"audio_assist\""), "должен присутствовать объект доступности audio_assist");
+        // базовые поля станции сохранены (backward-compatible со списочной карточкой)
+        assertTrue(body.contains("\"coordinates\""), "карточка должна содержать координаты станции");
+        assertTrue(body.contains("\"L1\"") && body.contains("\"L2\""),
+                "пересадочная станция принадлежит линиям L1 и L2");
+    }
+
+    @Test
     void unknownStationReturnsEnvelope404() {
         ResponseEntity<String> response = rest.getForEntity("/v1/stations/ST-NOPE", String.class);
 

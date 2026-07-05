@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import tj.metro.dushanbe.network.service.NetworkService;
+import tj.metro.dushanbe.network.web.dto.StationDetailDto;
 import tj.metro.dushanbe.network.web.dto.StationDto;
 
 /**
@@ -41,9 +42,11 @@ public class StationController {
     }
 
     @GetMapping("/{code}")
-    @Operation(summary = "Карточка станции",
-            description = "Возвращает станцию по стабильному коду (например, ST-L1-01). 404 — station.not_found.")
-    public StationDto byCode(@PathVariable("code") String code) {
-        return networkService.stationByCode(code);
+    @Operation(summary = "Детальная карточка станции",
+            description = "Возвращает детальную карточку станции по стабильному коду (например, ST-L1-01): "
+                    + "поля станции (name — i18n-объект, coordinates — [lon, lat]) плюс выходы (exits[]) "
+                    + "и объекты доступности (accessibilityFeatures[]). 404 — station.not_found.")
+    public StationDetailDto byCode(@PathVariable("code") String code) {
+        return networkService.stationDetailByCode(code);
     }
 }
