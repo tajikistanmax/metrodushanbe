@@ -158,3 +158,51 @@ export function isLineFeature(f: NetworkFeature): f is LineFeature {
 export function isStationFeature(f: NetworkFeature): f is StationFeature {
   return f.properties.feature_type === "station";
 }
+
+// ---------------------------------------------------------------------------
+// Детальная карточка станции: GET /api/v1/stations/{code}
+// Контракт использует camelCase (isTransfer, isAccessible, accessibilityFeatures)
+// в отличие от snake_case GeoJSON-модели сети выше.
+// ---------------------------------------------------------------------------
+
+/** Статус объекта доступности (лифт/эскалатор и т.п.) в карточке станции. */
+export type AccessibilityFeatureStatus =
+  | "available"
+  | "out_of_service"
+  | "planned";
+
+/** Выход со станции. */
+export type StationExit = {
+  code: string;
+  name: I18nName;
+  /** Оборудован для маломобильных пассажиров. */
+  isAccessible: boolean;
+  /** Позиция [lng, lat] (EPSG:4326). */
+  coordinates: LngLat;
+};
+
+/**
+ * Объект безбарьерной среды с описанием и статусом эксплуатации.
+ * `type` обычно совпадает с элементами безбарьерной среды сети, но набор
+ * на backend шире (напр. "accessible_toilet"), поэтому тип открытый —
+ * подпись берётся из словаря, а при неизвестном коде — из `description`.
+ */
+export type StationAccessibilityFeature = {
+  type: AccessibilityFeature | (string & {});
+  description: I18nName;
+  status: AccessibilityFeatureStatus;
+};
+
+/** Детальная информация о станции из API GET /stations/{code}. */
+export type StationDetail = {
+  code: string;
+  name: I18nName;
+  status: StationStatus;
+  lines: string[];
+  isTransfer: boolean;
+  accessibility: AccessibilityFeature[];
+  /** Позиция [lng, lat] (EPSG:4326). */
+  coordinates: LngLat;
+  exits: StationExit[];
+  accessibilityFeatures: StationAccessibilityFeature[];
+};

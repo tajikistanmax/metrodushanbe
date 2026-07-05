@@ -6,6 +6,7 @@
 
 import type {
   AccessibilityFeature,
+  AccessibilityFeatureStatus,
   AlertSeverity,
   I18nName,
   LineStatus,
@@ -76,7 +77,17 @@ export type Dict = {
   popupStatus: string;
   popupClose: string;
   transferBadge: string;
+  /** Детальная карточка станции (GET /stations/{code}). */
+  exitsHeading: string;
+  accessibilityFeaturesHeading: string;
+  exitAccessible: string;
+  exitNotAccessible: string;
+  detailsLoading: string;
+  detailsUnavailable: string;
+  detailsNoExits: string;
+  detailsNoFeatures: string;
   accessibility: Record<AccessibilityFeature, string>;
+  featureStatus: Record<AccessibilityFeatureStatus, string>;
   status: Record<LineStatus | StationStatus, string>;
   /** Публичный раздел новостей (ТЗ §6.2.7) и навигация шапки. */
   news: {
@@ -143,12 +154,25 @@ const tg: Dict = {
   popupStatus: "Ҳолат",
   popupClose: "Пӯшидан",
   transferBadge: "Гузариш",
+  exitsHeading: "Баромадгоҳҳо",
+  accessibilityFeaturesHeading: "Объектҳои дастрасӣ",
+  exitAccessible: "Дастрас",
+  exitNotAccessible: "Дастнорас",
+  detailsLoading: "Тафсилот бор мешавад…",
+  detailsUnavailable: "Тафсилот дастрас нест",
+  detailsNoExits: "Баромадгоҳҳо нишон дода нашудаанд",
+  detailsNoFeatures: "Объектҳои дастрасӣ нишон дода нашудаанд",
   accessibility: {
     elevator: "Лифт",
     escalator: "Эскалатор",
     ramp: "Пандус",
     tactile: "Роҳнамои ламсӣ",
     audio_assist: "Ёрии садоӣ",
+  },
+  featureStatus: {
+    available: "Дастрас",
+    out_of_service: "Аз кор баромада",
+    planned: "Ба нақша гирифташуда",
   },
   status: {
     planned: "Банақшагирифташуда",
@@ -215,12 +239,25 @@ const ru: Dict = {
   popupStatus: "Статус",
   popupClose: "Закрыть",
   transferBadge: "Пересадка",
+  exitsHeading: "Выходы",
+  accessibilityFeaturesHeading: "Объекты доступности",
+  exitAccessible: "Доступен",
+  exitNotAccessible: "Недоступен",
+  detailsLoading: "Загрузка деталей…",
+  detailsUnavailable: "Детали недоступны",
+  detailsNoExits: "Выходы не указаны",
+  detailsNoFeatures: "Объекты доступности не указаны",
   accessibility: {
     elevator: "Лифт",
     escalator: "Эскалатор",
     ramp: "Пандус",
     tactile: "Тактильная навигация",
     audio_assist: "Аудиосопровождение",
+  },
+  featureStatus: {
+    available: "Доступен",
+    out_of_service: "Не работает",
+    planned: "Запланирован",
   },
   status: {
     planned: "Запланирована",
@@ -287,12 +324,25 @@ const en: Dict = {
   popupStatus: "Status",
   popupClose: "Close",
   transferBadge: "Transfer",
+  exitsHeading: "Exits",
+  accessibilityFeaturesHeading: "Accessibility features",
+  exitAccessible: "Accessible",
+  exitNotAccessible: "Not accessible",
+  detailsLoading: "Loading details…",
+  detailsUnavailable: "Details unavailable",
+  detailsNoExits: "No exits listed",
+  detailsNoFeatures: "No accessibility features listed",
   accessibility: {
     elevator: "Elevator",
     escalator: "Escalator",
     ramp: "Ramp",
     tactile: "Tactile guidance",
     audio_assist: "Audio assistance",
+  },
+  featureStatus: {
+    available: "Available",
+    out_of_service: "Out of service",
+    planned: "Planned",
   },
   status: {
     planned: "Planned",

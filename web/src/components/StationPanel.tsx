@@ -8,13 +8,15 @@
  * на ней (пересадка — двойное кольцо navy), клик = flyTo + popup на карте.
  */
 
-import { useMemo, useState } from "react";
-import { lineBadgeLabel, pickName, type Lang } from "@/lib/i18n";
+import { useEffect, useMemo, useState } from "react";
+import { lineBadgeLabel, pickName, type Dict, type Lang } from "@/lib/i18n";
+import { loadStationDetail } from "@/lib/station-detail-data";
 import {
   isLineFeature,
   isStationFeature,
   type LineFeature,
   type NetworkGeoJson,
+  type StationDetail,
   type StationFeature,
 } from "@/lib/types";
 import SearchBox from "./SearchBox";
@@ -177,6 +179,206 @@ function LineDiagram({
   );
 }
 
+/**
+ * Иконка признака доступности выхода. Смысл передаётся ИКОНКОЙ + текстом
+ * рядом (не только цветом) — требование WCAG 2.2 (SC 1.4.1 «Использование
+ * цвета»). aria-hidden: значение дублируется видимой подписью.
+ */
+function AccessIcon({ accessible }: { accessible: boolean }) {
+  const color = accessible ? "var(--brand-green)" : "var(--text-secondary)";
+  return (
+    <span
+      aria-hidden="true"
+      className="flex h-4 w-4 shrink-0 items-center justify-center"
+      style={{ color }}
+    >
+      <svg
+        focusable="false"
+        width={16}
+        height={16}
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {accessible ? (
+          // Галочка — выход доступен
+          <path d="M3 8.5 6.5 12 13 4.5" />
+        ) : (
+          // Перечёркнутый круг — выход недоступен
+          <>
+            <circle cx="8" cy="8" r="5.5" />
+            <path d="M4.5 4.5 11.5 11.5" />
+          </>
+        )}
+      </svg>
+    </span>
+  );
+}
+
+/** Классы текстового бейджа статуса объекта доступности (цвет + текст). */
+function featureStatusClass(status: StationDetail["accessibilityFeatures"][number]["status"]): string {
+  switch (status) {
+    case "available":
+      return "border-[var(--brand-green)] text-[var(--brand-green)]";
+    case "out_of_service":
+      // Недоступность выделяем текстом + цветом (не только цветом)
+      return "border-[var(--brand-red)] text-[var(--brand-red)] font-bold";
+    case "planned":
+    default:
+      return "border-[var(--panel-border)] text-text-secondary";
+  }
+}
+
+/**
+ * Детальная карточка выбранной станции: базовая инфо (имя, статус, линии)
+ * всегда из данных сети, а выходы и объекты доступности — из API. При
+ * недоступном API показываем базовую инфо + «детали недоступны».
+ */
+function StationDetailCard({
+  station,
+  detail,
+  loading,
+  lang,
+  dict,
+}: {
+  station: StationFeature | null;
+  detail: StationDetail | null;
+  loading: boolean;
+  lang: Lang;
+  dict: Dict;
+}) {
+  const name = detail
+    ? pickName(detail.name, lang)
+    : station
+      ? pickName(station.properties.name, lang)
+      : "";
+  const status = detail?.status ?? station?.properties.status ?? null;
+  const lines = detail?.lines ?? station?.properties.lines ?? [];
+
+  return (
+    <div className="mb-3 rounded-xl border border-[var(--panel-border)] bg-[var(--control-hover)] p-3">
+      <h3 className="text-sm font-bold">{name}</h3>
+
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        {status && (
+          <span className="rounded-full border border-[var(--panel-border)] px-2 py-0.5 text-[11px] font-semibold text-text-secondary">
+            {dict.status[status]}
+          </span>
+        )}
+        {lines.map((code) => (
+          <span key={code} className="line-badge">
+            {lineBadgeLabel(code, lang)}
+          </span>
+        ))}
+      </div>
+
+      {loading && (
+        <p role="status" className="mt-2.5 text-xs text-text-secondary">
+          {dict.detailsLoading}
+        </p>
+      )}
+
+      {!loading && !detail && (
+        <p role="status" className="mt-2.5 text-xs text-text-secondary">
+          {dict.detailsUnavailable}
+        </p>
+      )}
+
+      {!loading && detail && (
+        <>
+          {/* Выходы */}
+          <section className="mt-3">
+            <h4 className="text-[11px] font-bold uppercase tracking-wide text-text-secondary">
+              {dict.exitsHeading}
+            </h4>
+            {detail.exits.length === 0 ? (
+              <p className="mt-1 text-xs text-text-secondary">
+                {dict.detailsNoExits}
+              </p>
+            ) : (
+              <ul className="mt-1.5 space-y-1.5">
+                {detail.exits.map((exit) => (
+                  <li
+                    key={exit.code}
+                    className="flex items-center gap-2 text-sm"
+                  >
+                    <AccessIcon accessible={exit.isAccessible} />
+                    <span className="min-w-0 flex-1 truncate font-medium">
+                      {pickName(exit.name, lang)}
+                    </span>
+                    <span
+                      className={`shrink-0 text-[11px] font-semibold ${
+                        exit.isAccessible
+                          ? "text-[var(--brand-green)]"
+                          : "text-text-secondary"
+                      }`}
+                    >
+                      {exit.isAccessible
+                        ? dict.exitAccessible
+                        : dict.exitNotAccessible}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {/* Объекты доступности */}
+          <section className="mt-3">
+            <h4 className="text-[11px] font-bold uppercase tracking-wide text-text-secondary">
+              {dict.accessibilityFeaturesHeading}
+            </h4>
+            {detail.accessibilityFeatures.length === 0 ? (
+              <p className="mt-1 text-xs text-text-secondary">
+                {dict.detailsNoFeatures}
+              </p>
+            ) : (
+              <ul className="mt-1.5 space-y-1.5">
+                {detail.accessibilityFeatures.map((feature, index) => {
+                  // Подпись типа из словаря; для неизвестного backend-кода
+                  // (напр. accessible_toilet) — локализованное описание.
+                  const known =
+                    dict.accessibility[
+                      feature.type as keyof typeof dict.accessibility
+                    ];
+                  const description = pickName(feature.description, lang);
+                  const primary = known ?? description;
+                  const secondary = known ? description : null;
+                  return (
+                  <li
+                    key={`${feature.type}-${index}`}
+                    className="flex items-start gap-2 text-sm"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="font-semibold">{primary}</span>
+                      {secondary && (
+                        <span className="block text-xs text-text-secondary">
+                          {secondary}
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      className={`mt-0.5 shrink-0 rounded-full border px-2 py-0.5 text-[11px] ${featureStatusClass(
+                        feature.status,
+                      )}`}
+                    >
+                      {dict.featureStatus[feature.status]}
+                    </span>
+                  </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function StationPanel({
   data,
   onSelect,
@@ -185,8 +387,51 @@ export default function StationPanel({
   const { lang, dict } = useI18n();
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState(true);
+  // Детали выбранной станции подгружаются ОТДЕЛЬНО и не блокируют панель:
+  // ошибка/офлайн → detail = null (loadStationDetail никогда не бросает).
+  // Храним результат вместе с кодом станции, к которой он относится, чтобы
+  // «загрузка» выводилась как производное состояние (без setState в эффекте).
+  const [detailState, setDetailState] = useState<{
+    code: string;
+    detail: StationDetail | null;
+  } | null>(null);
 
   const groups = useMemo(() => (data ? groupByLine(data) : []), [data]);
+
+  // Есть ли уже загруженный результат именно для выбранной станции.
+  const detailReady = detailState?.code === selectedCode;
+  const detail = detailReady ? (detailState?.detail ?? null) : null;
+  const detailLoading = Boolean(selectedCode) && !detailReady;
+
+  /** Выбранная станция из данных сети — источник базовой инфо для карточки. */
+  const selectedStation = useMemo(() => {
+    if (!selectedCode || !data) {
+      return null;
+    }
+    return (
+      data.features.find(
+        (f): f is StationFeature =>
+          isStationFeature(f) && f.properties.code === selectedCode,
+      ) ?? null
+    );
+  }, [data, selectedCode]);
+
+  // Загрузка деталей при смене выбранной станции. Гонки гасим флагом cancelled.
+  // setState вызываем только в async-колбэке (не синхронно в теле эффекта).
+  useEffect(() => {
+    if (!selectedCode) {
+      return;
+    }
+    let cancelled = false;
+    loadStationDetail(selectedCode).then((res) => {
+      if (!cancelled) {
+        setDetailState({ code: selectedCode, detail: res });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCode]);
 
   const normalizedQuery = query.trim().toLowerCase();
   const visibleGroups = useMemo(() => {
@@ -259,6 +504,15 @@ export default function StationPanel({
           <SearchBox value={query} onChange={setQuery} />
 
           <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+            {selectedCode && (selectedStation || detail || detailLoading) && (
+              <StationDetailCard
+                station={selectedStation}
+                detail={detail}
+                loading={detailLoading}
+                lang={lang}
+                dict={dict}
+              />
+            )}
             {groups.length === 0 ? (
               <p className="px-2 py-3 text-sm text-text-secondary">
                 {dict.loading}
