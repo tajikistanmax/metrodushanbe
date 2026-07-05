@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+/*
+ * Дизайн-токены бренда «Метро Душанбе» (docs/dev-conventions.md, §5).
+ * Общие с web/src/app/globals.css; admin — отдельное приложение.
+ * Шрифт — Montserrat, self-host через @fontsource (импорт весов в layout.tsx);
+ * внешние CDN/Google Fonts запрещены (офлайн-принцип, §8).
+ * Тёмная тема — через [data-theme="dark"] на <html> (см. ThemeProvider).
+ */
+:root {
+  /* Брендовые константы (одинаковы в обеих темах) */
+  --brand-navy: #082742;
+  --brand-red: #e21b2d;
+  --brand-green: #138a3d;
+  --surface-light: #ffffff;
+  --surface-muted: #f2f5f8;
+  --surface-dark: #0b1622;
+  --warning: #e08600;
+  --info: #0e5a8a;
+
+  /* Семантические токены светлой темы */
+  --text-primary: var(--brand-navy);
+  --text-secondary: #3a4a5a;
+  --page-bg: #edf1f5;
+  --sidebar-bg: var(--brand-navy);
+  --card-bg: #ffffff;
+  --card-border: rgba(8, 39, 66, 0.12);
+  --table-head-bg: #f2f5f8;
+  --table-row-hover: rgba(8, 39, 66, 0.04);
+  --table-border: rgba(8, 39, 66, 0.1);
+  --chip-bg: rgba(8, 39, 66, 0.06);
+  --shadow-card: 0 6px 24px rgba(8, 39, 66, 0.1);
+
+  /* Montserrat self-host; таджикские буквы (ӣ ӯ қ ғ ҳ ҷ) — субсет
+     cyrillic-ext, fallback — Segoe UI (dev-conventions.md, §5) */
+  --font-brand: "Montserrat", "Segoe UI", system-ui, sans-serif;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --text-primary: #f2f5f8;
+  --text-secondary: #aebfce;
+  --page-bg: #0b1622;
+  --sidebar-bg: #071a2b;
+  --card-bg: #0f1d2e;
+  --card-border: rgba(242, 245, 248, 0.14);
+  --table-head-bg: rgba(242, 245, 248, 0.05);
+  --table-row-hover: rgba(242, 245, 248, 0.06);
+  --table-border: rgba(242, 245, 248, 0.12);
+  --chip-bg: rgba(242, 245, 248, 0.09);
+  --shadow-card: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* Проброс токенов в утилиты Tailwind v4 (bg-brand-navy, text-text-secondary и т.д.) */
+@theme inline {
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-red: var(--brand-red);
+  --color-brand-green: var(--brand-green);
+  --color-surface-light: var(--surface-light);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-dark: var(--surface-dark);
+  --color-text-secondary: var(--text-secondary);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-ink: var(--text-primary);
+  --color-page: var(--page-bg);
+  --color-sidebar: var(--sidebar-bg);
+  --color-card: var(--card-bg);
+  --color-card-border: var(--card-border);
+  --font-sans: var(--font-brand);
+}
+
+body {
+  background: var(--page-bg);
+  color: var(--text-primary);
+  font-family: var(--font-brand);
+}
+
+/* Видимый фокус для клавиатурной навигации (WCAG 2.2 AA) */
+:focus-visible {
+  outline: 3px solid var(--info);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* На тёмном фоне --info даёт <3:1 (SC 1.4.11) — индикатор фокуса светлее */
+[data-theme="dark"] :focus-visible {
+  outline-color: #8fc3ea;
+}
+
+/* На navy-сайдбаре белый индикатор фокуса даёт ≈15:1 */
+.sidebar :focus-visible,
+.skip-link:focus-visible {
+  outline-color: var(--surface-light);
+}
+
+/* Skip-link: скрыт, появляется при фокусе */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 0.5rem 1rem;
+  background: var(--brand-navy);
+  color: var(--surface-light);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.skip-link:focus-visible {
+  left: 0.5rem;
+  top: 0.5rem;
+}
+
+/* Уважение к prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/*
+ * Бейдж линии («Л1»/«L1»): скруглённый прямоугольник цвета линии, белый
+ * текст 700. Inset-тень слегка затемняет фон (ложится ПОД текст), поднимая
+ * контраст белого на брендовых цветах выше 4.5:1 (WCAG 2.2 AA).
+ */
+.line-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  padding: 1px 7px;
+  border-radius: 7px;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 18px;
+  letter-spacing: 0.02em;
+  box-shadow: inset 0 0 0 999px rgba(8, 23, 42, 0.12);
+}
