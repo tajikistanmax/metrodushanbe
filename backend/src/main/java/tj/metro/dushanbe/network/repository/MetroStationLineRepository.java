@@ -33,4 +33,10 @@ public interface MetroStationLineRepository extends JpaRepository<MetroStationLi
      */
     @Query("select sl.line.code from MetroStationLine sl where sl.station.code = :stationCode")
     List<String> findLineCodesByStationCode(@Param("stationCode") String stationCode);
+
+    /**
+     * Все связи станции с данным стабильным кодом (для идемпотентной перепривязки
+     * при импорте: связи станции удаляются и создаются заново из входных данных).
+     */
+    List<MetroStationLine> findByStation_Code(String stationCode);
 }
