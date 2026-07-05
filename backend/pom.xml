@@ -107,6 +107,22 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+            <plugin>
+                <!--
+                  JDK 25 + Mockito (inline mock maker): под мок Mockito генерирует
+                  классы через ByteBuddy. Версия ByteBuddy, управляемая Spring Boot
+                  BOM, не знает формат байткода JDK 25 (class file v69) — отсюда
+                  «Mockito cannot mock this class … Could not modify all classes».
+                  net.bytebuddy.experimental=true разрешает ByteBuddy работать на
+                  ещё не поддержанной версии JDK; EnableDynamicAgentLoading убирает
+                  ворнинг/отказ само-прикрепления java-агента Mockito на JDK 21+.
+                -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-XX:+EnableDynamicAgentLoading -Dnet.bytebuddy.experimental=true</argLine>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

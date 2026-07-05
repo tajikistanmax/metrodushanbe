@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,11 +23,7 @@ import org.testcontainers.utility.DockerImageName;
  * Интеграционный тест публичного API новостей поверх реального PostGIS
  * (Testcontainers): применяются миграции Flyway (V005 — схема news_article,
  * V006 — демо-сиды) и проверяется контракт GET /v1/news и GET /v1/news/{slug}.
- *
- * ОТКЛЮЧЁН: в текущем worktree-окружении нет Docker (см. NetworkApiIntegrationTest).
- * После установки Docker Desktop удалите аннотацию @Disabled — тест готов к запуску.
  */
-@Disabled("Требует Docker: Testcontainers поднимает PostGIS (postgis/postgis:16-3.4); в dev-окружении Docker отсутствует")
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class NewsApiIntegrationTest {

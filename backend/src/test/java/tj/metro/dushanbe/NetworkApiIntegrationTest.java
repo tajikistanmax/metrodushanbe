@@ -68,7 +68,7 @@ class NetworkApiIntegrationTest {
 
     @Test
     void stationDetailReturnsExitsAndAccessibilityFeatures() {
-        ResponseEntity<String> response = rest.getForEntity("/api/v1/stations/ST-HUB-CENTER", String.class);
+        ResponseEntity<String> response = rest.getForEntity("/v1/stations/ST-HUB-CENTER", String.class);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         String body = response.getBody();
