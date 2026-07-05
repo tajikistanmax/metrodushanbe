@@ -65,51 +65,58 @@ public class NetworkService {
         this.geoJsonBuilder = geoJsonBuilder;
     }
 
-    /** Список линий, опционально отфильтрованный по статусу. */
+    /**
+     * Список линий, опционально отфильтрованный по статусу. Публичное чтение
+     * отдаёт только действующие линии (deleted_at IS NULL, BR-NET-2).
+     */
     public List<LineDto> lines(String status) {
         List<MetroLine> lines;
         if (isBlank(status)) {
-            lines = lineRepository.findAllByOrderBySortOrderAscCodeAsc();
+            lines = lineRepository.findByDeletedAtIsNullOrderBySortOrderAscCodeAsc();
         } else {
             requireValidStatus(status, LINE_STATUSES, "status");
-            lines = lineRepository.findByStatusOrderBySortOrderAscCodeAsc(status);
+            lines = lineRepository.findByStatusAndDeletedAtIsNullOrderBySortOrderAscCodeAsc(status);
         }
         return lines.stream().map(this::toDto).toList();
     }
 
-    /** Карточка линии по коду. */
+    /** Карточка линии по коду; soft-deleted линия → 404 line.not_found. */
     public LineDto lineByCode(String code) {
-        return lineRepository.findByCode(code)
+        return lineRepository.findByCodeAndDeletedAtIsNull(code)
                 .map(this::toDto)
                 .orElseThrow(() -> NotFoundException.line(code));
     }
 
-    /** Список станций с фильтрами по линии и статусу. */
+    /**
+     * Список станций с фильтрами по линии и статусу. Публичное чтение исключает
+     * soft-deleted станции и станции soft-deleted линий (BR-NET-2).
+     */
     public List<StationDto> stations(String lineCode, String status) {
         if (!isBlank(status)) {
             requireValidStatus(status, STATION_STATUSES, "status");
         }
         List<MetroStation> stations;
         if (!isBlank(lineCode)) {
-            lineRepository.findByCode(lineCode).orElseThrow(() -> NotFoundException.line(lineCode));
-            stations = stationRepository.findByLineCodeOrderByPosition(lineCode);
+            lineRepository.findByCodeAndDeletedAtIsNull(lineCode)
+                    .orElseThrow(() -> NotFoundException.line(lineCode));
+            stations = stationRepository.findActiveByLineCodeOrderByPosition(lineCode);
         } else {
-            stations = stationRepository.findAllByOrderByCodeAsc();
+            stations = stationRepository.findByDeletedAtIsNullOrderByCodeAsc();
         }
         if (!isBlank(status)) {
             stations = stations.stream().filter(s -> status.equals(s.getStatus())).toList();
         }
-        Map<UUID, List<String>> lineCodesByStation = lineCodesByStation(stationLineRepository.findAllWithStationAndLine());
+        Map<UUID, List<String>> lineCodesByStation = lineCodesByStation(stationLineRepository.findAllActiveWithStationAndLine());
         return stations.stream()
                 .map(s -> toDto(s, lineCodesByStation.getOrDefault(s.getId(), List.of())))
                 .toList();
     }
 
-    /** Карточка станции по коду. */
+    /** Карточка станции по коду; soft-deleted станция → 404 station.not_found. */
     public StationDto stationByCode(String code) {
-        MetroStation station = stationRepository.findByCode(code)
+        MetroStation station = stationRepository.findByCodeAndDeletedAtIsNull(code)
                 .orElseThrow(() -> NotFoundException.station(code));
-        Map<UUID, List<String>> lineCodesByStation = lineCodesByStation(stationLineRepository.findAllWithStationAndLine());
+        Map<UUID, List<String>> lineCodesByStation = lineCodesByStation(stationLineRepository.findAllActiveWithStationAndLine());
         return toDto(station, lineCodesByStation.getOrDefault(station.getId(), List.of()));
     }
 
@@ -118,9 +125,9 @@ public class NetworkService {
      * выходы и объекты доступности. 404 — station.not_found.
      */
     public StationDetailDto stationDetailByCode(String code) {
-        MetroStation station = stationRepository.findByCode(code)
+        MetroStation station = stationRepository.findByCodeAndDeletedAtIsNull(code)
                 .orElseThrow(() -> NotFoundException.station(code));
-        Map<UUID, List<String>> lineCodesByStation = lineCodesByStation(stationLineRepository.findAllWithStationAndLine());
+        Map<UUID, List<String>> lineCodesByStation = lineCodesByStation(stationLineRepository.findAllActiveWithStationAndLine());
         List<String> lineCodes = lineCodesByStation.getOrDefault(station.getId(), List.of());
 
         List<StationExitDto> exits = stationExitRepository.findByStationCodeOrderBySortOrder(code)
@@ -143,15 +150,15 @@ public class NetworkService {
      * (пересадочная станция попадает в выдачу один раз).
      */
     public GeoJsonFeatureCollection networkGeoJson() {
-        List<MetroLine> lines = lineRepository.findAllByOrderBySortOrderAscCodeAsc();
-        List<MetroStationLine> links = sortedLinks(stationLineRepository.findAllWithStationAndLine());
+        List<MetroLine> lines = lineRepository.findByDeletedAtIsNullOrderBySortOrderAscCodeAsc();
+        List<MetroStationLine> links = sortedLinks(stationLineRepository.findAllActiveWithStationAndLine());
 
         Map<UUID, MetroStation> orderedStations = new LinkedHashMap<>();
         for (MetroStationLine link : links) {
             orderedStations.putIfAbsent(link.getStation().getId(), link.getStation());
         }
         // станции без привязки к линиям (на демо-данных таких нет) — в конец, по коду
-        for (MetroStation station : stationRepository.findAllByOrderByCodeAsc()) {
+        for (MetroStation station : stationRepository.findByDeletedAtIsNullOrderByCodeAsc()) {
             orderedStations.putIfAbsent(station.getId(), station);
         }
         return geoJsonBuilder.buildNetwork(lines, List.copyOf(orderedStations.values()), lineCodesByStation(links));

@@ -26,4 +26,25 @@ public interface MetroStationRepository extends JpaRepository<MetroStation, UUID
             order by sl.positionIndex asc
             """)
     List<MetroStation> findByLineCodeOrderByPosition(@Param("lineCode") String lineCode);
+
+    // --- Публичное чтение: только действующие станции (deleted_at IS NULL, BR-NET-2). ---
+
+    /** Действующая станция по коду; soft-deleted станция трактуется как отсутствующая. */
+    Optional<MetroStation> findByCodeAndDeletedAtIsNull(String code);
+
+    /** Все действующие станции по коду (для публичного списка/GeoJSON). */
+    List<MetroStation> findByDeletedAtIsNullOrderByCodeAsc();
+
+    /**
+     * Действующие станции действующей линии в порядке следования вдоль неё:
+     * исключаются как soft-deleted станции, так и станции soft-deleted линии.
+     */
+    @Query("""
+            select sl.station from MetroStationLine sl
+            where sl.line.code = :lineCode
+              and sl.station.deletedAt is null
+              and sl.line.deletedAt is null
+            order by sl.positionIndex asc
+            """)
+    List<MetroStation> findActiveByLineCodeOrderByPosition(@Param("lineCode") String lineCode);
 }

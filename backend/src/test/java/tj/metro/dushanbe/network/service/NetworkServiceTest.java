@@ -55,8 +55,8 @@ class NetworkServiceTest {
     @Test
     void stationDetailAssemblesBaseFieldsExitsAndFeatures() {
         MetroStation station = station("ST-L1-01", "Южные ворота", 68.8180, 38.5210);
-        when(stationRepository.findByCode("ST-L1-01")).thenReturn(Optional.of(station));
-        when(stationLineRepository.findAllWithStationAndLine()).thenReturn(List.of());
+        when(stationRepository.findByCodeAndDeletedAtIsNull("ST-L1-01")).thenReturn(Optional.of(station));
+        when(stationLineRepository.findAllActiveWithStationAndLine()).thenReturn(List.of());
         when(stationExitRepository.findByStationCodeOrderBySortOrder("ST-L1-01")).thenReturn(List.of(
                 exit(station, "EX-ST-L1-01-A", "Выход A", 68.8182, 38.5212, true),
                 exit(station, "EX-ST-L1-01-B", "Выход B", 68.8178, 38.5208, false)));
@@ -89,8 +89,8 @@ class NetworkServiceTest {
     @Test
     void stationWithoutDetailsReturnsEmptyLists() {
         MetroStation station = station("ST-L1-06", "Рудаки", 68.7800, 38.5850);
-        when(stationRepository.findByCode("ST-L1-06")).thenReturn(Optional.of(station));
-        when(stationLineRepository.findAllWithStationAndLine()).thenReturn(List.of());
+        when(stationRepository.findByCodeAndDeletedAtIsNull("ST-L1-06")).thenReturn(Optional.of(station));
+        when(stationLineRepository.findAllActiveWithStationAndLine()).thenReturn(List.of());
         when(stationExitRepository.findByStationCodeOrderBySortOrder("ST-L1-06")).thenReturn(List.of());
         when(accessibilityFeatureRepository.findByStationCodeOrderByType("ST-L1-06")).thenReturn(List.of());
 
@@ -102,7 +102,7 @@ class NetworkServiceTest {
 
     @Test
     void unknownStationThrowsNotFoundWithDomainCode() {
-        when(stationRepository.findByCode("ST-NOPE")).thenReturn(Optional.empty());
+        when(stationRepository.findByCodeAndDeletedAtIsNull("ST-NOPE")).thenReturn(Optional.empty());
 
         NotFoundException ex = assertThrows(NotFoundException.class,
                 () -> service.stationDetailByCode("ST-NOPE"));

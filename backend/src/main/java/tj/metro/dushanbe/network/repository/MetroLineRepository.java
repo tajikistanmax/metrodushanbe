@@ -18,4 +18,15 @@ public interface MetroLineRepository extends JpaRepository<MetroLine, UUID> {
     List<MetroLine> findAllByOrderBySortOrderAscCodeAsc();
 
     List<MetroLine> findByStatusOrderBySortOrderAscCodeAsc(String status);
+
+    // --- Публичное чтение: только действующие линии (deleted_at IS NULL, BR-NET-2). ---
+
+    /** Действующая линия по коду; soft-deleted линия трактуется как отсутствующая. */
+    Optional<MetroLine> findByCodeAndDeletedAtIsNull(String code);
+
+    /** Все действующие линии в штатном порядке (для публичного списка/GeoJSON). */
+    List<MetroLine> findByDeletedAtIsNullOrderBySortOrderAscCodeAsc();
+
+    /** Действующие линии заданного статуса в штатном порядке. */
+    List<MetroLine> findByStatusAndDeletedAtIsNullOrderBySortOrderAscCodeAsc(String status);
 }

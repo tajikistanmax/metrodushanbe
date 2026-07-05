@@ -99,9 +99,10 @@ public class RoutingService {
      * Нет пути (несвязные компоненты / закрытая станция) → {@code found=false}.
      */
     public RouteDto route(String fromCode, String toCode) {
-        stationRepository.findByCode(fromCode)
+        // soft-deleted станция (BR-NET-2) трактуется как несуществующая
+        stationRepository.findByCodeAndDeletedAtIsNull(fromCode)
                 .orElseThrow(() -> routeStationNotFound(fromCode));
-        stationRepository.findByCode(toCode)
+        stationRepository.findByCodeAndDeletedAtIsNull(toCode)
                 .orElseThrow(() -> routeStationNotFound(toCode));
 
         Graph graph = buildGraph();
@@ -138,12 +139,14 @@ public class RoutingService {
     // ---------------------------------------------------------------------
 
     private Graph buildGraph() {
+        // граф строится только по действующим линиям/станциям (BR-NET-2): soft-deleted
+        // элементы сети в маршрутизацию не попадают, как и закрытые статусы (BR-RTE-1)
         Map<String, MetroLine> linesByCode = new LinkedHashMap<>();
-        for (MetroLine line : lineRepository.findAllByOrderBySortOrderAscCodeAsc()) {
+        for (MetroLine line : lineRepository.findByDeletedAtIsNullOrderBySortOrderAscCodeAsc()) {
             linesByCode.put(line.getCode(), line);
         }
 
-        List<MetroStationLine> links = stationLineRepository.findAllWithStationAndLine();
+        List<MetroStationLine> links = stationLineRepository.findAllActiveWithStationAndLine();
 
         Map<String, MetroStation> stationsByCode = new HashMap<>();
         for (MetroStationLine link : links) {

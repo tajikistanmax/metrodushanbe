@@ -17,6 +17,17 @@ public interface MetroStationLineRepository extends JpaRepository<MetroStationLi
     List<MetroStationLine> findAllWithStationAndLine();
 
     /**
+     * Связи только для действующих станций и линий (deleted_at IS NULL, BR-NET-2) —
+     * для публичного чтения: список станций, GeoJSON, граф маршрутизации.
+     */
+    @Query("""
+            select sl from MetroStationLine sl
+            join fetch sl.station join fetch sl.line
+            where sl.station.deletedAt is null and sl.line.deletedAt is null
+            """)
+    List<MetroStationLine> findAllActiveWithStationAndLine();
+
+    /**
      * Коды линий, которым принадлежит станция с данным стабильным кодом.
      * Неизвестный код станции — пустой список.
      */

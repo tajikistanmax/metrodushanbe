@@ -129,10 +129,11 @@ class RoutingServiceTest {
     // ---------------------------------------------------------------------
 
     private void stubNetwork(Network network) {
-        when(stationRepository.findByCode(anyString()))
+        // публичное чтение маршрутизации использует active-варианты (исключают soft-deleted)
+        when(stationRepository.findByCodeAndDeletedAtIsNull(anyString()))
                 .thenAnswer(inv -> Optional.ofNullable(network.stations.get(inv.getArgument(0))));
-        when(lineRepository.findAllByOrderBySortOrderAscCodeAsc()).thenReturn(network.lines);
-        when(stationLineRepository.findAllWithStationAndLine()).thenReturn(network.links);
+        when(lineRepository.findByDeletedAtIsNullOrderBySortOrderAscCodeAsc()).thenReturn(network.lines);
+        when(stationLineRepository.findAllActiveWithStationAndLine()).thenReturn(network.links);
     }
 
     private Network demoNetwork() {
