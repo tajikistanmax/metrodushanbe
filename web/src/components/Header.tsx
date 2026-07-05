@@ -35,6 +35,15 @@ export default function Header({ source }: HeaderProps) {
   const pathname = usePathname();
   // Раздел новостей охватывает и /news, и /news/{slug}
   const onNews = pathname === "/news" || pathname.startsWith("/news/");
+  const onRoute = pathname === "/route";
+  // Карта (главная) активна, когда не открыт другой раздел
+  const onMap = !onNews && !onRoute;
+
+  // Общие классы ссылок навигации: активная — белая пилюля, прочие — приглушены
+  const navActive =
+    "rounded-full bg-surface-light/15 px-2.5 py-1 text-xs font-bold text-surface-light sm:text-sm";
+  const navIdle =
+    "rounded-full px-2.5 py-1 text-xs font-semibold text-surface-light/80 transition-colors duration-150 ease-out hover:bg-surface-light/15 sm:text-sm";
 
   const sourceKey = source ?? "loading";
   const sourceShort =
@@ -68,25 +77,26 @@ export default function Header({ source }: HeaderProps) {
           <li>
             <Link
               href="/"
-              aria-current={onNews ? undefined : "page"}
-              className={
-                onNews
-                  ? "rounded-full px-2.5 py-1 text-xs font-semibold text-surface-light/80 transition-colors duration-150 ease-out hover:bg-surface-light/15 sm:text-sm"
-                  : "rounded-full bg-surface-light/15 px-2.5 py-1 text-xs font-bold text-surface-light sm:text-sm"
-              }
+              aria-current={onMap ? "page" : undefined}
+              className={onMap ? navActive : navIdle}
             >
               {dict.news.mapNav}
             </Link>
           </li>
           <li>
             <Link
+              href="/route"
+              aria-current={onRoute ? "page" : undefined}
+              className={onRoute ? navActive : navIdle}
+            >
+              {dict.route.nav}
+            </Link>
+          </li>
+          <li>
+            <Link
               href="/news"
               aria-current={onNews ? "page" : undefined}
-              className={
-                onNews
-                  ? "rounded-full bg-surface-light/15 px-2.5 py-1 text-xs font-bold text-surface-light sm:text-sm"
-                  : "rounded-full px-2.5 py-1 text-xs font-semibold text-surface-light/80 transition-colors duration-150 ease-out hover:bg-surface-light/15 sm:text-sm"
-              }
+              className={onNews ? navActive : navIdle}
             >
               {dict.news.nav}
             </Link>

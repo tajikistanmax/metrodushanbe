@@ -111,6 +111,55 @@ export type Dict = {
     notFoundTitle: string;
     notFoundBody: string;
   };
+  /** Маршрутный поиск «откуда/куда» (GET /routes). */
+  route: {
+    /** Подпись ссылки на поиск маршрута в шапке. */
+    nav: string;
+    /** Заголовок раздела. */
+    heading: string;
+    /** Вводная подпись под заголовком. */
+    intro: string;
+    /** Skip-link к содержимому. */
+    skipToContent: string;
+    fromLabel: string;
+    toLabel: string;
+    fromPlaceholder: string;
+    toPlaceholder: string;
+    /** Кнопка обмена «откуда»/«куда» местами. */
+    swap: string;
+    /** Кнопка построения маршрута. */
+    submit: string;
+    /** Состояние «строим маршрут». */
+    building: string;
+    /** Ошибка сети/недоступный backend (в отличие от «нет пути»). */
+    error: string;
+    /** Подсказка при совпадении станций. */
+    sameStation: string;
+    /** Подсказка, пока не выбраны обе станции. */
+    selectBoth: string;
+    /** Валидный ответ found:false — пути между станциями нет. */
+    notFound: string;
+    /** Подпись плитки времени в пути. */
+    timeLabel: string;
+    /** Подпись плитки пересадок. */
+    transfersLabel: string;
+    /** Подпись плитки числа остановок. */
+    stopsLabel: string;
+    /** Значение плитки при нуле пересадок. */
+    transfersNone: string;
+    /** Сокращение единицы времени («мин»). */
+    minutesSuffix: string;
+    /** Сокращение единицы «остановок» для мета-строки участка. */
+    stopsCountSuffix: string;
+    /** Пометка, что время — оценочное (до реального расписания). */
+    estimateNote: string;
+    /** Заголовок списка участков по линиям. */
+    legsHeading: string;
+    /** Заголовок списка остановок маршрута. */
+    stopsHeading: string;
+    /** Префикс метки пересадки между участками (+ название станции). */
+    transferAt: string;
+  };
 };
 
 const tg: Dict = {
@@ -195,6 +244,34 @@ const tg: Dict = {
     notFoundTitle: "Мақола ёфт нашуд",
     notFoundBody:
       "Мумкин аст мақола нашр нашуда бошад ё нишонӣ нодуруст аст.",
+  },
+  route: {
+    nav: "Масир",
+    heading: "Ҷустуҷӯи масир",
+    intro:
+      "Истгоҳҳои ибтидо ва ниҳоро интихоб кунед — портал масири беҳтаринро бо гузаришҳо ва вақти тахминӣ нишон медиҳад.",
+    skipToContent: "Гузаштан ба мундариҷа",
+    fromLabel: "Аз куҷо",
+    toLabel: "Ба куҷо",
+    fromPlaceholder: "Истгоҳи ибтидо",
+    toPlaceholder: "Истгоҳи ниҳоӣ",
+    swap: "Ҷойивазкунии истгоҳҳо",
+    submit: "Сохтани масир",
+    building: "Масир сохта мешавад…",
+    error: "Масир сохта нашуд. Лутфан баъдтар такрор кунед.",
+    sameStation: "Ду истгоҳи гуногунро интихоб кунед",
+    selectBoth: "Ҳарду истгоҳро интихоб кунед",
+    notFound: "Байни ин истгоҳҳо масир ёфт нашуд",
+    timeLabel: "Вақти тахминӣ",
+    transfersLabel: "Гузаришҳо",
+    stopsLabel: "Истгоҳҳо",
+    transfersNone: "бе гузариш",
+    minutesSuffix: "дақ",
+    stopsCountSuffix: "истгоҳ",
+    estimateNote: "Вақт тахминист — то интишори ҷадвали расмии ҳаракат.",
+    legsHeading: "Қитъаҳо аз рӯи хатҳо",
+    stopsHeading: "Истгоҳҳои масир",
+    transferAt: "Гузариш дар",
   },
 };
 
@@ -281,6 +358,34 @@ const ru: Dict = {
     notFoundBody:
       "Возможно, статья не опубликована или ссылка неверна.",
   },
+  route: {
+    nav: "Маршрут",
+    heading: "Поиск маршрута",
+    intro:
+      "Выберите станции отправления и назначения — портал покажет оптимальный маршрут с пересадками и оценочным временем в пути.",
+    skipToContent: "Перейти к содержимому",
+    fromLabel: "Откуда",
+    toLabel: "Куда",
+    fromPlaceholder: "Станция отправления",
+    toPlaceholder: "Станция назначения",
+    swap: "Поменять станции местами",
+    submit: "Построить маршрут",
+    building: "Строим маршрут…",
+    error: "Не удалось построить маршрут. Попробуйте позже.",
+    sameStation: "Выберите две разные станции",
+    selectBoth: "Выберите обе станции",
+    notFound: "Маршрут между этими станциями не найден",
+    timeLabel: "Время в пути",
+    transfersLabel: "Пересадки",
+    stopsLabel: "Остановки",
+    transfersNone: "без пересадок",
+    minutesSuffix: "мин",
+    stopsCountSuffix: "ст.",
+    estimateNote: "Время оценочное — до публикации официального расписания.",
+    legsHeading: "Участки по линиям",
+    stopsHeading: "Остановки маршрута",
+    transferAt: "Пересадка на",
+  },
 };
 
 const en: Dict = {
@@ -364,6 +469,34 @@ const en: Dict = {
     publishedLabel: "Published",
     notFoundTitle: "Article not found",
     notFoundBody: "The article may be unpublished or the link is incorrect.",
+  },
+  route: {
+    nav: "Route",
+    heading: "Route planner",
+    intro:
+      "Pick your origin and destination — the portal shows the best route with transfers and an estimated travel time.",
+    skipToContent: "Skip to content",
+    fromLabel: "From",
+    toLabel: "To",
+    fromPlaceholder: "Origin station",
+    toPlaceholder: "Destination station",
+    swap: "Swap stations",
+    submit: "Find route",
+    building: "Finding route…",
+    error: "Could not build the route. Please try again later.",
+    sameStation: "Choose two different stations",
+    selectBoth: "Select both stations",
+    notFound: "No route found between these stations",
+    timeLabel: "Travel time",
+    transfersLabel: "Transfers",
+    stopsLabel: "Stops",
+    transfersNone: "no transfers",
+    minutesSuffix: "min",
+    stopsCountSuffix: "stops",
+    estimateNote: "Travel time is an estimate — pending the official timetable.",
+    legsHeading: "Legs by line",
+    stopsHeading: "Route stops",
+    transferAt: "Transfer at",
   },
 };
 

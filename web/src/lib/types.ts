@@ -206,3 +206,53 @@ export type StationDetail = {
   exits: StationExit[];
   accessibilityFeatures: StationAccessibilityFeature[];
 };
+
+// ---------------------------------------------------------------------------
+// Маршрутный поиск «откуда/куда»: GET /api/v1/routes?from={code}&to={code}
+// Время в пути — ОЦЕНОЧНОЕ (до реального расписания). Несуществующий код
+// станции → 404 route.station_not_found; отсутствие пути → found:false с
+// пустыми legs/stops.
+// ---------------------------------------------------------------------------
+
+/** Участок маршрута в пределах одной линии (без пересадок). */
+export type RouteLeg = {
+  /** Код линии участка, например "L1". */
+  lineCode: string;
+  lineName: I18nName;
+  /** Цвет линии в HEX, например "#E21B2D". */
+  colorHex: string;
+  /** Коды станций участка по порядку следования (вкл. точки пересадки). */
+  stations: string[];
+  /** Число перегонов участка. */
+  segmentCount: number;
+  /** Оценочное время участка, мин. */
+  estimatedMinutes: number;
+};
+
+/** Остановка на маршруте в порядке следования. */
+export type RouteStop = {
+  code: string;
+  name: I18nName;
+  /** Линия, по которой пассажир проходит эту остановку. */
+  lineCode: string;
+  /** Остановка является точкой пересадки на маршруте. */
+  transfer: boolean;
+};
+
+/** Построенный маршрут — контракт GET /api/v1/routes. */
+export type Route = {
+  /** Код станции отправления. */
+  from: string;
+  /** Код станции назначения. */
+  to: string;
+  /** Найден ли путь; false — legs и stops пусты. */
+  found: boolean;
+  /** Оценочное время всего маршрута, мин. */
+  estimatedMinutes: number;
+  /** Число пересадок. */
+  transfers: number;
+  /** Общее число перегонов. */
+  segmentCount: number;
+  legs: RouteLeg[];
+  stops: RouteStop[];
+};
