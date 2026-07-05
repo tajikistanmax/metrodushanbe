@@ -24,4 +24,8 @@ public class NotFoundException extends RuntimeException {
     public static NotFoundException station(String stationCode) {
         return new NotFoundException("station.not_found", "Станция с кодом '" + stationCode + "' не найдена");
     }
+
+    public static NotFoundException news(String slug) {
+        return new NotFoundException("news.not_found", "Новость со слагом '" + slug + "' не найдена");
+    }
 }
