@@ -5,6 +5,7 @@
  * страницы), локализация — на клиенте по выбранному языку.
  */
 
+import type { ReactNode } from "react";
 import { pickName } from "@/lib/i18n";
 import type { Line } from "@/lib/types";
 import { useI18n } from "./I18nProvider";
@@ -16,9 +17,11 @@ import StateNotice from "./StateNotice";
 type LinesTableProps = {
   data: Line[] | null;
   error: string | null;
+  /** Необязательная колонка действий (admin CRUD). */
+  actions?: (row: Line) => ReactNode;
 };
 
-export default function LinesTable({ data, error }: LinesTableProps) {
+export default function LinesTable({ data, error, actions }: LinesTableProps) {
   const { lang, dict } = useI18n();
 
   if (error) {
@@ -67,6 +70,16 @@ export default function LinesTable({ data, error }: LinesTableProps) {
       align: "right",
       cell: (l) => <span className="tabular-nums">{l.sortOrder}</span>,
     },
+    ...(actions
+      ? [
+          {
+            key: "actions",
+            header: dict.colActions,
+            align: "right" as const,
+            cell: actions,
+          },
+        ]
+      : []),
   ];
 
   return (

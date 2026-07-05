@@ -5,6 +5,7 @@
  * элементы доступности. Локализация — на клиенте.
  */
 
+import type { ReactNode } from "react";
 import { pickName } from "@/lib/i18n";
 import type { Station } from "@/lib/types";
 import { useI18n } from "./I18nProvider";
@@ -18,12 +19,15 @@ type StationsTableProps = {
   error: string | null;
   /** Соответствие кода линии её цвету (для бейджей). */
   lineColors?: Record<string, string>;
+  /** Необязательная колонка действий (admin CRUD). */
+  actions?: (row: Station) => ReactNode;
 };
 
 export default function StationsTable({
   data,
   error,
   lineColors = {},
+  actions,
 }: StationsTableProps) {
   const { lang, dict } = useI18n();
 
@@ -87,6 +91,16 @@ export default function StationsTable({
           </span>
         ),
     },
+    ...(actions
+      ? [
+          {
+            key: "actions",
+            header: dict.colActions,
+            align: "right" as const,
+            cell: actions,
+          },
+        ]
+      : []),
   ];
 
   return (

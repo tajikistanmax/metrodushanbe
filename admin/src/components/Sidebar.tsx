@@ -77,19 +77,8 @@ export default function Sidebar() {
         </ul>
       </nav>
 
-      {/* Нижний блок: read-only + тема + языки */}
+      {/* Нижний блок: тема + языки */}
       <div className="flex flex-col gap-3">
-        <span
-          title={dict.readOnlyHint}
-          className="inline-flex w-fit items-center gap-1.5 rounded-full bg-surface-light/10 px-2.5 py-1 text-xs font-semibold"
-        >
-          <span
-            aria-hidden="true"
-            className="h-2 w-2 shrink-0 rounded-full bg-[var(--warning)]"
-          />
-          {dict.readOnlyBadge}
-        </span>
-
         <div className="flex items-center justify-between gap-2">
           <ThemeToggle />
           <nav aria-label={dict.languageSwitcher} className="shrink-0">

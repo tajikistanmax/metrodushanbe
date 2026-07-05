@@ -5,6 +5,7 @@
  * Локализация — на клиенте.
  */
 
+import type { ReactNode } from "react";
 import { formatDateTime, pickName } from "@/lib/i18n";
 import type { News } from "@/lib/types";
 import { useI18n } from "./I18nProvider";
@@ -14,9 +15,11 @@ import StateNotice from "./StateNotice";
 type NewsTableProps = {
   data: News[] | null;
   error: string | null;
+  /** Необязательная колонка действий (admin CRUD). */
+  actions?: (row: News) => ReactNode;
 };
 
-export default function NewsTable({ data, error }: NewsTableProps) {
+export default function NewsTable({ data, error, actions }: NewsTableProps) {
   const { lang, dict } = useI18n();
 
   if (error) {
@@ -70,6 +73,16 @@ export default function NewsTable({ data, error }: NewsTableProps) {
           <span className="text-text-secondary">{dict.noCover}</span>
         ),
     },
+    ...(actions
+      ? [
+          {
+            key: "actions",
+            header: dict.colActions,
+            align: "right" as const,
+            cell: actions,
+          },
+        ]
+      : []),
   ];
 
   return (

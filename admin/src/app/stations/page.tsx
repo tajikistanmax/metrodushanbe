@@ -1,10 +1,10 @@
 import { getLines, getStations } from "@/lib/api";
 import SectionHeader from "@/components/SectionHeader";
-import StationsTable from "@/components/StationsTable";
+import StationsManager from "@/components/admin/StationsManager";
 
 export const dynamic = "force-dynamic";
 
-/** Раздел «Станции»: read-only таблица станций (+ цвета линий для бейджей). */
+/** Раздел «Станции»: таблица станций с CRUD-формами (+ цвета линий для бейджей). */
 export default async function StationsPage() {
   const [stations, lines] = await Promise.all([getStations(), getLines()]);
 
@@ -16,7 +16,7 @@ export default async function StationsPage() {
   return (
     <>
       <SectionHeader section="stations" />
-      <StationsTable
+      <StationsManager
         data={stations.data}
         error={stations.error}
         lineColors={lineColors}

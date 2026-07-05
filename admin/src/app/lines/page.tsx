@@ -1,17 +1,17 @@
 import { getLines } from "@/lib/api";
 import SectionHeader from "@/components/SectionHeader";
-import LinesTable from "@/components/LinesTable";
+import LinesManager from "@/components/admin/LinesManager";
 
 export const dynamic = "force-dynamic";
 
-/** Раздел «Линии»: read-only таблица линий сети. */
+/** Раздел «Линии»: таблица линий с CRUD-формами (admin-write). */
 export default async function LinesPage() {
   const lines = await getLines();
 
   return (
     <>
       <SectionHeader section="lines" />
-      <LinesTable data={lines.data} error={lines.error} />
+      <LinesManager data={lines.data} error={lines.error} />
     </>
   );
 }

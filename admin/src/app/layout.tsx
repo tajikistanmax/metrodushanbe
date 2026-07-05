@@ -11,6 +11,7 @@ import "@fontsource/montserrat/800.css";
 import "./globals.css";
 import { I18nProvider } from "@/components/I18nProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { ToastProvider } from "@/components/admin/ToastProvider";
 import Sidebar from "@/components/Sidebar";
 import SkipLink from "@/components/SkipLink";
 
@@ -41,13 +42,15 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <ThemeProvider>
           <I18nProvider>
-            <SkipLink />
-            <div className="flex flex-col lg:flex-row">
-              <Sidebar />
-              <main id="main" className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
-                {children}
-              </main>
-            </div>
+            <ToastProvider>
+              <SkipLink />
+              <div className="flex flex-col lg:flex-row">
+                <Sidebar />
+                <main id="main" className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
+                  {children}
+                </main>
+              </div>
+            </ToastProvider>
           </I18nProvider>
         </ThemeProvider>
       </body>

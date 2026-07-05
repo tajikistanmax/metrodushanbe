@@ -104,6 +104,83 @@ export type Dict = {
   noCover: string;
   openLink: string;
 
+  colActions: string;
+
+  /** Кнопки действий (тулбар, строки, формы). */
+  actions: {
+    create: string;
+    edit: string;
+    delete: string;
+    publish: string;
+    save: string;
+    cancel: string;
+    close: string;
+    saving: string;
+  };
+
+  /** Единичные названия сущностей (для заголовков форм). */
+  entity: {
+    line: string;
+    station: string;
+    alert: string;
+    news: string;
+  };
+
+  /** Строки форм создания/редактирования. */
+  form: {
+    createTitle: string;
+    editTitle: string;
+    required: string;
+    optional: string;
+    langTg: string;
+    langRu: string;
+    langEn: string;
+    fieldBody: string;
+    fieldSlug: string;
+    fieldCoverUrl: string;
+    fieldDescription: string;
+    fieldCoordinates: string;
+    fieldLon: string;
+    fieldLat: string;
+    fieldPath: string;
+    hintPath: string;
+    hintCoordinates: string;
+    hintCodeImmutable: string;
+    fieldTargets: string;
+    targetType: string;
+    targetCode: string;
+    targetLine: string;
+    targetStation: string;
+    addTarget: string;
+    removeTarget: string;
+    draftHint: string;
+    // Сообщения валидации
+    errRequired: string;
+    errI18nIncomplete: string;
+    errColorHex: string;
+    errCoordinates: string;
+    errNumber: string;
+    errDateRange: string;
+    errUrl: string;
+    fixErrors: string;
+  };
+
+  /** Подтверждение удаления. */
+  confirmDelete: {
+    title: string;
+    text: string;
+    hint: string;
+  };
+
+  /** Тосты (уведомления об исходе операции). */
+  toast: {
+    created: string;
+    updated: string;
+    deleted: string;
+    published: string;
+    error: string;
+  };
+
   severity: Record<AlertSeverity, string>;
   accessibility: Record<AccessibilityFeature, string>;
   status: Record<LineStatus | StationStatus, string>;
@@ -163,6 +240,71 @@ const tg: Dict = {
   hasCover: "Ҳаст",
   noCover: "Нест",
   openLink: "Кушодан",
+  colActions: "Амалҳо",
+  actions: {
+    create: "Илова кардан",
+    edit: "Таҳрир",
+    delete: "Нест кардан",
+    publish: "Нашр",
+    save: "Захира",
+    cancel: "Бекор",
+    close: "Пӯшидан",
+    saving: "Захира шуда истодааст…",
+  },
+  entity: {
+    line: "Хат",
+    station: "Истгоҳ",
+    alert: "Огоҳӣ",
+    news: "Хабар",
+  },
+  form: {
+    createTitle: "Илова кардан",
+    editTitle: "Таҳрир",
+    required: "ҳатмӣ",
+    optional: "ихтиёрӣ",
+    langTg: "Тоҷикӣ (tg)",
+    langRu: "Русӣ (ru)",
+    langEn: "Англисӣ (en)",
+    fieldBody: "Матн",
+    fieldSlug: "Slug",
+    fieldCoverUrl: "URL-и муқова",
+    fieldDescription: "Тавсиф",
+    fieldCoordinates: "Координатаҳо",
+    fieldLon: "Дарозӣ (lon)",
+    fieldLat: "Арз (lat)",
+    fieldPath: "Трасса (нуқтаҳо)",
+    hintPath: "Ҳар сатр — «lon, lat». Ихтиёрӣ.",
+    hintCoordinates: "EPSG:4326, тартиб [lon, lat].",
+    hintCodeImmutable: "Рамз пас аз сохтан тағйир намеёбад.",
+    fieldTargets: "Ҳадафҳо",
+    targetType: "Навъ",
+    targetCode: "Рамз",
+    targetLine: "Хат",
+    targetStation: "Истгоҳ",
+    addTarget: "Илова кардани ҳадаф",
+    removeTarget: "Нест кардан",
+    draftHint: "Ҳамчун лоиҳа (draft) сохта мешавад; пас аз нашр дар рӯйхат пайдо мешавад.",
+    errRequired: "Майдони ҳатмӣ",
+    errI18nIncomplete: "Ҳар се забон (tg/ru/en) пур карда шаванд",
+    errColorHex: "Формат бояд #RRGGBB бошад",
+    errCoordinates: "Ду адади дуруст ворид кунед",
+    errNumber: "Адади дуруст ворид кунед",
+    errDateRange: "Анҷом бояд пас аз оғоз бошад",
+    errUrl: "URL-и дуруст ворид кунед",
+    fixErrors: "Хатоҳоро ислоҳ кунед",
+  },
+  confirmDelete: {
+    title: "Нест кардан",
+    text: "Дар ҳақиқат нест кардан мехоҳед",
+    hint: "Ин амал сабтро аз намоиши оммавӣ пинҳон мекунад (soft-delete).",
+  },
+  toast: {
+    created: "Сохта шуд",
+    updated: "Навсозӣ шуд",
+    deleted: "Нест карда шуд",
+    published: "Нашр шуд",
+    error: "Хатогӣ",
+  },
   severity: {
     info: "Маълумот",
     warning: "Огоҳӣ",
@@ -240,6 +382,71 @@ const ru: Dict = {
   hasCover: "Есть",
   noCover: "Нет",
   openLink: "Открыть",
+  colActions: "Действия",
+  actions: {
+    create: "Добавить",
+    edit: "Изменить",
+    delete: "Удалить",
+    publish: "Опубликовать",
+    save: "Сохранить",
+    cancel: "Отмена",
+    close: "Закрыть",
+    saving: "Сохранение…",
+  },
+  entity: {
+    line: "Линия",
+    station: "Станция",
+    alert: "Уведомление",
+    news: "Новость",
+  },
+  form: {
+    createTitle: "Добавить",
+    editTitle: "Изменить",
+    required: "обязательно",
+    optional: "необязательно",
+    langTg: "Таджикский (tg)",
+    langRu: "Русский (ru)",
+    langEn: "Английский (en)",
+    fieldBody: "Текст",
+    fieldSlug: "Slug",
+    fieldCoverUrl: "URL обложки",
+    fieldDescription: "Описание",
+    fieldCoordinates: "Координаты",
+    fieldLon: "Долгота (lon)",
+    fieldLat: "Широта (lat)",
+    fieldPath: "Трасса (точки)",
+    hintPath: "По строке на точку в формате «lon, lat». Необязательно.",
+    hintCoordinates: "EPSG:4326, порядок [lon, lat].",
+    hintCodeImmutable: "Код неизменен после создания.",
+    fieldTargets: "Цели",
+    targetType: "Тип",
+    targetCode: "Код",
+    targetLine: "Линия",
+    targetStation: "Станция",
+    addTarget: "Добавить цель",
+    removeTarget: "Удалить",
+    draftHint: "Создаётся как черновик (draft); появится в списке после публикации.",
+    errRequired: "Обязательное поле",
+    errI18nIncomplete: "Заполните все три языка (tg/ru/en)",
+    errColorHex: "Формат должен быть #RRGGBB",
+    errCoordinates: "Введите два корректных числа",
+    errNumber: "Введите корректное число",
+    errDateRange: "Окончание должно быть позже начала",
+    errUrl: "Введите корректный URL",
+    fixErrors: "Исправьте ошибки в форме",
+  },
+  confirmDelete: {
+    title: "Удаление",
+    text: "Действительно удалить",
+    hint: "Действие скрывает запись из публичной выдачи (soft-delete).",
+  },
+  toast: {
+    created: "Создано",
+    updated: "Обновлено",
+    deleted: "Удалено",
+    published: "Опубликовано",
+    error: "Ошибка",
+  },
   severity: {
     info: "Информация",
     warning: "Предупреждение",
@@ -317,6 +524,71 @@ const en: Dict = {
   hasCover: "Yes",
   noCover: "No",
   openLink: "Open",
+  colActions: "Actions",
+  actions: {
+    create: "Add",
+    edit: "Edit",
+    delete: "Delete",
+    publish: "Publish",
+    save: "Save",
+    cancel: "Cancel",
+    close: "Close",
+    saving: "Saving…",
+  },
+  entity: {
+    line: "Line",
+    station: "Station",
+    alert: "Alert",
+    news: "News item",
+  },
+  form: {
+    createTitle: "Add",
+    editTitle: "Edit",
+    required: "required",
+    optional: "optional",
+    langTg: "Tajik (tg)",
+    langRu: "Russian (ru)",
+    langEn: "English (en)",
+    fieldBody: "Body",
+    fieldSlug: "Slug",
+    fieldCoverUrl: "Cover URL",
+    fieldDescription: "Description",
+    fieldCoordinates: "Coordinates",
+    fieldLon: "Longitude (lon)",
+    fieldLat: "Latitude (lat)",
+    fieldPath: "Path (points)",
+    hintPath: "One \"lon, lat\" per line. Optional.",
+    hintCoordinates: "EPSG:4326, order [lon, lat].",
+    hintCodeImmutable: "Code cannot change after creation.",
+    fieldTargets: "Targets",
+    targetType: "Type",
+    targetCode: "Code",
+    targetLine: "Line",
+    targetStation: "Station",
+    addTarget: "Add target",
+    removeTarget: "Remove",
+    draftHint: "Created as a draft; it appears in the list once published.",
+    errRequired: "Required field",
+    errI18nIncomplete: "Fill all three languages (tg/ru/en)",
+    errColorHex: "Format must be #RRGGBB",
+    errCoordinates: "Enter two valid numbers",
+    errNumber: "Enter a valid number",
+    errDateRange: "End must be after start",
+    errUrl: "Enter a valid URL",
+    fixErrors: "Fix the errors in the form",
+  },
+  confirmDelete: {
+    title: "Delete",
+    text: "Really delete",
+    hint: "This hides the record from public output (soft-delete).",
+  },
+  toast: {
+    created: "Created",
+    updated: "Updated",
+    deleted: "Deleted",
+    published: "Published",
+    error: "Error",
+  },
   severity: {
     info: "Info",
     warning: "Warning",

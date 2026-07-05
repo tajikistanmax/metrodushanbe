@@ -6,6 +6,7 @@
  * есть текстовая подпись и точка-индикатор.
  */
 
+import type { ReactNode } from "react";
 import { formatDateTime, pickName } from "@/lib/i18n";
 import type { Alert, AlertSeverity } from "@/lib/types";
 import { useI18n } from "./I18nProvider";
@@ -15,6 +16,8 @@ import StateNotice from "./StateNotice";
 type AlertsTableProps = {
   data: Alert[] | null;
   error: string | null;
+  /** Необязательная колонка действий (admin CRUD). */
+  actions?: (row: Alert) => ReactNode;
 };
 
 const SEVERITY_COLOR: Record<AlertSeverity, string> = {
@@ -37,7 +40,7 @@ function SeverityBadge({ severity }: { severity: AlertSeverity }) {
   );
 }
 
-export default function AlertsTable({ data, error }: AlertsTableProps) {
+export default function AlertsTable({ data, error, actions }: AlertsTableProps) {
   const { lang, dict } = useI18n();
 
   if (error) {
@@ -104,6 +107,16 @@ export default function AlertsTable({ data, error }: AlertsTableProps) {
         </span>
       ),
     },
+    ...(actions
+      ? [
+          {
+            key: "actions",
+            header: dict.colActions,
+            align: "right" as const,
+            cell: actions,
+          },
+        ]
+      : []),
   ];
 
   return (
