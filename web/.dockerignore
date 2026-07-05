@@ -1,0 +1,19 @@
+# Что НЕ отправлять в build-контекст web-образа.
+node_modules/
+.next/
+out/
+npm-debug.log*
+.git/
+.gitignore
+.idea/
+.vscode/
+Dockerfile
+.dockerignore
+README.md
+AGENTS.md
+CLAUDE.md
+.env
+.env.local
+.env.*.local
+next-env.d.ts
+*.tsbuildinfo

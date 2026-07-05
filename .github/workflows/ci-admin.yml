@@ -1,0 +1,38 @@
+name: CI Admin
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "admin/**"
+      - ".github/workflows/ci-admin.yml"
+  pull_request:
+    paths:
+      - "admin/**"
+      - ".github/workflows/ci-admin.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Сборка и линт админ-панели
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+
+      - name: Установка зависимостей
+        run: npm ci
+
+      - name: Линт
+        run: npm run lint
+
+      - name: Сборка
+        run: npm run build

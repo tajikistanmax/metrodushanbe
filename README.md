@@ -38,6 +38,42 @@ cd web && npm install && npm run dev
 # http://localhost:3000  (карта работает и БЕЗ backend — на демо-данных)
 ```
 
+## Полный стек в контейнерах (Docker)
+
+Два независимых compose-файла в `infra/` под разные задачи:
+
+| Файл | Назначение | Что поднимает |
+|---|---|---|
+| `infra/docker-compose.yml` | **dev-инфра** — для локального запуска backend/web из исходников | Postgres+PostGIS, Redis (+ Keycloak по профилю `auth`) |
+| `infra/docker-compose.full.yml` | **весь контур в образах** — демо/приёмка | postgres + redis + backend + web + admin |
+
+Полный стек собирается и поднимается одной командой (из корня репозитория):
+
+```bash
+docker compose -f infra/docker-compose.full.yml up -d --build
+# web:     http://localhost:3000
+# admin:   http://localhost:3001
+# API:     http://localhost:8080/api/v1
+# Swagger: http://localhost:8080/api/swagger-ui.html
+
+docker compose -f infra/docker-compose.full.yml config     # проверить конфиг
+docker compose -f infra/docker-compose.full.yml down -v     # остановить + удалить данные БД
+```
+
+Порты на хосте те же, что в dev (5433/6379/8080/3000/3001), поэтому dev-инфру и
+полный стек **одновременно не поднимают**. Образы (`backend/Dockerfile`,
+`web/Dockerfile`, `admin/Dockerfile`) — multi-stage: Temurin JDK 25 → JRE 25 для
+backend и Next.js standalone для web/admin.
+
+Ключевые env (все значения по умолчанию — dev-заглушки, менять для прода):
+
+| Переменная | Сервис | По умолчанию | Смысл |
+|---|---|---|---|
+| `POSTGRES_DB/USER/PASSWORD` | postgres | `metro` | учётные данные БД |
+| `WEB_API_BASE` | web (build-arg) | `http://localhost:8080/api/v1` | база API из **браузера** (публичный портал) |
+| `ADMIN_API_BASE` | admin (build-arg) | `http://backend:8080/api/v1` | база API для **серверных** вызовов админки |
+| `ADMIN_API_KEY` | admin + backend | `dev-admin-key-change-me` | секрет `X-Admin-Key` admin-контура (согласован с обеих сторон) |
+
 ## Фазы (по ТЗ v2, раздел 10)
 
 1. **Сейчас:** вертикальный срез — инфраструктура, ядро сети (линии/станции), карта.
