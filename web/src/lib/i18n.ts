@@ -6,6 +6,7 @@
 
 import type {
   AccessibilityFeature,
+  AlertSeverity,
   I18nName,
   LineStatus,
   StationStatus,
@@ -39,6 +40,12 @@ export type Dict = {
   appTitle: string;
   demoBanner: string;
   demoDismiss: string;
+  /** Сервисные уведомления (ТЗ §6.2.6). */
+  alertsRegionLabel: string;
+  alertDismiss: string;
+  /** Префикс списка целей уведомления («Затронуто:»). */
+  alertAffected: string;
+  alertSeverity: Record<AlertSeverity, string>;
   skipToList: string;
   languageSwitcher: string;
   mapRegionLabel: string;
@@ -77,6 +84,14 @@ const tg: Dict = {
   appTitle: "Метрои Душанбе",
   demoBanner: "Нақшаи намоишӣ — маълумот тасдиқ нашудааст",
   demoDismiss: "Пинҳон кардани огоҳӣ",
+  alertsRegionLabel: "Огоҳиҳои хидматрасонӣ",
+  alertDismiss: "Пӯшидани огоҳӣ",
+  alertAffected: "Дахл дорад:",
+  alertSeverity: {
+    info: "Маълумот",
+    warning: "Огоҳӣ",
+    critical: "Фавқулодда",
+  },
   skipToList: "Гузаштан ба рӯйхати истгоҳҳо",
   languageSwitcher: "Забон",
   mapRegionLabel: "Харитаи шабакаи метро",
@@ -128,6 +143,14 @@ const ru: Dict = {
   appTitle: "Метро Душанбе",
   demoBanner: "Демонстрационная схема — данные не утверждены",
   demoDismiss: "Скрыть предупреждение",
+  alertsRegionLabel: "Сервисные уведомления",
+  alertDismiss: "Скрыть уведомление",
+  alertAffected: "Затронуто:",
+  alertSeverity: {
+    info: "Информация",
+    warning: "Предупреждение",
+    critical: "Критично",
+  },
   skipToList: "Перейти к списку станций",
   languageSwitcher: "Язык",
   mapRegionLabel: "Карта сети метро",
@@ -179,6 +202,14 @@ const en: Dict = {
   appTitle: "Dushanbe Metro",
   demoBanner: "Demonstration diagram — data is not approved",
   demoDismiss: "Dismiss warning",
+  alertsRegionLabel: "Service alerts",
+  alertDismiss: "Dismiss alert",
+  alertAffected: "Affected:",
+  alertSeverity: {
+    info: "Info",
+    warning: "Warning",
+    critical: "Critical",
+  },
   skipToList: "Skip to station list",
   languageSwitcher: "Language",
   mapRegionLabel: "Metro network map",

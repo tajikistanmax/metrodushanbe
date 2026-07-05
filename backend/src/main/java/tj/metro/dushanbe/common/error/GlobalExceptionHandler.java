@@ -21,14 +21,13 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
  * Централизованная обработка ошибок: все ответы — в едином envelope
  * {@link ApiError} (ТЗ §7.5, docs/dev-conventions.md §3).
  * Коды: 404 — {@code line.not_found}/{@code station.not_found},
- * 400 — {@code validation.failed}, 500 — {@code internal.error}.
+ * 400 — {@code validation.failed} либо доменный код из {@link BadRequestException}
+ * (например {@code alert.severity_invalid}), 500 — {@code internal.error}.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
-
-    private static final String VALIDATION_FAILED = "validation.failed";
 
     /** 404: доменный "не найдено" (station.not_found / line.not_found). */
     @ExceptionHandler(NotFoundException.class)
@@ -37,11 +36,11 @@ public class GlobalExceptionHandler {
                 .body(ApiError.of(requestId(request), ex.getCode(), ex.getMessage(), null));
     }
 
-    /** 400: доменная валидация параметров запроса. */
+    /** 400: доменная валидация параметров запроса (код из исключения, например alert.severity_invalid). */
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ApiError> handleBadRequest(BadRequestException ex, HttpServletRequest request) {
         return ResponseEntity.badRequest()
-                .body(ApiError.of(requestId(request), VALIDATION_FAILED, ex.getMessage(), ex.getDetails()));
+                .body(ApiError.of(requestId(request), ex.getCode(), ex.getMessage(), ex.getDetails()));
     }
 
     /** 400: Bean Validation на @RequestBody. */
@@ -57,7 +56,7 @@ public class GlobalExceptionHandler {
                 })
                 .toList();
         return ResponseEntity.badRequest()
-                .body(ApiError.of(requestId(request), VALIDATION_FAILED, "Ошибка валидации запроса", details));
+                .body(ApiError.of(requestId(request), BadRequestException.VALIDATION_FAILED, "Ошибка валидации запроса", details));
     }
 
     /** 400: Bean Validation на параметрах (@RequestParam/@PathVariable). */
@@ -73,7 +72,7 @@ public class GlobalExceptionHandler {
                 })
                 .toList();
         return ResponseEntity.badRequest()
-                .body(ApiError.of(requestId(request), VALIDATION_FAILED, "Ошибка валидации запроса", details));
+                .body(ApiError.of(requestId(request), BadRequestException.VALIDATION_FAILED, "Ошибка валидации запроса", details));
     }
 
     /** 400: неверный тип параметра, отсутствующий параметр, нечитаемое тело. */
@@ -82,7 +81,7 @@ public class GlobalExceptionHandler {
             HttpMessageNotReadableException.class})
     public ResponseEntity<ApiError> handleMalformedRequest(Exception ex, HttpServletRequest request) {
         return ResponseEntity.badRequest()
-                .body(ApiError.of(requestId(request), VALIDATION_FAILED, "Некорректный запрос", ex.getMessage()));
+                .body(ApiError.of(requestId(request), BadRequestException.VALIDATION_FAILED, "Некорректный запрос", ex.getMessage()));
     }
 
     /**

@@ -102,6 +102,20 @@ header :focus-visible,
   outline-color: var(--brand-navy);
 }
 
+/*
+ * Баннеры сервисных уведомлений: индикатор фокуса читаем на каждом
+ * severity-фоне (SC 1.4.11): на red (≈4.8:1) и info (≈7.4:1) — белый,
+ * на amber — navy (≈5.5:1, как в .demo-banner).
+ */
+.alert-banner-critical :focus-visible,
+.alert-banner-info :focus-visible {
+  outline-color: var(--surface-light);
+}
+
+.alert-banner-warning :focus-visible {
+  outline-color: var(--brand-navy);
+}
+
 /* Skip-link: скрыт, появляется при фокусе */
 .skip-link {
   position: absolute;

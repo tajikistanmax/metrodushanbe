@@ -14,7 +14,7 @@ on:
 
 jobs:
   build:
-    name: Сборка и тесты backend (JDK 21)
+    name: Сборка и тесты backend (JDK 25)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -25,7 +25,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "25"
           cache: maven
 
       - name: Сборка и тесты

@@ -107,6 +107,32 @@ export type NetworkGeoJson = {
 /** Откуда получены данные: живой API или офлайн-демо из бандла. */
 export type DataSource = "api" | "demo";
 
+/** Уровень важности сервисного уведомления (ТЗ §6.2.6). */
+export type AlertSeverity = "info" | "warning" | "critical";
+
+/** Цель уведомления: линия или станция по стабильному коду. */
+export type AlertTarget = {
+  type: "line" | "station";
+  code: string;
+};
+
+/**
+ * Активное сервисное уведомление — контракт GET /api/v1/alerts.
+ * Пустой массив `targets` означает уведомление на всю сеть.
+ */
+export type ServiceAlert = {
+  /** Стабильный внешний код, например "ALERT-2026-001". */
+  code: string;
+  severity: AlertSeverity;
+  title: I18nName;
+  body: I18nName;
+  /** Начало действия, ISO-8601 UTC. */
+  startsAt: string;
+  /** Окончание действия, ISO-8601 UTC; null — бессрочно. */
+  endsAt: string | null;
+  targets: AlertTarget[];
+};
+
 /** Type guard: фича — линия. */
 export function isLineFeature(f: NetworkFeature): f is LineFeature {
   return f.properties.feature_type === "line";

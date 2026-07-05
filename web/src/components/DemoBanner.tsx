@@ -4,7 +4,7 @@
  * Amber-полоса (36px) под шапкой: схема демонстрационная, данные
  * не утверждены. Скрывается крестиком, выбор сохраняется в localStorage
  * (читается через useSyncExternalStore — без setState в эффектах и
- * hydration mismatch). Контраст navy-текста на #E08600 ≈ 6.1:1 (WCAG AA).
+ * hydration mismatch). Контраст navy-текста на #E08600 ≈ 5.5:1 (WCAG AA).
  */
 
 import { useSyncExternalStore } from "react";

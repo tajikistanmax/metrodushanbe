@@ -6,7 +6,7 @@
 
 | Каталог | Что это | Стек | Статус |
 |---|---|---|---|
-| `backend/` | API-платформа (модульный монолит) | Java 21, Spring Boot, PostgreSQL + PostGIS, Flyway, Redis | 🚧 первый срез |
+| `backend/` | API-платформа (модульный монолит) | Java 25, Spring Boot, PostgreSQL + PostGIS, Flyway, Redis | 🚧 первый срез |
 | `web/` | Публичный портал с картой сети | Next.js, TypeScript, MapLibre GL | 🚧 первый срез |
 | `admin/` | Админ-панель (operational console) | Next.js, TypeScript | ⏳ следующая итерация |
 | `mobile/` | Мобильное приложение | Flutter | ⏳ следующая итерация |
@@ -18,7 +18,7 @@
 ## Требования для разработки
 
 - **Node.js 20+** (web/admin)
-- **JDK 21** (backend) — например, [Eclipse Temurin](https://adoptium.net/)
+- **JDK 25** (backend) — например, [Eclipse Temurin](https://adoptium.net/)
 - **Docker Desktop** (PostgreSQL/PostGIS, Redis, Keycloak)
 - Flutter SDK (mobile, позже)
 
@@ -28,7 +28,7 @@
 # 1. Инфраструктура (Postgres+PostGIS, Redis)
 cd infra && docker compose up -d
 
-# 2. Backend (после установки JDK 21)
+# 2. Backend (после установки JDK 25)
 cd backend && ./mvnw spring-boot:run
 # API:      http://localhost:8080/api/v1/lines
 # OpenAPI:  http://localhost:8080/api/swagger-ui.html

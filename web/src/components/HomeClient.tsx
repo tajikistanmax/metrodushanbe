@@ -8,8 +8,11 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
+import { loadActiveAlerts } from "@/lib/alerts-data";
 import { loadNetworkData, type NetworkDataResult } from "@/lib/network-data";
+import type { ServiceAlert } from "@/lib/types";
 import type { MapSelection } from "./NetworkMap";
+import AlertsBanner, { MAIN_CONTENT_ID } from "./AlertsBanner";
 import DemoBanner from "./DemoBanner";
 import Header from "./Header";
 import Legend from "./Legend";
@@ -40,6 +43,7 @@ export default function HomeClient() {
   const { resolved } = useTheme();
   const [result, setResult] = useState<NetworkDataResult | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [alerts, setAlerts] = useState<ServiceAlert[]>([]);
   const [selection, setSelection] = useState<MapSelection | null>(null);
 
   useEffect(() => {
@@ -60,6 +64,20 @@ export default function HomeClient() {
     };
   }, []);
 
+  // Сервисные уведомления грузятся параллельно и независимо от данных сети;
+  // loadActiveAlerts никогда не отклоняется — при ошибке отдаёт []
+  useEffect(() => {
+    let cancelled = false;
+    loadActiveAlerts().then((res) => {
+      if (!cancelled) {
+        setAlerts(res);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleSelect = useCallback((code: string) => {
     setSelection((prev) => ({ code, seq: (prev?.seq ?? 0) + 1 }));
   }, []);
@@ -73,9 +91,12 @@ export default function HomeClient() {
 
       <Header source={result?.source ?? null} />
       <DemoBanner />
+      <AlertsBanner alerts={alerts} data={result?.data ?? null} />
 
-      {/* Карта — холст продукта: занимает всё остальное пространство */}
-      <main className="relative min-h-0 flex-1">
+      {/* Карта — холст продукта: занимает всё остальное пространство.
+          tabIndex={-1} — программная цель фокуса после закрытия последнего
+          баннера уведомлений (см. AlertsBanner) */}
+      <main id={MAIN_CONTENT_ID} tabIndex={-1} className="relative min-h-0 flex-1">
         <NetworkMap
           data={result?.data ?? null}
           lang={lang}

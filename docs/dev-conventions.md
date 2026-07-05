@@ -6,7 +6,7 @@
 
 ```
 MetroDushanbe/
-├─ backend/     # Java 21 + Spring Boot (модульный монолит, Maven)
+├─ backend/     # Java 25 + Spring Boot (модульный монолит, Maven)
 ├─ web/         # Next.js + TypeScript — публичный портал
 ├─ admin/       # Next.js + TypeScript — админ-панель (следующая итерация)
 ├─ mobile/      # Flutter (следующая итерация)
@@ -36,14 +36,18 @@ MetroDushanbe/
   - `GET /api/v1/stations` — список станций (фильтры `?lineCode=`, `?status=`)
   - `GET /api/v1/stations/{code}` — карточка станции
   - `GET /api/v1/network/geojson` — FeatureCollection всей сети для карты (совместим по схеме с `data/demo-network.geojson`)
+  - `GET /api/v1/alerts` — активные сервисные уведомления (фильтры `?lineCode=`, `?stationCode=`, `?severity=info|warning|critical`; пустой массив `targets` = вся сеть; невалидный `severity` → 400 `alert.severity_invalid`). Семантика таргет-фильтров: network-wide уведомления (без таргетов) попадают в выдачу всегда; `lineCode` — уведомления, таргетированные этой линией (станционные таргеты линию не расширяют); `stationCode` — таргетированные этой станцией ИЛИ любой линией, которой станция принадлежит (по связи станция-линия); оба фильтра сразу — объединение: уведомление попадает, если проходит хотя бы один фильтр («не потерять уведомление» важнее строгости)
 - OpenAPI UI: `http://localhost:8080/api/swagger-ui.html` (springdoc).
 - CORS (dev): разрешён `http://localhost:3000`.
 
 ## 4. Модель данных (первый срез)
 
-Основана на ТЗ §6.3.1 (DDL): `metro_line`, `metro_station`, `metro_station_line`.
+Основана на ТЗ §6.3.1 (DDL): `metro_line`, `metro_station`, `metro_station_line`;
+сервисные уведомления (ТЗ §6.2.6): `service_alert`, `service_alert_target`
+(пустой таргетинг = уведомление на всю сеть).
 - ID — UUID; `code` — стабильный внешний идентификатор (никогда не меняется).
-- Названия — JSONB `name_i18n` вида `{"tg":"…","ru":"…","en":"…"}`; обязательные языки: tg, ru, en.
+- Локализуемые тексты — JSONB вида `{"tg":"…","ru":"…","en":"…"}` (`name_i18n`,
+  а также `title_i18n`/`body_i18n` уведомлений); обязательные языки: tg, ru, en.
 - Геометрии — PostGIS `geometry(...,4326)` + GiST-индексы.
 - Статусы линий: `planned|under_construction|testing|active|suspended|decommissioned`;
   станций: `planned|under_construction|testing|active|temporarily_closed|decommissioned`.
@@ -74,7 +78,7 @@ MetroDushanbe/
 
 ## 7. Качество
 
-- Backend: JDK 21, без Lombok (records/конструкторы), Testcontainers для интеграционных тестов, ошибки — через `@ControllerAdvice` в единый envelope.
+- Backend: JDK 25, без Lombok (records/конструкторы), Testcontainers для интеграционных тестов, ошибки — через `@ControllerAdvice` в единый envelope.
 - Web: TypeScript strict, ESLint; `npm run build` обязан проходить.
 - Секреты — только через env; в репозитории только dev-значения compose.
 - Git: ветка `main`, коммиты по Conventional Commits (`feat:`, `fix:`, `docs:`…).

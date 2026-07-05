@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   Backend платформы «Метро Душанбе» — модульный монолит (Spring Boot).
-  Java 21, без Lombok (records и явные конструкторы) — см. docs/dev-conventions.md §7.
+  Java 25, без Lombok (records и явные конструкторы) — см. docs/dev-conventions.md §7.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -22,7 +22,7 @@
     <description>Метро Душанбе — backend (сетевой каталог, гео-API)</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <springdoc.version>2.7.0</springdoc.version>
         <!-- Минимум 1.21.4: Docker Engine 29 требует API >= 1.44, версии из BOM Boot 3.4 падают с 400 Bad Request -->
         <testcontainers.version>1.21.4</testcontainers.version>

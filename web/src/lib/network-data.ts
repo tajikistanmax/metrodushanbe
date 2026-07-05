@@ -1,17 +1,13 @@
 /**
  * Загрузка данных сети метро с деградацией в офлайн (dev-conventions.md, §8):
- * 1) пробуем API GET {NEXT_PUBLIC_API_BASE}/network/geojson с таймаутом 2000 мс;
+ * 1) пробуем API GET {NEXT_PUBLIC_API_BASE}/network/geojson с таймаутом
+ *    API_TIMEOUT_MS (общий хелпер fetchApiJson из lib/api.ts);
  * 2) при любой ошибке (нет сети, не 2xx, таймаут, битый JSON) — читаем
  *    бандл-копию /data/demo-network.geojson.
  */
 
+import { fetchApiJson } from "./api";
 import type { DataSource, NetworkGeoJson } from "./types";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8080/api/v1";
-
-/** Таймаут запроса к API, мс. */
-const API_TIMEOUT_MS = 2000;
 
 /** Путь к офлайн-копии демо-данных внутри web/public. */
 const DEMO_DATA_URL = "/data/demo-network.geojson";
@@ -35,21 +31,11 @@ function assertNetworkGeoJson(value: unknown): NetworkGeoJson {
 }
 
 async function fetchFromApi(): Promise<NetworkGeoJson> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
-  try {
-    const response = await fetch(`${API_BASE}/network/geojson`, {
-      signal: controller.signal,
-      headers: { Accept: "application/geo+json, application/json" },
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      throw new Error(`API вернул HTTP ${response.status}`);
-    }
-    return assertNetworkGeoJson(await response.json());
-  } finally {
-    clearTimeout(timer);
-  }
+  const payload = await fetchApiJson(
+    "/network/geojson",
+    "application/geo+json, application/json",
+  );
+  return assertNetworkGeoJson(payload);
 }
 
 async function fetchDemoFallback(): Promise<NetworkGeoJson> {
