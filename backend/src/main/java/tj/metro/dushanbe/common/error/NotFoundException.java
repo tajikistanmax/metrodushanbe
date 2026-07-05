@@ -28,4 +28,17 @@ public class NotFoundException extends RuntimeException {
     public static NotFoundException news(String slug) {
         return new NotFoundException("news.not_found", "Новость со слагом '" + slug + "' не найдена");
     }
+
+    public static NotFoundException alert(String code) {
+        return new NotFoundException("alert.not_found", "Уведомление с кодом '" + code + "' не найдено");
+    }
+
+    public static NotFoundException stationExit(String code) {
+        return new NotFoundException("station_exit.not_found", "Выход с кодом '" + code + "' не найден");
+    }
+
+    public static NotFoundException accessibilityFeature(String id) {
+        return new NotFoundException("accessibility_feature.not_found",
+                "Объект доступности с id '" + id + "' не найден");
+    }
 }

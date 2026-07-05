@@ -21,4 +21,6 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, UUID> 
 
     /** Статья по слагу вне зависимости от статуса (редакционные операции, гейт публикации). */
     Optional<NewsArticle> findBySlug(String slug);
+
+    boolean existsBySlug(String slug);
 }

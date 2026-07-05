@@ -13,6 +13,8 @@ public interface MetroLineRepository extends JpaRepository<MetroLine, UUID> {
 
     Optional<MetroLine> findByCode(String code);
 
+    boolean existsByCode(String code);
+
     List<MetroLine> findAllByOrderBySortOrderAscCodeAsc();
 
     List<MetroLine> findByStatusOrderBySortOrderAscCodeAsc(String status);

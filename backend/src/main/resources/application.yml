@@ -41,3 +41,11 @@ management:
     health:
       probes:
         enabled: true
+
+# ВРЕМЕННАЯ dev-заглушка авторизации админского контура (/api/v1/admin/**).
+# НЕ ДЛЯ ПРОДА: общий секрет в открытом виде, без пользователей/ролей/MFA.
+# Прод (ТЗ §6.1.7, §9.2) требует Keycloak/OAuth2 + JWT, RBAC + ABAC, MFA.
+# Секрет запросов — заголовок X-Admin-Key; актор аудита — заголовок X-Admin-Actor.
+app:
+  admin:
+    dev-key: dev-admin-key-change-me

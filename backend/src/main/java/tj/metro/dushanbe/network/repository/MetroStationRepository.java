@@ -15,6 +15,8 @@ public interface MetroStationRepository extends JpaRepository<MetroStation, UUID
 
     Optional<MetroStation> findByCode(String code);
 
+    boolean existsByCode(String code);
+
     List<MetroStation> findAllByOrderByCodeAsc();
 
     /** Станции указанной линии в порядке следования вдоль неё. */

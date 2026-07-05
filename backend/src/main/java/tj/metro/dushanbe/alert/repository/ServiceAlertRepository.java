@@ -2,6 +2,7 @@ package tj.metro.dushanbe.alert.repository;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,6 +13,11 @@ import tj.metro.dushanbe.alert.domain.ServiceAlert;
  * Доступ к сервисным уведомлениям.
  */
 public interface ServiceAlertRepository extends JpaRepository<ServiceAlert, UUID> {
+
+    /** Уведомление по стабильному коду (редакционные операции, публикация). */
+    Optional<ServiceAlert> findByCode(String code);
+
+    boolean existsByCode(String code);
 
     /**
      * Активные published-уведомления в окне действия на момент {@code now},

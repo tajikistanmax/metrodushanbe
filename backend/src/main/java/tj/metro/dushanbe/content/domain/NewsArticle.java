@@ -100,6 +100,18 @@ public class NewsArticle {
         this.publishedAt = publishedAt;
     }
 
+    /**
+     * Редакционное изменение статьи (ADM-03/CMS): тексты и обложка. Стабильный слаг
+     * и статус здесь не меняются (публикация — через {@link #markPublished}).
+     * Гейт полноты языков (BR-CMS-1) применяется при публикации, а не при правке черновика.
+     */
+    public void updateEditorial(Map<String, String> titleI18n, Map<String, String> bodyI18n,
+                                String coverMediaUrl) {
+        this.titleI18n = titleI18n;
+        this.bodyI18n = bodyI18n;
+        this.coverMediaUrl = coverMediaUrl;
+    }
+
     public UUID getId() {
         return id;
     }

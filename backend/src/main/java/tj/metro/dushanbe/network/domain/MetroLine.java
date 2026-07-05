@@ -59,6 +59,10 @@ public class MetroLine {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
+    /** Момент soft-delete (BR-NET-2); NULL = запись активна. */
+    @Column(name = "deleted_at")
+    private OffsetDateTime deletedAt;
+
     /** Конструктор для JPA. */
     protected MetroLine() {
     }
@@ -89,6 +93,34 @@ public class MetroLine {
     @PreUpdate
     void onUpdate() {
         updatedAt = OffsetDateTime.now();
+    }
+
+    /**
+     * Редакционное изменение линии (ADM-02): цвет, статус, i18n-название, порядок.
+     * Стабильный код и геометрия меняются отдельно ({@link #setGeom}); версионирование
+     * (effective_from/effective_to, BR-NET-3) для admin-write контура упрощено —
+     * фиксируется updated_at через {@link #onUpdate()}.
+     */
+    public void updateDetails(String colorHex, String status,
+                              Map<String, String> nameI18n, int sortOrder) {
+        this.colorHex = colorHex;
+        this.status = status;
+        this.nameI18n = nameI18n;
+        this.sortOrder = sortOrder;
+    }
+
+    public void setGeom(MultiLineString geom) {
+        this.geom = geom;
+    }
+
+    /**
+     * Soft-delete линии (BR-NET-2): проставляет deleted_at и закрывает окно действия
+     * (effective_to). Физического удаления строки не происходит — исторические версии
+     * сохраняются для аудита.
+     */
+    public void softDelete(OffsetDateTime when) {
+        this.deletedAt = when;
+        this.effectiveTo = when;
     }
 
     public UUID getId() {
@@ -133,5 +165,9 @@ public class MetroLine {
 
     public OffsetDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public OffsetDateTime getDeletedAt() {
+        return deletedAt;
     }
 }

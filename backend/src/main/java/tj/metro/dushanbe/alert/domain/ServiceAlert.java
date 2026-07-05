@@ -104,6 +104,35 @@ public class ServiceAlert {
         updatedAt = OffsetDateTime.now();
     }
 
+    /**
+     * Редакционное изменение уведомления (ADM-02/ALERT lifecycle): важность, тексты,
+     * окно действия и таргеты. Стабильный код и статус меняются отдельно
+     * (статус — через {@link #markPublished}). Гейты (важность, языки, корректность
+     * окна) проверяет вызывающий сервис ДО этого изменения.
+     */
+    public void updateContent(String severity, Map<String, String> titleI18n,
+                              Map<String, String> bodyI18n, OffsetDateTime startsAt,
+                              OffsetDateTime endsAt, List<AlertTarget> targets) {
+        this.severity = severity;
+        this.titleI18n = titleI18n;
+        this.bodyI18n = bodyI18n;
+        this.startsAt = startsAt;
+        this.endsAt = endsAt;
+        this.targets.clear();
+        this.targets.addAll(targets);
+    }
+
+    /**
+     * Публикация уведомления (переход в {@code published}, ТЗ §6.2.6) с фиксацией
+     * момента публикации. Допустимость перехода и гейт полноты языков проверяет
+     * вызывающий сервис ДО этого перехода; сама сущность лишь применяет валидное
+     * изменение состояния (BR-ALT-4 — переход фиксируется в аудите вызывающим кодом).
+     */
+    public void markPublished(OffsetDateTime publishedAt) {
+        this.status = "published";
+        this.publishedAt = publishedAt;
+    }
+
     public UUID getId() {
         return id;
     }

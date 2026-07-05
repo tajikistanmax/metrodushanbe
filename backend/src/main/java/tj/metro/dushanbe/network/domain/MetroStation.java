@@ -71,6 +71,10 @@ public class MetroStation {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
+    /** Момент soft-delete (BR-NET-2); NULL = запись активна. */
+    @Column(name = "deleted_at")
+    private OffsetDateTime deletedAt;
+
     /** Конструктор для JPA. */
     protected MetroStation() {
     }
@@ -102,6 +106,30 @@ public class MetroStation {
     @PreUpdate
     void onUpdate() {
         updatedAt = OffsetDateTime.now();
+    }
+
+    /**
+     * Редакционное изменение станции (ADM-02): статус, i18n-название, описание,
+     * признак пересадки, теги доступности. Стабильный код и координата меняются
+     * отдельно ({@link #setPointGeom}).
+     */
+    public void updateDetails(String status, Map<String, String> nameI18n,
+                              Map<String, String> descriptionI18n, boolean isTransfer,
+                              List<String> accessibility) {
+        this.status = status;
+        this.nameI18n = nameI18n;
+        this.descriptionI18n = descriptionI18n;
+        this.isTransfer = isTransfer;
+        this.accessibility = accessibility;
+    }
+
+    public void setPointGeom(Point pointGeom) {
+        this.pointGeom = pointGeom;
+    }
+
+    /** Soft-delete станции (BR-NET-2): проставляет deleted_at без физического удаления. */
+    public void softDelete(OffsetDateTime when) {
+        this.deletedAt = when;
     }
 
     public UUID getId() {
@@ -154,5 +182,9 @@ public class MetroStation {
 
     public OffsetDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public OffsetDateTime getDeletedAt() {
+        return deletedAt;
     }
 }
