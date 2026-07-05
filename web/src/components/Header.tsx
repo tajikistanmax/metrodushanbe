@@ -6,6 +6,8 @@
  * переключатель языков. Контраст белого на navy ≈15:1 (WCAG AA).
  */
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { LANG_LABELS, LANG_SHORT_LABELS, LANGS } from "@/lib/i18n";
 import type { DataSource } from "@/lib/types";
 import BrandMark from "./BrandMark";
@@ -13,8 +15,12 @@ import ThemeToggle from "./ThemeToggle";
 import { useI18n } from "./I18nProvider";
 
 type HeaderProps = {
-  /** Фактический источник данных; null — ещё загружается. */
-  source: DataSource | null;
+  /**
+   * Фактический источник данных; null — ещё загружается. Проп опускается на
+   * страницах без данных сети (напр. новости) — тогда пилюля источника
+   * скрыта.
+   */
+  source?: DataSource | null;
 };
 
 /** Цвет точки-индикатора источника (контраст к navy ≥3:1). */
@@ -26,6 +32,9 @@ const SOURCE_DOT: Record<"api" | "demo" | "loading", string> = {
 
 export default function Header({ source }: HeaderProps) {
   const { lang, setLang, dict } = useI18n();
+  const pathname = usePathname();
+  // Раздел новостей охватывает и /news, и /news/{slug}
+  const onNews = pathname === "/news" || pathname.startsWith("/news/");
 
   const sourceKey = source ?? "loading";
   const sourceShort =
@@ -53,23 +62,58 @@ export default function Header({ source }: HeaderProps) {
         </h1>
       </div>
 
+      {/* Первичная навигация портала: карта (главная) и раздел новостей */}
+      <nav aria-label={dict.appTitle} className="ml-1 shrink-0 sm:ml-2">
+        <ul className="flex items-center gap-0.5 sm:gap-1">
+          <li>
+            <Link
+              href="/"
+              aria-current={onNews ? undefined : "page"}
+              className={
+                onNews
+                  ? "rounded-full px-2.5 py-1 text-xs font-semibold text-surface-light/80 transition-colors duration-150 ease-out hover:bg-surface-light/15 sm:text-sm"
+                  : "rounded-full bg-surface-light/15 px-2.5 py-1 text-xs font-bold text-surface-light sm:text-sm"
+              }
+            >
+              {dict.news.mapNav}
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/news"
+              aria-current={onNews ? "page" : undefined}
+              className={
+                onNews
+                  ? "rounded-full bg-surface-light/15 px-2.5 py-1 text-xs font-bold text-surface-light sm:text-sm"
+                  : "rounded-full px-2.5 py-1 text-xs font-semibold text-surface-light/80 transition-colors duration-150 ease-out hover:bg-surface-light/15 sm:text-sm"
+              }
+            >
+              {dict.news.nav}
+            </Link>
+          </li>
+        </ul>
+      </nav>
+
       <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2.5">
-        {/* Пилюля источника данных: API / демо, с точкой-индикатором */}
-        <span
-          role="status"
-          title={`${dict.dataSourceLabel}: ${sourceLong}`}
-          className="flex h-8 items-center gap-1.5 rounded-full bg-surface-light/10 px-2.5 text-xs font-semibold"
-        >
+        {/* Пилюля источника данных: API / демо, с точкой-индикатором.
+            Скрыта на страницах без данных сети (source не передан). */}
+        {source !== undefined && (
           <span
-            aria-hidden="true"
-            className="h-2 w-2 shrink-0 rounded-full"
-            style={{ background: SOURCE_DOT[sourceKey] }}
-          />
-          <span className="hidden sm:inline">{sourceShort}</span>
-          <span className="sr-only">
-            {dict.dataSourceLabel}: {sourceLong}
+            role="status"
+            title={`${dict.dataSourceLabel}: ${sourceLong}`}
+            className="flex h-8 items-center gap-1.5 rounded-full bg-surface-light/10 px-2.5 text-xs font-semibold"
+          >
+            <span
+              aria-hidden="true"
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ background: SOURCE_DOT[sourceKey] }}
+            />
+            <span className="hidden sm:inline">{sourceShort}</span>
+            <span className="sr-only">
+              {dict.dataSourceLabel}: {sourceLong}
+            </span>
           </span>
-        </span>
+        )}
 
         <ThemeToggle />
 

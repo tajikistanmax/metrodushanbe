@@ -78,6 +78,28 @@ export type Dict = {
   transferBadge: string;
   accessibility: Record<AccessibilityFeature, string>;
   status: Record<LineStatus | StationStatus, string>;
+  /** Публичный раздел новостей (ТЗ §6.2.7) и навигация шапки. */
+  news: {
+    /** Подпись ссылки на раздел новостей в шапке. */
+    nav: string;
+    /** Подпись ссылки на карту (главную) в шапке. */
+    mapNav: string;
+    /** Заголовок раздела и <title>-подобный H1. */
+    heading: string;
+    /** Skip-link к содержимому страницы. */
+    skipToContent: string;
+    /** Пустой список новостей. */
+    empty: string;
+    /** Кнопка/ссылка «читать статью». */
+    read: string;
+    /** Ссылка возврата к списку со страницы статьи. */
+    backToList: string;
+    /** Префикс даты публикации (aria/визуально). */
+    publishedLabel: string;
+    /** Состояние «статья не найдена» (null со страницы статьи). */
+    notFoundTitle: string;
+    notFoundBody: string;
+  };
 };
 
 const tg: Dict = {
@@ -136,6 +158,19 @@ const tg: Dict = {
     suspended: "Боздошташуда",
     temporarily_closed: "Муваққатан баста",
     decommissioned: "Аз кор баровардашуда",
+  },
+  news: {
+    nav: "Ахбор",
+    mapNav: "Харита",
+    heading: "Ахбор",
+    skipToContent: "Гузаштан ба мундариҷа",
+    empty: "Ҳоло ахборе нест",
+    read: "Хондан",
+    backToList: "Ба ҳамаи ахбор",
+    publishedLabel: "Нашр шуд",
+    notFoundTitle: "Мақола ёфт нашуд",
+    notFoundBody:
+      "Мумкин аст мақола нашр нашуда бошад ё нишонӣ нодуруст аст.",
   },
 };
 
@@ -196,6 +231,19 @@ const ru: Dict = {
     temporarily_closed: "Временно закрыта",
     decommissioned: "Выведена из эксплуатации",
   },
+  news: {
+    nav: "Новости",
+    mapNav: "Карта",
+    heading: "Новости",
+    skipToContent: "Перейти к содержимому",
+    empty: "Новостей пока нет",
+    read: "Читать",
+    backToList: "Ко всем новостям",
+    publishedLabel: "Опубликовано",
+    notFoundTitle: "Статья не найдена",
+    notFoundBody:
+      "Возможно, статья не опубликована или ссылка неверна.",
+  },
 };
 
 const en: Dict = {
@@ -254,6 +302,18 @@ const en: Dict = {
     suspended: "Suspended",
     temporarily_closed: "Temporarily closed",
     decommissioned: "Decommissioned",
+  },
+  news: {
+    nav: "News",
+    mapNav: "Map",
+    heading: "News",
+    skipToContent: "Skip to content",
+    empty: "No news yet",
+    read: "Read",
+    backToList: "All news",
+    publishedLabel: "Published",
+    notFoundTitle: "Article not found",
+    notFoundBody: "The article may be unpublished or the link is incorrect.",
   },
 };
 

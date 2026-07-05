@@ -133,6 +133,22 @@ export type ServiceAlert = {
   targets: AlertTarget[];
 };
 
+/**
+ * Новостная статья — контракт GET /api/v1/news и /api/v1/news/{slug}
+ * (ТЗ §6.2.7). Публично отдаются только опубликованные статьи, поэтому
+ * статус в контракт не входит.
+ */
+export type NewsArticle = {
+  /** Стабильный слаг статьи, например "metro-construction-launch". */
+  slug: string;
+  title: I18nName;
+  body: I18nName;
+  /** URL обложки или null, если её нет. */
+  coverMediaUrl: string | null;
+  /** Дата публикации, ISO-8601 UTC. */
+  publishedAt: string;
+};
+
 /** Type guard: фича — линия. */
 export function isLineFeature(f: NetworkFeature): f is LineFeature {
   return f.properties.feature_type === "line";
