@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tj.metro.dushanbe.admin.web.dto.AlertCreateRequest;
@@ -25,6 +26,7 @@ import tj.metro.dushanbe.alert.web.dto.AlertTargetDto;
 import tj.metro.dushanbe.audit.service.AuditService;
 import tj.metro.dushanbe.common.error.BadRequestException;
 import tj.metro.dushanbe.common.error.NotFoundException;
+import tj.metro.dushanbe.common.i18n.I18nValidator;
 import tj.metro.dushanbe.network.repository.MetroLineRepository;
 import tj.metro.dushanbe.network.repository.MetroStationRepository;
 
@@ -62,10 +64,13 @@ public class AdminAlertService {
 
     /** Создать уведомление в статусе draft (аудит alert.create). */
     @Transactional
+    @CacheEvict(value = "alerts", allEntries = true)
     public AlertDto create(AlertCreateRequest request, String actor) {
         AdminSupport.requireUnique(alertRepository.existsByCode(request.code()),
                 "alert.code_exists", "code", request.code());
         AdminSupport.requireIn(request.severity(), AlertService.SEVERITY_ORDER, "alert.severity_invalid", "severity");
+        I18nValidator.requireAll(request.title(), "title");
+        I18nValidator.requireAll(request.body(), "body");
         requireValidWindow(request.startsAt(), request.endsAt());
         List<AlertTarget> targets = validatedTargets(request.targets());
 
@@ -80,9 +85,12 @@ public class AdminAlertService {
 
     /** Обновить содержание уведомления по коду (аудит alert.update). */
     @Transactional
+    @CacheEvict(value = "alerts", allEntries = true)
     public AlertDto update(String code, AlertUpdateRequest request, String actor) {
         ServiceAlert alert = alertRepository.findByCode(code).orElseThrow(() -> NotFoundException.alert(code));
         AdminSupport.requireIn(request.severity(), AlertService.SEVERITY_ORDER, "alert.severity_invalid", "severity");
+        I18nValidator.requireAll(request.title(), "title");
+        I18nValidator.requireAll(request.body(), "body");
         requireValidWindow(request.startsAt(), request.endsAt());
         List<AlertTarget> targets = validatedTargets(request.targets());
 
@@ -100,6 +108,7 @@ public class AdminAlertService {
      * языков и фиксацией момента публикации. Аудит alert.publish (BR-ALT-4).
      */
     @Transactional
+    @CacheEvict(value = "alerts", allEntries = true)
     public AlertDto publish(String code, String actor) {
         ServiceAlert alert = alertRepository.findByCode(code).orElseThrow(() -> NotFoundException.alert(code));
         if (!PUBLISHABLE_FROM.contains(alert.getStatus())) {

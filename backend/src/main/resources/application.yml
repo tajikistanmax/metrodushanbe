@@ -42,10 +42,27 @@ management:
       probes:
         enabled: true
 
-# ВРЕМЕННАЯ dev-заглушка авторизации админского контура (/api/v1/admin/**).
-# НЕ ДЛЯ ПРОДА: общий секрет в открытом виде, без пользователей/ролей/MFA.
-# Прод (ТЗ §6.1.7, §9.2) требует Keycloak/OAuth2 + JWT, RBAC + ABAC, MFA.
-# Секрет запросов — заголовок X-Admin-Key; актор аудита — заголовок X-Admin-Actor.
 app:
+  cors:
+    allowed-origins: http://localhost:3000,http://localhost:3001,http://localhost:3002
   admin:
     dev-key: dev-admin-key-change-me
+  rate-limit:
+    enabled: true
+    capacity: 100
+    refill-per-minute: 100
+
+  security:
+    issuer-uri: ""  # blank = dev mode (no JWT validation)
+  feature-flags:
+    cache-ttl-seconds: 60
+
+ai:
+  llm:
+    provider: openai-compatible
+    base-url: http://localhost:11434/v1
+    api-key: ""
+    model: llama3.2
+    timeout: 30s
+  agents:
+    enabled: true

@@ -44,6 +44,24 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    image: minio/minio:latest
+    container_name: metro-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: metro
+      MINIO_ROOT_PASSWORD: metro-dev-key-change
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   # Keycloak стартует только с профилем auth: docker compose --profile auth up -d
   keycloak:
     image: quay.io/keycloak/keycloak:26.1
@@ -60,3 +78,4 @@ services:
 # Именованные тома (данные живут внутри Docker, вне рабочего каталога проекта)
 volumes:
   pgdata:
+  minio-data:

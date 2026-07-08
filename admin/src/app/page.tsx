@@ -1,4 +1,4 @@
-import { getAlerts, getLines, getNews, getStations } from "@/lib/api";
+import { getAiBriefing, getAlerts, getLines, getNews, getStations } from "@/lib/api";
 import SectionHeader from "@/components/SectionHeader";
 import OverviewCards from "@/components/OverviewCards";
 
@@ -6,13 +6,14 @@ import OverviewCards from "@/components/OverviewCards";
 // счётчики всегда актуальны, а `next build` не пытается ходить в API.
 export const dynamic = "force-dynamic";
 
-/** Обзор: счётчики линий, станций, активных уведомлений и новостей. */
+/** Обзор: счётчики линий, станций, активных уведомлений, новостей и AI-агентов. */
 export default async function OverviewPage() {
-  const [lines, stations, alerts, news] = await Promise.all([
+  const [lines, stations, alerts, news, briefing] = await Promise.all([
     getLines(),
     getStations(),
     getAlerts(),
     getNews(),
+    getAiBriefing(),
   ]);
 
   return (
@@ -23,6 +24,7 @@ export default async function OverviewPage() {
         stations={stations.data?.length ?? null}
         alerts={alerts.data?.length ?? null}
         news={news.data?.length ?? null}
+        briefing={briefing.data}
       />
     </>
   );

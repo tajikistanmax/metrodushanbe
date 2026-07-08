@@ -26,7 +26,18 @@ import type {
   StationCreateBody,
   StationUpdateBody,
 } from "./admin-forms";
-import type { Alert, Line, News, Station } from "./types";
+import type {
+  AiChatRequest,
+  AiChatResponse,
+  Alert,
+  AuditEvent,
+  Line,
+  News,
+  Station,
+} from "./types";
+
+/** Форма результата чтения для таблиц/панелей: данные либо причина ошибки. */
+type ReadResult<T> = { data: T | null; error: string | null };
 
 /** Dev-ключ по умолчанию (совпадает с app.admin.dev-key backend). */
 const DEFAULT_ADMIN_KEY = "dev-admin-key-change-me";
@@ -217,4 +228,60 @@ export async function publishNews(slug: string): Promise<ActionResult<News>> {
   );
   if (r.ok) revalidatePath("/news");
   return r;
+}
+
+// --- Аудит (чтение) ---------------------------------------------------------
+
+/**
+ * GET /admin/audit — лента событий аудита. Эндпоинт под /v1/admin/** защищён
+ * X-Admin-Key (AdminKeyAuthFilter), поэтому читаем ТОЛЬКО серверно, с ключом.
+ * Возвращает форму { data, error } для таблицы (не ActionResult).
+ */
+export async function getAuditEvents(): Promise<ReadResult<AuditEvent[]>> {
+  const adminKey = process.env.ADMIN_API_KEY ?? DEFAULT_ADMIN_KEY;
+  try {
+    const res = await fetch(`${API_BASE}/admin/audit`, {
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+        "X-Admin-Key": adminKey,
+        "X-Admin-Actor": ADMIN_ACTOR,
+      },
+    });
+    if (!res.ok) {
+      return { data: null, error: `HTTP ${res.status} ${res.statusText}`.trim() };
+    }
+    const payload = (await res.json()) as { items?: AuditEvent[] };
+    return { data: payload.items ?? [], error: null };
+  } catch (e) {
+    return { data: null, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+// --- AI-чат (проксируется серверно) -----------------------------------------
+
+/**
+ * POST /ai/chat — вопрос агенту. Выполняется СЕРВЕРНО (Server Action): из браузера
+ * NEXT_PUBLIC_API_BASE в контейнерном деплое указывает на внутреннее имя backend
+ * (http://backend:8080), недостижимое из браузера. Клиентская панель вызывает эту
+ * функцию, а fetch к backend идёт с сервера Next.
+ */
+export async function sendAiChat(
+  request: AiChatRequest,
+): Promise<ReadResult<AiChatResponse>> {
+  try {
+    const res = await fetch(`${API_BASE}/ai/chat`, {
+      method: "POST",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(request),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!res.ok) {
+      return { data: null, error: `HTTP ${res.status} ${res.statusText}`.trim() };
+    }
+    return { data: (await res.json()) as AiChatResponse, error: null };
+  } catch (e) {
+    return { data: null, error: e instanceof Error ? e.message : String(e) };
+  }
 }

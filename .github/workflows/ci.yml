@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend
+    uses: ./.github/workflows/ci-backend.yml
+  web:
+    name: Web
+    uses: ./.github/workflows/ci-web.yml
+  admin:
+    name: Admin
+    uses: ./.github/workflows/ci-admin.yml
+  summary:
+    name: Сводка
+    needs: [backend, web, admin]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Проверка статуса
+        run: echo "Все CI-джобы завершены успешно"

@@ -26,6 +26,9 @@ mobile/.flutter-plugins*
 .vscode/
 *.iml
 
+# --- Claude Code (сессии, worktree агентов) ---
+.claude/
+
 # --- OS ---
 Thumbs.db
 .DS_Store

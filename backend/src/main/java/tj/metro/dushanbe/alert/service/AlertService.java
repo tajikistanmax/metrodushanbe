@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tj.metro.dushanbe.alert.domain.AlertTarget;
@@ -70,6 +71,7 @@ public class AlertService {
      *       хотя бы один из фильтров («не потерять уведомление» важнее строгости).</li>
      * </ul>
      */
+    @Cacheable(value = "alerts", unless = "#result.isEmpty()")
     public List<AlertDto> activeAlerts(String lineCode, String stationCode, String severity) {
         if (!isBlank(severity)) {
             requireValidSeverity(severity);

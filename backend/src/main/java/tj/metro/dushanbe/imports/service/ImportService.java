@@ -2,17 +2,23 @@ package tj.metro.dushanbe.imports.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import tj.metro.dushanbe.admin.service.AdminLineService;
 import tj.metro.dushanbe.admin.service.AdminStationService;
@@ -22,6 +28,7 @@ import tj.metro.dushanbe.admin.web.dto.StationCreateRequest;
 import tj.metro.dushanbe.admin.web.dto.StationUpdateRequest;
 import tj.metro.dushanbe.audit.service.AuditService;
 import tj.metro.dushanbe.common.error.BadRequestException;
+import tj.metro.dushanbe.featureflag.service.FeatureFlagService;
 import tj.metro.dushanbe.imports.domain.ImportError;
 import tj.metro.dushanbe.imports.domain.ImportJob;
 import tj.metro.dushanbe.imports.repository.ImportErrorRepository;
@@ -43,10 +50,12 @@ import tj.metro.dushanbe.network.repository.MetroStationRepository;
  * Итог фиксируется в {@link ImportJob} (счётчики/статус) и построчных {@link ImportError}
  * (IMP-03); идемпотентность — по стабильному {@code code} (IMP-02).
  *
- * <h2>Синхронное применение (MVP)</h2>
- * Импорт выполняется синхронно в рамках HTTP-запроса. TODO(PERF-05): вынести в фоновую
- * очередь/джоб с preview-diff (IMP-04/IMP-05) — модель ImportJob уже поддерживает
- * жизненный цикл pending → running → success|partial|failed.
+ * <h2>Режимы применения</h2>
+ * По умолчанию импорт выполняется <b>синхронно</b> в рамках HTTP-запроса. При включённом
+ * feature-флаге {@code import.async} обработка уходит в фоновый поток, а запрос сразу
+ * получает джоб в статусе pending (см. {@link #importNetworkGeoJson}). TODO(PERF-05):
+ * очередь/preview-diff (IMP-04/IMP-05) — модель ImportJob уже поддерживает жизненный
+ * цикл pending → running → success|partial|failed.
  *
  * <h2>Транзакции</h2>
  * Оркестрация НЕ обёрнута в общую транзакцию намеренно: каждый апсерт фичи выполняется
@@ -57,6 +66,8 @@ import tj.metro.dushanbe.network.repository.MetroStationRepository;
  */
 @Service
 public class ImportService {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ImportService.class);
 
     private final ImportJobRepository jobRepository;
     private final ImportErrorRepository errorRepository;
@@ -69,6 +80,11 @@ public class ImportService {
     private final AuditService auditService;
     private final ObjectMapper objectMapper;
     private final Clock clock;
+    private final FeatureFlagService featureFlagService;
+    private final ImportService self;
+
+    /** Feature-флаг фонового (асинхронного) импорта. По умолчанию выключен → импорт синхронный. */
+    static final String FLAG_IMPORT_ASYNC = "import.async";
 
     public ImportService(ImportJobRepository jobRepository,
                          ImportErrorRepository errorRepository,
@@ -80,7 +96,9 @@ public class ImportService {
                          MetroStationLineRepository stationLineRepository,
                          AuditService auditService,
                          ObjectMapper objectMapper,
-                         Clock clock) {
+                         Clock clock,
+                         FeatureFlagService featureFlagService,
+                         @Lazy ImportService self) {
         this.jobRepository = jobRepository;
         this.errorRepository = errorRepository;
         this.validator = validator;
@@ -92,61 +110,116 @@ public class ImportService {
         this.auditService = auditService;
         this.objectMapper = objectMapper;
         this.clock = clock;
+        this.featureFlagService = featureFlagService;
+        this.self = self;
     }
 
     /**
-     * Выполнить импорт сети из GeoJSON-тела. Всегда создаёт запись {@link ImportJob}
-     * (даже при нечитаемом входе — со статусом failed) и возвращает её id.
+     * Импортирует сеть из GeoJSON-тела. Создаёт запись {@link ImportJob} и обрабатывает её
+     * в одном из двух режимов, в зависимости от feature-флага {@value #FLAG_IMPORT_ASYNC}:
+     * <ul>
+     *   <li><b>синхронно</b> (по умолчанию, флаг выключен) — обработка выполняется в рамках
+     *       HTTP-запроса; возвращается уже <i>завершённый</i> джоб (success|partial|failed)
+     *       со счётчиками. Контроллер отвечает 200 OK;</li>
+     *   <li><b>асинхронно</b> (флаг включён) — обработка уходит в фоновый поток
+     *       ({@link #processImportAsync}), сразу возвращается джоб в статусе {@code pending}.
+     *       Контроллер отвечает 202 Accepted + Location, статус отслеживается по GET /{id}.</li>
+     * </ul>
      *
      * @param body       сырое тело импорта (GeoJSON FeatureCollection)
      * @param sourceName имя источника/файла (IMP-01), может быть null
      * @param actor      субъект действия (аудит)
-     * @return сохранённый (финализированный) {@link ImportJob}
+     * @return {@link ImportJob}: завершённый (sync) либо в статусе pending (async)
      */
     public ImportJob importNetworkGeoJson(String body, String sourceName, String actor) {
         ImportJob job = jobRepository.save(new ImportJob(
                 UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, sourceName, sha256(body)));
-        job.markRunning(OffsetDateTime.now(clock));
-        job = jobRepository.save(job);
+        if (featureFlagService.isEnabled(FLAG_IMPORT_ASYNC, false)) {
+            self.processImportAsync(job.getId(), body, actor);
+            return job;
+        }
+        // Синхронный режим (по умолчанию): обрабатываем сразу и возвращаем завершённый джоб.
+        // Через self — чтобы сработал прокси @Caching (инвалидация кэшей сети).
+        return self.processImport(job.getId(), body, actor);
+    }
 
-        JsonNode root;
+    /**
+     * Асинхронная обёртка над {@link #processImport}: выполняет импорт в фоновом потоке
+     * (пул из {@code AsyncConfig}). Вызывается только при включённом флаге
+     * {@value #FLAG_IMPORT_ASYNC}. Инвалидация кэшей — внутри {@link #processImport}
+     * (через self-прокси), поэтому здесь дополнительных аннотаций нет.
+     */
+    @Async
+    public void processImportAsync(UUID jobId, String body, String actor) {
+        self.processImport(jobId, body, actor);
+    }
+
+    /**
+     * Ядро обработки импорта: разбор тела, апсерт фич, фиксация счётчиков/ошибок и статуса
+     * джоба, запись в аудит. По завершении инвалидирует кэши сети (@CacheEvict). Общий код
+     * для синхронного и асинхронного режимов; вызывать через self-прокси.
+     *
+     * @return завершённый {@link ImportJob} (success|partial|failed) — используется
+     *         синхронным путём для немедленного ответа; в async-режиме результат не важен.
+     */
+    @Caching(evict = {
+            @CacheEvict(value = "network.geojson", allEntries = true),
+            @CacheEvict(value = "lines", allEntries = true),
+            @CacheEvict(value = "stations", allEntries = true)
+    })
+    public ImportJob processImport(UUID jobId, String body, String actor) {
+        ImportJob job = jobRepository.findById(jobId).orElseThrow();
         try {
-            root = objectMapper.readTree(body == null ? "" : body);
-        } catch (Exception ex) {
-            return fail(job, "тело импорта не является корректным JSON: " + ex.getMessage(), actor);
-        }
-        if (root == null || root.isMissingNode() || !"FeatureCollection".equals(root.path("type").asText(null))) {
-            return fail(job, "ожидался GeoJSON FeatureCollection (поле type)", actor);
-        }
-        JsonNode features = root.path("features");
-        if (!features.isArray()) {
-            return fail(job, "поле features должно быть массивом фич", actor);
-        }
+            job.markRunning(OffsetDateTime.now(clock));
+            job = jobRepository.save(job);
+            LOG.info("Import job {} started processing", jobId);
 
-        Counters counters = new Counters();
-        // Порядок применения: сначала линии (на них ссылаются станции), затем станции.
-        for (JsonNode feature : features) {
-            ParsedFeature parsed = validator.parse(feature);
-            if (parsed.kind() == Kind.LINE) {
-                applyLine(job, parsed, counters, actor);
+            JsonNode root;
+            try {
+                root = objectMapper.readTree(body == null ? "" : body);
+            } catch (IOException ex) {
+                return fail(job, "тело импорта не является корректным JSON: " + ex.getMessage(), actor);
             }
-        }
-        Map<String, Integer> positions = new LinkedHashMap<>();
-        for (JsonNode feature : features) {
-            ParsedFeature parsed = validator.parse(feature);
-            if (parsed.kind() == Kind.STATION) {
-                applyStation(job, parsed, counters, positions, actor);
-            } else if (parsed.kind() == Kind.UNKNOWN) {
-                recordError(job, parsed.ref(), String.join("; ", parsed.errors()), ImportError.SEVERITY_ERROR);
-                counters.failed++;
+            if (root == null || root.isMissingNode() || !"FeatureCollection".equals(root.path("type").asText(null))) {
+                return fail(job, "ожидался GeoJSON FeatureCollection (поле type)", actor);
             }
-        }
+            JsonNode features = root.path("features");
+            if (!features.isArray()) {
+                return fail(job, "поле features должно быть массивом фич", actor);
+            }
 
-        job.finish(counters.total, counters.created, counters.updated, counters.failed,
-                OffsetDateTime.now(clock));
-        job = jobRepository.save(job);
-        auditService.record(actor, "network.import", "import_job", job.getId().toString(), null, snapshot(job));
-        return job;
+            Counters counters = new Counters();
+            for (JsonNode feature : features) {
+                ParsedFeature parsed = validator.parse(feature);
+                if (parsed.kind() == Kind.LINE) {
+                    applyLine(job, parsed, counters, actor);
+                }
+            }
+            Map<String, Integer> positions = new LinkedHashMap<>();
+            for (JsonNode feature : features) {
+                ParsedFeature parsed = validator.parse(feature);
+                if (parsed.kind() == Kind.STATION) {
+                    applyStation(job, parsed, counters, positions, actor);
+                } else if (parsed.kind() == Kind.UNKNOWN) {
+                    recordError(job, parsed.ref(), String.join("; ", parsed.errors()), ImportError.SEVERITY_ERROR);
+                    counters.failed++;
+                }
+            }
+
+            job.finish(counters.total, counters.created, counters.updated, counters.failed,
+                    OffsetDateTime.now(clock));
+            job = jobRepository.save(job);
+            auditService.record(actor, "network.import", "import_job", job.getId().toString(), null, snapshot(job));
+            LOG.info("Import job {} completed: {} created, {} updated, {} failed",
+                    jobId, counters.created, counters.updated, counters.failed);
+            return job;
+        } catch (RuntimeException ex) {
+            LOG.error("Import job {} failed unexpectedly: {}", jobId, ex.getMessage(), ex);
+            job.markFailed(OffsetDateTime.now(clock));
+            ImportJob saved = jobRepository.save(job);
+            auditService.record(actor, "network.import", "import_job", saved.getId().toString(), null, snapshot(saved));
+            return saved;
+        }
     }
 
     private void applyLine(ImportJob job, ParsedFeature parsed, Counters counters, String actor) {

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tj.metro.dushanbe.common.error.NotFoundException;
@@ -98,6 +99,11 @@ public class RoutingService {
      * Несуществующий код станции → 404 {@code route.station_not_found}.
      * Нет пути (несвязные компоненты / закрытая станция) → {@code found=false}.
      */
+    // Ключ по РЕАЛЬНЫМ именам параметров (fromCode/toCode). Ошибочные #from/#to в SpEL
+    // разрешались в null → ключ "null:null" для ЛЮБОГО запроса: первый посчитанный
+    // маршрут возвращался всем последующим (в т.ч. для несуществующих станций → 200
+    // вместо 404). Проявлялось только при поднятом Redis.
+    @Cacheable(value = "routes", key = "#fromCode + ':' + #toCode")
     public RouteDto route(String fromCode, String toCode) {
         // soft-deleted станция (BR-NET-2) трактуется как несуществующая
         stationRepository.findByCodeAndDeletedAtIsNull(fromCode)

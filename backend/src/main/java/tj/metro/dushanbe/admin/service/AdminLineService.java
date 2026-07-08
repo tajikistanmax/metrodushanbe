@@ -5,12 +5,15 @@ import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tj.metro.dushanbe.admin.web.dto.LineCreateRequest;
 import tj.metro.dushanbe.admin.web.dto.LineUpdateRequest;
 import tj.metro.dushanbe.audit.service.AuditService;
 import tj.metro.dushanbe.common.error.NotFoundException;
+import tj.metro.dushanbe.common.i18n.I18nValidator;
 import tj.metro.dushanbe.network.domain.MetroLine;
 import tj.metro.dushanbe.network.repository.MetroLineRepository;
 import tj.metro.dushanbe.network.service.NetworkService;
@@ -40,11 +43,15 @@ public class AdminLineService {
 
     /** Создать линию (статус/цвет/языки валидируются; аудит line.create). */
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "lines", allEntries = true),
+            @CacheEvict(value = "network.geojson", allEntries = true)
+    })
     public LineDto create(LineCreateRequest request, String actor) {
         AdminSupport.requireUnique(lineRepository.existsByCode(request.code()),
                 "line.code_exists", "code", request.code());
         AdminSupport.requireIn(request.status(), NetworkService.LINE_STATUSES, "line.status_invalid", "status");
-        AdminSupport.requireLanguages(request.name(), "name");
+        I18nValidator.requireAll(request.name(), "name");
 
         int sortOrder = request.sortOrder() != null ? request.sortOrder() : 0;
         MetroLine line = new MetroLine(UUID.randomUUID(), request.code(), request.colorHex(),
@@ -57,10 +64,14 @@ public class AdminLineService {
 
     /** Обновить линию по коду (аудит line.update со снимками до/после). */
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "lines", allEntries = true),
+            @CacheEvict(value = "network.geojson", allEntries = true)
+    })
     public LineDto update(String code, LineUpdateRequest request, String actor) {
         MetroLine line = lineRepository.findByCode(code).orElseThrow(() -> NotFoundException.line(code));
         AdminSupport.requireIn(request.status(), NetworkService.LINE_STATUSES, "line.status_invalid", "status");
-        AdminSupport.requireLanguages(request.name(), "name");
+        I18nValidator.requireAll(request.name(), "name");
 
         Map<String, Object> before = snapshot(line);
         int sortOrder = request.sortOrder() != null ? request.sortOrder() : line.getSortOrder();
@@ -76,6 +87,10 @@ public class AdminLineService {
 
     /** Soft-delete линии по коду (BR-NET-2; аудит line.delete). */
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "lines", allEntries = true),
+            @CacheEvict(value = "network.geojson", allEntries = true)
+    })
     public void softDelete(String code, String actor) {
         MetroLine line = lineRepository.findByCode(code).orElseThrow(() -> NotFoundException.line(code));
         Map<String, Object> before = snapshot(line);

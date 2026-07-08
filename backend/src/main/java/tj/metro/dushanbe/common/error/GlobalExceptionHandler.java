@@ -27,7 +27,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /** 404: доменный "не найдено" (station.not_found / line.not_found). */
     @ExceptionHandler(NotFoundException.class)
@@ -99,7 +99,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleInternal(Exception ex, HttpServletRequest request) {
         String requestId = requestId(request);
-        log.error("Необработанная ошибка, requestId={}", requestId, ex);
+        LOG.error("Необработанная ошибка, requestId={}", requestId, ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiError.of(requestId, "internal.error", "Внутренняя ошибка сервера", null));
     }

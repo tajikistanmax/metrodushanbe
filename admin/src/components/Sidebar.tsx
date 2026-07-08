@@ -14,7 +14,7 @@ import BrandMark from "./BrandMark";
 import ThemeToggle from "./ThemeToggle";
 import { useI18n } from "./I18nProvider";
 
-type NavKey = "overview" | "lines" | "stations" | "alerts" | "news";
+type NavKey = "overview" | "lines" | "stations" | "alerts" | "news" | "agents" | "audit";
 
 const NAV: { key: NavKey; href: string }[] = [
   { key: "overview", href: "/" },
@@ -22,6 +22,8 @@ const NAV: { key: NavKey; href: string }[] = [
   { key: "stations", href: "/stations" },
   { key: "alerts", href: "/alerts" },
   { key: "news", href: "/news" },
+  { key: "agents", href: "/agents" },
+  { key: "audit", href: "/audit" },
 ];
 
 function isActive(pathname: string, href: string): boolean {

@@ -3,12 +3,14 @@ package tj.metro.dushanbe.admin.service;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tj.metro.dushanbe.admin.web.dto.NewsCreateRequest;
 import tj.metro.dushanbe.admin.web.dto.NewsUpdateRequest;
 import tj.metro.dushanbe.audit.service.AuditService;
 import tj.metro.dushanbe.common.error.NotFoundException;
+import tj.metro.dushanbe.common.i18n.I18nValidator;
 import tj.metro.dushanbe.content.domain.NewsArticle;
 import tj.metro.dushanbe.content.repository.NewsArticleRepository;
 import tj.metro.dushanbe.content.service.ContentService;
@@ -35,9 +37,12 @@ public class AdminNewsService {
 
     /** Создать новость в статусе draft (аудит news.create). */
     @Transactional
+    @CacheEvict(value = "news", allEntries = true)
     public NewsArticleDto create(NewsCreateRequest request, String actor) {
         AdminSupport.requireUnique(newsRepository.existsBySlug(request.slug()),
                 "news.slug_exists", "slug", request.slug());
+        I18nValidator.requireAll(request.title(), "title");
+        I18nValidator.requireAll(request.body(), "body");
         NewsArticle article = new NewsArticle(UUID.randomUUID(), request.slug(), "draft",
                 request.title(), request.body(), request.coverMediaUrl(), null);
         NewsArticle saved = newsRepository.save(article);
@@ -48,8 +53,11 @@ public class AdminNewsService {
 
     /** Обновить содержание новости по слагу (аудит news.update). */
     @Transactional
+    @CacheEvict(value = "news", allEntries = true)
     public NewsArticleDto update(String slug, NewsUpdateRequest request, String actor) {
         NewsArticle article = newsRepository.findBySlug(slug).orElseThrow(() -> NotFoundException.news(slug));
+        I18nValidator.requireAll(request.title(), "title");
+        I18nValidator.requireAll(request.body(), "body");
         Map<String, Object> before = snapshot(article);
         article.updateEditorial(request.title(), request.body(), request.coverMediaUrl());
         NewsArticle saved = newsRepository.save(article);
@@ -64,6 +72,7 @@ public class AdminNewsService {
      * аудит не пишется). При успехе фиксируется событие news.publish со снимками.
      */
     @Transactional
+    @CacheEvict(value = "news", allEntries = true)
     public NewsArticleDto publish(String slug, String actor) {
         NewsArticle before = newsRepository.findBySlug(slug).orElseThrow(() -> NotFoundException.news(slug));
         Map<String, Object> beforeSnapshot = snapshot(before);

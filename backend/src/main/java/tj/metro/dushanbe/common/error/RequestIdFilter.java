@@ -38,6 +38,7 @@ public class RequestIdFilter extends OncePerRequestFilter {
         if (requestId == null || requestId.isBlank()) {
             requestId = UUID.randomUUID().toString();
         }
+        requestId = requestId.replaceAll("[\\r\\n]", "");
         request.setAttribute(ATTRIBUTE, requestId);
         response.setHeader(HEADER, requestId);
         MDC.put(MDC_KEY, requestId);

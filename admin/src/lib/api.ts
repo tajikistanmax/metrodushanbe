@@ -12,7 +12,7 @@
  * backend недоступен (офлайн-принцип, §8).
  */
 
-import type { Alert, Line, News, Station } from "./types";
+import type { AiBriefing, Alert, Line, News, Station } from "./types";
 
 /** Базовый URL API (совпадает с web/src/lib/api.ts). */
 export const API_BASE =
@@ -61,6 +61,11 @@ export function getNews(): Promise<ApiResult<News[]>> {
   return getJson<News[]>("/news");
 }
 
-// TODO (следующая итерация, CRUD): admin-write эндпоинты появятся на backend
-// (ТЗ §6.2.10). Тогда сюда добавятся createLine/updateLine/deleteLine и т.д.
-// с аутентификацией через Keycloak (dev-conventions.md, §2). Пока API read-only.
+/** GET /ai/briefing - AI agent readiness (публичный, серверный вызов из agents/page). */
+export function getAiBriefing(): Promise<ApiResult<AiBriefing>> {
+  return getJson<AiBriefing>("/ai/briefing");
+}
+
+// Примечание: чтение аудита (getAuditEvents, нужен X-Admin-Key) и AI-чат (sendAiChat,
+// проксируется серверно) вынесены в "use server"-модуль admin-actions.ts — ключ и
+// серверный base URL не должны попадать в клиентский бандл (см. AgentsPanel/AuditPage).

@@ -9,7 +9,7 @@
 import { useI18n } from "./I18nProvider";
 import PageHeader from "./PageHeader";
 
-export type Section = "overview" | "lines" | "stations" | "alerts" | "news";
+export type Section = "overview" | "lines" | "stations" | "alerts" | "news" | "audit";
 
 export default function SectionHeader({ section }: { section: Section }) {
   const { dict } = useI18n();
@@ -23,7 +23,9 @@ export default function SectionHeader({ section }: { section: Section }) {
           ? dict.stationsTitle
           : section === "alerts"
             ? dict.alertsTitle
-            : dict.newsTitle;
+            : section === "news"
+              ? dict.newsTitle
+              : dict.auditTitle;
 
   const lead = section === "overview" ? dict.overviewLead : undefined;
 

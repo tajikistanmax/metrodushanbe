@@ -1,15 +1,7 @@
-# Что НЕ отправлять в build-контекст backend-образа.
-# ВАЖНО: .mvn/ и mvnw НЕ исключаем — они нужны для сборки в образе.
-target/
-*.class
-hs_err_pid*
-
-# Git / IDE / доки — на сборку не влияют.
 .git/
-.gitignore
-.idea/
-.vscode/
-*.iml
-README.md
-Dockerfile
-.dockerignore
+target/
+# ВНИМАНИЕ: .mvn/ НЕ исключаем — Dockerfile копирует его (COPY .mvn/ .mvn/) ради
+# maven-wrapper.properties. Маска *.jar ниже всё равно отсекает maven-wrapper.jar
+# (он gitignored и докачивается mvnw через curl внутри образа).
+*.jar
+.DS_Store

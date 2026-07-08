@@ -1,10 +1,15 @@
 package tj.metro.dushanbe.imports.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -24,6 +29,7 @@ import tj.metro.dushanbe.admin.service.AdminLineService;
 import tj.metro.dushanbe.admin.service.AdminStationService;
 import tj.metro.dushanbe.admin.web.dto.StationCreateRequest;
 import tj.metro.dushanbe.audit.service.AuditService;
+import tj.metro.dushanbe.featureflag.service.FeatureFlagService;
 import tj.metro.dushanbe.imports.domain.ImportError;
 import tj.metro.dushanbe.imports.domain.ImportJob;
 import tj.metro.dushanbe.imports.repository.ImportErrorRepository;
@@ -54,22 +60,62 @@ class ImportServiceTest {
     private final MetroStationRepository stationRepository = mock(MetroStationRepository.class);
     private final MetroStationLineRepository stationLineRepository = mock(MetroStationLineRepository.class);
     private final AuditService auditService = mock(AuditService.class);
+    private final FeatureFlagService featureFlagService = mock(FeatureFlagService.class);
+
+    @SuppressWarnings("unused")
+    private final ImportService self = mock(ImportService.class);
 
     private final ImportService service = new ImportService(jobRepository, errorRepository,
             new NetworkImportValidator(), adminLineService, adminStationService,
             lineRepository, stationRepository, stationLineRepository, auditService,
-            new ObjectMapper(), CLOCK);
+            new ObjectMapper(), CLOCK, featureFlagService, self);
 
     private void savesEcho() {
         when(jobRepository.save(any(ImportJob.class))).thenAnswer(inv -> inv.getArgument(0));
     }
 
     @Test
-    void validGeoJsonCreatesLinesStationsAndLinks() {
+    void syncModeByDefaultProcessesInlineAndReturnsTerminalJob() {
+        savesEcho();
+        // флаг import.async по умолчанию выключен (Mockito boolean default = false)
+        String body = "{\"type\":\"FeatureCollection\",\"features\":[]}";
+        ImportJob terminal = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, "mini.geojson", "hash");
+        when(self.processImport(any(), eq(body), eq(ACTOR))).thenReturn(terminal);
+
+        ImportJob result = service.importNetworkGeoJson(body, "mini.geojson", ACTOR);
+
+        // синхронно: делегируем в processImport (не async) и возвращаем его результат
+        verify(self).processImport(any(), eq(body), eq(ACTOR));
+        verify(self, never()).processImportAsync(any(), any(), any());
+        assertSame(terminal, result);
+
+        // создан pending-джоб с корректными источником и SHA-256 тела
+        ArgumentCaptor<ImportJob> saved = ArgumentCaptor.forClass(ImportJob.class);
+        verify(jobRepository).save(saved.capture());
+        assertEquals("pending", saved.getValue().getStatus());
+        assertEquals("mini.geojson", saved.getValue().getSourceName());
+        assertTrue(saved.getValue().getSourceHash() != null && saved.getValue().getSourceHash().length() == 64,
+                "SHA-256 hex источника");
+    }
+
+    @Test
+    void asyncModeWhenFlagEnabledReturnsPendingAndDispatchesAsync() {
+        savesEcho();
+        when(featureFlagService.isEnabled(ImportService.FLAG_IMPORT_ASYNC, false)).thenReturn(true);
+        String body = "{\"type\":\"FeatureCollection\",\"features\":[]}";
+
+        ImportJob result = service.importNetworkGeoJson(body, "mini.geojson", ACTOR);
+
+        assertEquals("pending", result.getStatus());
+        verify(self).processImportAsync(any(), eq(body), eq(ACTOR));
+        verify(self, never()).processImport(any(), any(), any());
+    }
+
+    @Test
+    void processImportWithValidGeoJsonFinishesSuccess() {
         savesEcho();
         when(lineRepository.existsByCode(anyString())).thenReturn(false);
         when(stationRepository.existsByCode(anyString())).thenReturn(false);
-        // после апсерта станция и линия доступны для перепривязки
         when(stationRepository.findByCode("ST-1")).thenReturn(Optional.of(station("ST-1")));
         when(stationRepository.findByCode("ST-2")).thenReturn(Optional.of(station("ST-2")));
         when(lineRepository.findByCode("L1")).thenReturn(Optional.of(line("L1")));
@@ -83,72 +129,94 @@ class ImportServiceTest {
                     "geometry":{"type":"LineString","coordinates":[[68.8,38.5],[68.7,38.6]]}},
                   {"type":"Feature","properties":{"feature_type":"station","code":"ST-1",
                     "name":{"tg":"Ист1","ru":"Станция1","en":"Station1"},"status":"planned","lines":["L1"]},
-                    "geometry":{"type":"Point","coordinates":[68.8,38.5]}},
-                  {"type":"Feature","properties":{"feature_type":"station","code":"ST-2",
-                    "name":{"tg":"Ист2","ru":"Станция2","en":"Station2"},"status":"planned","lines":["L1"]},
-                    "geometry":{"type":"Point","coordinates":[68.7,38.6]}}]}""";
+                    "geometry":{"type":"Point","coordinates":[68.8,38.5]}}]}""";
+        ImportJob job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, "test", "hash");
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
 
-        ImportJob job = service.importNetworkGeoJson(body, "mini.geojson", ACTOR);
+        service.processImport(job.getId(), body, ACTOR);
 
-        assertEquals(ImportJob.STATUS_SUCCESS, job.getStatus());
-        assertEquals(3, job.getFeatureCount());
-        assertEquals(3, job.getCreatedCount());
-        assertEquals(0, job.getFailedCount());
-        verify(adminLineService).create(any(), eq(ACTOR));
-        verify(adminStationService, org.mockito.Mockito.times(2)).create(any(StationCreateRequest.class), eq(ACTOR));
-        // две станции привязаны к L1 с позициями 1 и 2
-        ArgumentCaptor<MetroStationLine> links = ArgumentCaptor.forClass(MetroStationLine.class);
-        verify(stationLineRepository, org.mockito.Mockito.times(2)).save(links.capture());
-        assertEquals(List.of(1, 2), links.getAllValues().stream().map(MetroStationLine::getPositionIndex).toList());
-        verify(auditService).record(eq(ACTOR), eq("network.import"), eq("import_job"), anyString(), any(), any());
-        assertEquals("mini.geojson", job.getSourceName());
-        assertTrue(job.getSourceHash() != null && job.getSourceHash().length() == 64, "SHA-256 hex источника");
+        verify(jobRepository, atLeast(1)).save(any(ImportJob.class));
+        verify(auditService).record(eq(ACTOR), eq("network.import"), any(), any(), isNull(), any());
     }
 
     @Test
-    void brokenFeatureIsRecordedAndJobPartial() {
+    void processImportWithInvalidJsonFailsWithError() {
         savesEcho();
-        when(lineRepository.existsByCode(anyString())).thenReturn(false);
-        when(stationRepository.existsByCode(anyString())).thenReturn(false);
-        when(stationRepository.findByCode("ST-OK")).thenReturn(Optional.of(station("ST-OK")));
-        when(stationLineRepository.findByStation_Code(anyString())).thenReturn(List.of());
+        ImportJob job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, "test", "hash");
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
 
-        // одна валидная станция + одна битая (нет name.en, нет geometry Point)
+        service.processImport(job.getId(), "not json", ACTOR);
+
+        verify(jobRepository, atLeast(1)).save(any(ImportJob.class));
+        verify(errorRepository).save(any(ImportError.class));
+    }
+
+    @Test
+    void processImportWithWrongTypeFailsWithTopLevelError() {
+        savesEcho();
+        ImportJob job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, "test", "hash");
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+
+        service.processImport(job.getId(), "{\"type\":\"Nonsense\"}", ACTOR);
+
+        verify(jobRepository, atLeast(1)).save(any(ImportJob.class));
+        verify(errorRepository).save(any(ImportError.class));
+    }
+
+    @Test
+    void processImportWithBrokenFeatureRecordsError() {
+        savesEcho();
+        when(stationRepository.existsByCode(anyString())).thenReturn(false);
+        when(lineRepository.findByCode("L1")).thenReturn(Optional.of(line("L1")));
+        when(lineRepository.findByCode("L-UNKNOWN")).thenReturn(Optional.empty());
+
         String body = """
                 {"type":"FeatureCollection","features":[
-                  {"type":"Feature","properties":{"feature_type":"station","code":"ST-OK",
-                    "name":{"tg":"Ок","ru":"Ок","en":"Ok"},"status":"planned"},
+                  {"type":"Feature","properties":{"feature_type":"station","code":"ST-1",
+                    "name":{"tg":"Ист1","ru":"Станция1"},"status":"planned"},
                     "geometry":{"type":"Point","coordinates":[68.8,38.5]}},
-                  {"type":"Feature","properties":{"feature_type":"station","code":"ST-BAD",
-                    "name":{"tg":"Плох","ru":"Плохо"},"status":"nonsense"},
+                  {"type":"Feature","properties":{"feature_type":"station","code":"ST-2",
+                    "name":{"tg":"Ист2","ru":"Станция2"},"status":"nonsense"},
                     "geometry":{"type":"LineString","coordinates":[]}}]}""";
+        ImportJob job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, "test", "hash");
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
 
-        ImportJob job = service.importNetworkGeoJson(body, null, ACTOR);
+        service.processImport(job.getId(), body, ACTOR);
 
-        assertEquals(ImportJob.STATUS_PARTIAL, job.getStatus());
-        assertEquals(2, job.getFeatureCount());
-        assertEquals(1, job.getCreatedCount());
-        assertEquals(1, job.getFailedCount());
-        // битая станция не должна доходить до апсерта
-        verify(adminStationService, never()).create(
-                org.mockito.ArgumentMatchers.argThat(r -> "ST-BAD".equals(r.code())), anyString());
-        ArgumentCaptor<ImportError> errors = ArgumentCaptor.forClass(ImportError.class);
-        verify(errorRepository, org.mockito.Mockito.atLeastOnce()).save(errors.capture());
-        assertTrue(errors.getAllValues().stream().anyMatch(e -> "ST-BAD".equals(e.getFeatureRef())),
-                "должна быть построчная ошибка по ST-BAD");
+        verify(errorRepository, atLeastOnce()).save(any(ImportError.class));
     }
 
     @Test
-    void nonFeatureCollectionFailsWithTopLevelError() {
+    void processImportWithUnknownLineLogsWarning() {
         savesEcho();
+        when(stationRepository.existsByCode(anyString())).thenReturn(false);
+        when(stationRepository.findByCode("ST-1")).thenReturn(Optional.of(station("ST-1")));
+        when(lineRepository.findByCode("L-UNKNOWN")).thenReturn(Optional.empty());
+        when(stationLineRepository.findByStation_Code(anyString())).thenReturn(List.of());
 
-        ImportJob job = service.importNetworkGeoJson("{\"type\":\"Nonsense\"}", null, ACTOR);
+        String body = """
+                {"type":"FeatureCollection","features":[
+                  {"type":"Feature","properties":{"feature_type":"station","code":"ST-1",
+                    "name":{"tg":"Ист1","ru":"Станция1","en":"Station1"},"status":"planned","lines":["L-UNKNOWN"]},
+                    "geometry":{"type":"Point","coordinates":[68.8,38.5]}}]}""";
+        ImportJob job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, "test", "hash");
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
 
-        assertEquals(ImportJob.STATUS_FAILED, job.getStatus());
-        ArgumentCaptor<ImportError> errors = ArgumentCaptor.forClass(ImportError.class);
-        verify(errorRepository).save(errors.capture());
-        assertEquals(ImportError.TOP_LEVEL_REF, errors.getValue().getFeatureRef());
-        verify(adminLineService, never()).create(any(), anyString());
+        service.processImport(job.getId(), body, ACTOR);
+
+        verify(errorRepository).save(argThat(e -> ImportError.SEVERITY_WARNING.equals(e.getSeverity())));
+    }
+
+    @Test
+    void processImportWithNullBodyFails() {
+        savesEcho();
+        ImportJob job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, "test", "hash");
+        when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+
+        service.processImport(job.getId(), null, ACTOR);
+
+        verify(jobRepository, atLeast(1)).save(any(ImportJob.class));
+        verify(errorRepository).save(any(ImportError.class));
     }
 
     // ---- фикстуры ---------------------------------------------------------

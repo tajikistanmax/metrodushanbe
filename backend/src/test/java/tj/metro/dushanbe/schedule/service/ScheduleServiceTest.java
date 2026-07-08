@@ -28,6 +28,7 @@ import tj.metro.dushanbe.network.repository.MetroStationLineRepository;
 import tj.metro.dushanbe.network.repository.MetroStationRepository;
 import tj.metro.dushanbe.schedule.domain.LineSchedule;
 import tj.metro.dushanbe.schedule.repository.LineScheduleRepository;
+import tj.metro.dushanbe.schedule.service.CalendarExceptionService;
 import tj.metro.dushanbe.schedule.web.dto.ArrivalDto;
 import tj.metro.dushanbe.schedule.web.dto.LineScheduleDto;
 import tj.metro.dushanbe.schedule.web.dto.StationArrivalsDto;
@@ -48,10 +49,11 @@ class ScheduleServiceTest {
     private final MetroLineRepository lineRepository = mock(MetroLineRepository.class);
     private final MetroStationRepository stationRepository = mock(MetroStationRepository.class);
     private final MetroStationLineRepository stationLineRepository = mock(MetroStationLineRepository.class);
+    private final CalendarExceptionService calendarExceptionService = mock(CalendarExceptionService.class);
 
     private ScheduleService serviceAt(Instant now) {
         return new ScheduleService(scheduleRepository, lineRepository, stationRepository,
-                stationLineRepository, Clock.fixed(now, ZoneOffset.UTC));
+                stationLineRepository, calendarExceptionService, Clock.fixed(now, ZoneOffset.UTC));
     }
 
     // ---------------------------------------------------------------------
@@ -142,6 +144,7 @@ class ScheduleServiceTest {
     void arrivalsDerivesDayTypeFromClockWhenAbsent() {
         stationOnLine("ST-L1-01", "L1");
         lineExists("L1");
+        when(calendarExceptionService.resolveDayType(LocalDate.of(2026, 7, 4))).thenReturn("saturday");
         // Суббота 2026-07-04 => weekend
         when(scheduleRepository.findEffective(eq("L1"), eq("weekend"), any()))
                 .thenReturn(List.of(schedule("L1", "weekend", LocalTime.of(6, 30), LocalTime.of(22, 30), 7)));

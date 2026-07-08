@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tj.metro.dushanbe.admin.web.dto.AccessibilityFeatureRequest;
@@ -15,6 +17,7 @@ import tj.metro.dushanbe.admin.web.dto.StationExitRequest;
 import tj.metro.dushanbe.admin.web.dto.StationUpdateRequest;
 import tj.metro.dushanbe.audit.service.AuditService;
 import tj.metro.dushanbe.common.error.NotFoundException;
+import tj.metro.dushanbe.common.i18n.I18nValidator;
 import tj.metro.dushanbe.network.domain.AccessibilityFeature;
 import tj.metro.dushanbe.network.domain.MetroStation;
 import tj.metro.dushanbe.network.domain.StationExit;
@@ -63,11 +66,15 @@ public class AdminStationService {
 
     /** Создать станцию (аудит station.create). */
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "stations", allEntries = true),
+            @CacheEvict(value = "network.geojson", allEntries = true)
+    })
     public StationDto create(StationCreateRequest request, String actor) {
         AdminSupport.requireUnique(stationRepository.existsByCode(request.code()),
                 "station.code_exists", "code", request.code());
         AdminSupport.requireIn(request.status(), NetworkService.STATION_STATUSES, "station.status_invalid", "status");
-        AdminSupport.requireLanguages(request.name(), "name");
+        I18nValidator.requireAll(request.name(), "name");
 
         boolean isTransfer = request.isTransfer() != null && request.isTransfer();
         List<String> accessibility = request.accessibility() != null ? request.accessibility() : List.of();
@@ -82,11 +89,15 @@ public class AdminStationService {
 
     /** Обновить станцию по коду (аудит station.update). */
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "stations", allEntries = true),
+            @CacheEvict(value = "network.geojson", allEntries = true)
+    })
     public StationDto update(String code, StationUpdateRequest request, String actor) {
         MetroStation station = stationRepository.findByCode(code)
                 .orElseThrow(() -> NotFoundException.station(code));
         AdminSupport.requireIn(request.status(), NetworkService.STATION_STATUSES, "station.status_invalid", "status");
-        AdminSupport.requireLanguages(request.name(), "name");
+        I18nValidator.requireAll(request.name(), "name");
 
         Map<String, Object> before = snapshot(station);
         boolean isTransfer = request.isTransfer() != null ? request.isTransfer() : station.isTransfer();
@@ -104,6 +115,10 @@ public class AdminStationService {
 
     /** Soft-delete станции по коду (BR-NET-2; аудит station.delete). */
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "stations", allEntries = true),
+            @CacheEvict(value = "network.geojson", allEntries = true)
+    })
     public void softDelete(String code, String actor) {
         MetroStation station = stationRepository.findByCode(code)
                 .orElseThrow(() -> NotFoundException.station(code));
@@ -122,7 +137,7 @@ public class AdminStationService {
                 .orElseThrow(() -> NotFoundException.station(stationCode));
         AdminSupport.requireUnique(stationExitRepository.existsByCode(request.code()),
                 "station_exit.code_exists", "code", request.code());
-        AdminSupport.requireLanguages(request.name(), "name");
+        I18nValidator.requireAll(request.name(), "name");
 
         boolean isAccessible = request.isAccessible() != null && request.isAccessible();
         int sortOrder = request.sortOrder() != null ? request.sortOrder() : 0;
@@ -152,7 +167,7 @@ public class AdminStationService {
         MetroStation station = stationRepository.findByCode(stationCode)
                 .orElseThrow(() -> NotFoundException.station(stationCode));
         AdminSupport.requireIn(request.type(), FEATURE_TYPES, "accessibility_feature.type_invalid", "type");
-        AdminSupport.requireLanguages(request.description(), "description");
+        I18nValidator.requireAll(request.description(), "description");
         String status = request.status() != null ? request.status() : "available";
         AdminSupport.requireIn(status, FEATURE_STATUSES, "accessibility_feature.status_invalid", "status");
 

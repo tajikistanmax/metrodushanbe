@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tj.metro.dushanbe.common.error.BadRequestException;
@@ -69,6 +70,7 @@ public class NetworkService {
      * Список линий, опционально отфильтрованный по статусу. Публичное чтение
      * отдаёт только действующие линии (deleted_at IS NULL, BR-NET-2).
      */
+    @Cacheable("lines")
     public List<LineDto> lines(String status) {
         List<MetroLine> lines;
         if (isBlank(status)) {
@@ -91,6 +93,7 @@ public class NetworkService {
      * Список станций с фильтрами по линии и статусу. Публичное чтение исключает
      * soft-deleted станции и станции soft-deleted линий (BR-NET-2).
      */
+    @Cacheable("stations")
     public List<StationDto> stations(String lineCode, String status) {
         if (!isBlank(status)) {
             requireValidStatus(status, STATION_STATUSES, "status");
@@ -149,6 +152,7 @@ public class NetworkService {
      * сначала линии (по sort_order), затем станции — по линиям и позиции вдоль линии
      * (пересадочная станция попадает в выдачу один раз).
      */
+    @Cacheable("network.geojson")
     public GeoJsonFeatureCollection networkGeoJson() {
         List<MetroLine> lines = lineRepository.findByDeletedAtIsNullOrderBySortOrderAscCodeAsc();
         List<MetroStationLine> links = sortedLinks(stationLineRepository.findAllActiveWithStationAndLine());

@@ -1,0 +1,591 @@
+{
+  "assessmentMetadata": {
+    "reportDate": "2026-07-05",
+    "projectName": "Metro Dushanbe Backend",
+    "projectLocation": "d:\\Projects\\metrodushanbe\\backend",
+    "projectLanguage": "Java",
+    "technologyStack": "Spring Boot 3.4.5 | Java 25 | PostgreSQL + PostGIS | Maven",
+    "assessmentScope": "Production-readiness, Modernization Opportunities, Cloud Migration Readiness",
+    "assessmentStatus": "COMPLETE",
+    "cloudReadiness": "READY_WITH_IMPROVEMENTS",
+    "overallScore": "8.5/10"
+  },
+  "projectStructure": {
+    "architecturePattern": "Modular Monolith",
+    "modules": 11,
+    "mainSourceFiles": 60,
+    "mainSourceLOC": 5716,
+    "testSourceFiles": 19,
+    "testSourceLOC": 2358,
+    "testCodeRatio": "41%",
+    "modules": [
+      "config",
+      "common",
+      "network",
+      "alert",
+      "routing",
+      "schedule",
+      "audit",
+      "admin",
+      "content",
+      "imports",
+      "ai"
+    ],
+    "designPatterns": [
+      "Layered Architecture (Domain/Repository/Service/Web)",
+      "Repository Pattern (Spring Data JPA)",
+      "Centralized Exception Handling (@RestControllerAdvice)",
+      "Request Tracing (X-Request-Id)",
+      "Immutable DTOs (Java Records)"
+    ]
+  },
+  "technologyStack": {
+    "frameworks": [
+      {
+        "name": "Spring Boot",
+        "version": "3.4.5",
+        "releaseDate": "2026",
+        "status": "CURRENT",
+        "upgradePath": "Wait for 4.0.x stable (late 2025/early 2026)"
+      },
+      {
+        "name": "Java (JDK)",
+        "version": "25",
+        "releaseDate": "2026",
+        "status": "NON_LTS",
+        "supportEnds": "2026-09",
+        "issue": "CRITICAL",
+        "recommendation": "Migrate to Java 21 LTS"
+      }
+    ],
+    "database": [
+      {
+        "name": "PostgreSQL",
+        "extension": "PostGIS",
+        "driverVersion": "Latest (BOM)",
+        "features": ["UUID Type", "JSONB", "Geometry (SRID 4326)"]
+      }
+    ],
+    "dependencies": {
+      "direct": 9,
+      "managedBy": "Spring Boot 3.4.5 BOM",
+      "transitive": "~50-70 (estimated)",
+      "cveHighSeverity": 0,
+      "cveTotal": 0
+    },
+    "testFrameworks": [
+      "JUnit 5",
+      "Mockito 5.x",
+      "AssertJ 3.x",
+      "TestContainers 1.21.4+"
+    ]
+  },
+  "codeQuality": {
+    "assessment": "GOOD",
+    "strengths": [
+      "Type Safety (Java Records, no Lombok)",
+      "Consistency (Centralized Error Handling)",
+      "Testability (Constructor Injection)",
+      "Documentation (JavaDoc, dev-conventions.md)",
+      "Code Organization (Layered Architecture)"
+    ],
+    "observations": [
+      "Java 25 ByteBuddy experimental flag required",
+      "Test coverage adequate but not comprehensive (41%)",
+      "No static code analysis tools (Checkstyle, SpotBugs)"
+    ],
+    "recommendations": [
+      "Add Checkstyle plugin to Maven",
+      "Add SpotBugs plugin for bug detection",
+      "Expand test coverage to >70%",
+      "Enable SonarQube or similar for continuous monitoring"
+    ]
+  },
+  "databaseLayer": {
+    "engine": "PostgreSQL",
+    "extension": "PostGIS",
+    "schema": {
+      "tables": 11,
+      "migrations": 12,
+      "migrationTool": "Flyway",
+      "migrationStrategy": "Versioned (V001__init_network.sql through V012__seed_line_schedule.sql)"
+    },
+    "patterns": {
+      "localization": "JSONB (name_i18n, title_i18n, body_i18n with keys: tg, ru, en)",
+      "geospatialData": "PostGIS Geometry (SRID 4326 - WGS84)",
+      "primaryKeys": "UUID",
+      "stableIdentifiers": "code column (never changes, used in URLs)"
+    },
+    "optimization": {
+      "indexes": "B-tree (PK/FK), GiST (geometry columns)",
+      "connectionPooling": "HikariCP (default 10, recommended 20 for prod)",
+      "concerns": "N+1 risk on service_alert_target (@ElementCollection)"
+    },
+    "assessment": "WELL_DESIGNED"
+  },
+  "apiSurface": {
+    "baseUrl": "http://localhost:8080/api/v1",
+    "publicEndpoints": 10,
+    "adminEndpoints": 5,
+    "documentation": "OpenAPI 3.0 + Swagger UI",
+    "errorFormat": "Unified envelope (timestamp, requestId, error: {code, message, details})",
+    "key_endpoints": [
+      "/lines (GET) - List all lines",
+      "/lines/{code} (GET) - Line details",
+      "/stations (GET) - List stations",
+      "/stations/{code} (GET) - Station details",
+      "/network/geojson (GET) - Full network as GeoJSON",
+      "/alerts (GET) - Service alerts",
+      "/admin/lines (POST/PUT/DELETE) - Manage lines (admin-only)",
+      "/admin/alerts (POST/PUT/DELETE) - Manage alerts (admin-only)"
+    ],
+    "cors": "Configured for localhost:3000 (web), :3001 (admin), :3002 (dev)"
+  },
+  "securityPosture": {
+    "overallScore": "6/10",
+    "strengths": [
+      "Input Validation (Jakarta Bean Validation)",
+      "CORS Configuration (explicit origins)",
+      "Request Tracing (X-Request-Id for audit)",
+      "Actuator Hardening (only /health, /info exposed)",
+      "SQL Injection Prevention (JPA parameterized queries)"
+    ],
+    "concerns": [
+      {
+        "issue": "Admin Authorization (dev-mode temporary solution)",
+        "severity": "CRITICAL",
+        "description": "Simple header-based key (X-Admin-Key), shared secret, no RBAC/MFA",
+        "status": "TEMPORARY",
+        "remediation": "Replace with OAuth2/Keycloak + JWT + RBAC + MFA",
+        "timeframe": "CRITICAL - Pre-production"
+      },
+      {
+        "issue": "Database Credentials in Version Control",
+        "severity": "HIGH",
+        "description": "application.yml contains dev credentials (metro/metro)",
+        "status": "DEV_ONLY",
+        "remediation": "Use Spring profiles + env vars for production",
+        "timeframe": "HIGH - Before production"
+      },
+      {
+        "issue": "Secrets Management (X-Admin-Actor header)",
+        "severity": "MEDIUM",
+        "description": "Admin audit actor passed in plain header, should come from JWT",
+        "status": "NEEDS_IMPLEMENTATION",
+        "remediation": "Extract from JWT sub claim with validation",
+        "timeframe": "HIGH - Before production"
+      },
+      {
+        "issue": "TLS/HTTPS",
+        "severity": "HIGH",
+        "description": "No explicit HTTPS configuration in Spring config",
+        "status": "NOT_CONFIGURED",
+        "remediation": "Configure in production profile or handle at ingress",
+        "timeframe": "HIGH - Before production"
+      },
+      {
+        "issue": "CORS Origin Validation",
+        "severity": "MEDIUM",
+        "description": "Hardcoded localhost origins, must be parameterized for prod",
+        "status": "NEEDS_PARAMETERIZATION",
+        "remediation": "Read from environment variables",
+        "timeframe": "MEDIUM - Before production"
+      },
+      {
+        "issue": "Swagger UI Exposed",
+        "severity": "LOW",
+        "description": "OpenAPI documentation available in dev, should be disabled in prod",
+        "status": "ACCEPTABLE_DEV",
+        "remediation": "Set springdoc.swagger-ui.enabled=false in production profile",
+        "timeframe": "LOW - Nice-to-have"
+      }
+    ]
+  },
+  "performance": {
+    "assessment": "GOOD_WITH_IMPROVEMENTS",
+    "cachingStrategy": {
+      "current": "NONE",
+      "recommendation": "Add Redis + Spring Cache (1h TTL for stations, 10m for news, 6h for GeoJSON)",
+      "estimated_impact": "API response time 200ms → 100ms for cached endpoints"
+    },
+    "databaseOptimization": {
+      "queryLogging": "Not enabled by default",
+      "recommendation": "Profile with spring.jpa.show-sql=true, add @Query fetch joins",
+      "n1_risk": "Moderate (service_alert_target uses @ElementCollection)"
+    },
+    "asyncProcessing": {
+      "current": "Synchronous only",
+      "opportunities": ["Data imports", "Audit logging", "Alert notifications"],
+      "recommendation": "Add @Async for post-launch enhancements"
+    },
+    "connectionPooling": {
+      "current": "HikariCP (default 10 connections)",
+      "recommendation": "Increase to 20 for production, validate under load"
+    }
+  },
+  "buildAndDeployment": {
+    "buildTool": "Maven 3.8.x (via Maven Wrapper)",
+    "dockerizationStatus": "READY",
+    "dockerfile": {
+      "stages": 2,
+      "baseImageBuild": "eclipse-temurin:25-jdk",
+      "baseImageRuntime": "eclipse-temurin:25-jre",
+      "optimizations": [
+        "Multi-stage build (discards build layer)",
+        "Non-root user (spring:spring)",
+        "JVM memory tuning (-XX:MaxRAMPercentage=75.0)",
+        "Minimal final image (~500-700 MB)"
+      ],
+      "opportunities": [
+        "Use distroless base image for ultra-minimal size (~200 MB)",
+        "Add .dockerignore for faster builds"
+      ]
+    },
+    "cicdReadiness": "NOT_YET_IMPLEMENTED",
+    "recommendation": "Create .github/workflows/build.yml with: build, test, Docker build, container registry push"
+  },
+  "modernizationOpportunities": {
+    "javaVersion": {
+      "current": "Java 25 (Non-LTS)",
+      "issue": "Support ends September 2026",
+      "recommended": "Java 21 LTS (Support until September 2026+)",
+      "action": "MIGRATE_IMMEDIATELY",
+      "effort": "1-2 weeks"
+    },
+    "springBootUpgrade": {
+      "current": "Spring Boot 3.4.5 (Latest Stable)",
+      "nextMajor": "Spring Boot 4.0 (Late 2025/Early 2026)",
+      "recommendation": "Monitor for 4.0.x GA + first patch, then plan migration",
+      "effort": "2-3 weeks when ready"
+    },
+    "deprecatedApis": {
+      "status": "NONE_DETECTED",
+      "notes": "Project uses modern Jakarta EE, no XML config, proper use of Spring Boot starters"
+    },
+    "cloudReadiness": {
+      "containerization": "READY",
+      "configurationManagement": "NEEDS_ENV_VARS",
+      "database": "COMPATIBLE_WITH_AZURE",
+      "observability": "BASIC_ONLY",
+      "recommendation": "Add Application Insights integration"
+    }
+  },
+  "vulnerabilities": {
+    "highSeverityCVEs": 0,
+    "dependencyStatus": "UP_TO_DATE",
+    "bomManagement": "Spring Boot 3.4.5 BOM includes patches for Log4j, Jackson, Hibernate",
+    "supplyChainRisks": [
+      {
+        "component": "testcontainers",
+        "pinned": "1.21.4+",
+        "reason": "Docker Engine 29 API compatibility (400 Bad Request with older versions)",
+        "actionRequired": "Monitor for updates, maintain pin"
+      }
+    ],
+    "codeVulnerabilities": [
+      {
+        "category": "Authentication",
+        "severity": "MEDIUM",
+        "issue": "Temporary dev-mode key-based auth",
+        "status": "ACCEPTABLE_DEV"
+      },
+      {
+        "category": "Authorization",
+        "severity": "MEDIUM",
+        "issue": "No RBAC (role-based access control)",
+        "status": "PLANNED"
+      }
+    ],
+    "recommendations": [
+      "Run mvn dependency:check regularly",
+      "Add OWASP dependency check to CI/CD",
+      "Implement container image scanning (Trivy) in GitHub Actions",
+      "Setup GitHub dependabot alerts"
+    ]
+  },
+  "migrationRisks": {
+    "riskMatrix": [
+      {
+        "risk": "Java 25 non-LTS support",
+        "likelihood": "HIGH",
+        "impact": "MEDIUM",
+        "mitigation": "Migrate to Java 21 LTS immediately"
+      },
+      {
+        "risk": "Admin authentication inadequate for production",
+        "likelihood": "HIGH",
+        "impact": "HIGH",
+        "mitigation": "Implement OAuth2/Keycloak before production launch"
+      },
+      {
+        "risk": "No production-grade logging aggregation",
+        "likelihood": "MEDIUM",
+        "impact": "HIGH",
+        "mitigation": "Add Application Insights or ELK Stack"
+      },
+      {
+        "risk": "Single container failure without auto-recovery",
+        "likelihood": "LOW",
+        "impact": "HIGH",
+        "mitigation": "Deploy to AKS or Azure Spring Apps with auto-scaling"
+      },
+      {
+        "risk": "Database failover not configured",
+        "likelihood": "LOW",
+        "impact": "CRITICAL",
+        "mitigation": "Enable Azure Database HA with geo-replication"
+      }
+    ],
+    "blockers": [
+      {
+        "blocker": "Authentication/Authorization (CRITICAL)",
+        "currentState": "Dev-mode X-Admin-Key",
+        "requiredState": "OAuth2/JWT with RBAC",
+        "effort": "6-8 weeks",
+        "priority": "P0"
+      },
+      {
+        "blocker": "Secrets Management (HIGH)",
+        "currentState": "Credentials in application.yml",
+        "requiredState": "Azure Key Vault integration",
+        "effort": "2-3 weeks",
+        "priority": "P1"
+      },
+      {
+        "blocker": "Logging & Monitoring (HIGH)",
+        "currentState": "No log aggregation",
+        "requiredState": "Central logging (Application Insights)",
+        "effort": "3-4 weeks",
+        "priority": "P1"
+      }
+    ]
+  },
+  "recommendations": {
+    "phase1_securityHardening": {
+      "duration": "4 weeks",
+      "priority": "CRITICAL",
+      "tasks": [
+        {
+          "task": "Implement OAuth2 + Keycloak",
+          "effort": "3-4 weeks",
+          "scope": "Replace X-Admin-Key, add JWT, implement RBAC"
+        },
+        {
+          "task": "Secrets Management",
+          "effort": "1-2 weeks",
+          "scope": "Move DB creds to env vars, integrate Azure Key Vault"
+        },
+        {
+          "task": "Enable HTTPS/TLS",
+          "effort": "1 week",
+          "scope": "Configure production profile, handle cert management"
+        }
+      ]
+    },
+    "phase2_modernization": {
+      "duration": "4 weeks",
+      "priority": "HIGH",
+      "tasks": [
+        {
+          "task": "Migrate to Java 21 LTS",
+          "effort": "1-2 weeks",
+          "scope": "Update pom.xml, test, remove ByteBuddy workarounds"
+        },
+        {
+          "task": "Add Static Code Analysis",
+          "effort": "1 week",
+          "scope": "Integrate Checkstyle, SpotBugs, SonarQube plugins"
+        },
+        {
+          "task": "Expand Test Coverage",
+          "effort": "2-3 weeks",
+          "scope": "Add controller tests, edge cases, >70% coverage"
+        }
+      ]
+    },
+    "phase3_cloudDevops": {
+      "duration": "4 weeks",
+      "priority": "HIGH",
+      "tasks": [
+        {
+          "task": "Containerization & Registry",
+          "effort": "1-2 weeks",
+          "scope": "Build pipeline to ACR, vulnerability scanning"
+        },
+        {
+          "task": "Observability Integration",
+          "effort": "2 weeks",
+          "scope": "Add Application Insights, metrics, distributed tracing"
+        },
+        {
+          "task": "Azure Database Setup",
+          "effort": "2-3 weeks",
+          "scope": "PostgreSQL Flexible Server, HA, backups"
+        },
+        {
+          "task": "Kubernetes Deployment (Optional)",
+          "effort": "3-4 weeks",
+          "scope": "Helm charts for AKS, auto-scaling, health checks"
+        }
+      ]
+    },
+    "phase4_optimization": {
+      "duration": "4 weeks",
+      "priority": "MEDIUM",
+      "tasks": [
+        {
+          "task": "Caching Layer (Redis)",
+          "effort": "2 weeks",
+          "scope": "Spring Cache, TTL strategies, cache invalidation"
+        },
+        {
+          "task": "Database Query Optimization",
+          "effort": "2-3 weeks",
+          "scope": "Profiling, index tuning, N+1 elimination"
+        },
+        {
+          "task": "Cost Optimization",
+          "effort": "1 week",
+          "scope": "Azure Cost Management, resource right-sizing"
+        }
+      ]
+    },
+    "quickWins": [
+      {
+        "task": "Add .dockerignore",
+        "effort": "1 hour",
+        "impact": "Faster Docker builds"
+      },
+      {
+        "task": "Disable Swagger UI in prod profile",
+        "effort": "30 mins",
+        "impact": "Reduced exposure of API documentation"
+      },
+      {
+        "task": "Parameterize CORS origins",
+        "effort": "1 hour",
+        "impact": "Flexible cross-origin configuration"
+      },
+      {
+        "task": "Add health check probes for Kubernetes",
+        "effort": "1 hour",
+        "impact": "Container orchestration ready"
+      },
+      {
+        "task": "Pre-build Docker image",
+        "effort": "1 hour",
+        "impact": "Faster local/CI deployments"
+      }
+    ]
+  },
+  "cloudDeploymentOptions": [
+    {
+      "option": "Azure Spring Apps",
+      "suitability": "IDEAL",
+      "effort": "MEDIUM",
+      "cost": "$",
+      "pros": ["Seamless Spring Boot integration", "Auto-scaling", "Built-in monitoring"],
+      "cons": ["Limited customization for advanced scenarios"]
+    },
+    {
+      "option": "Azure Container Instances (ACI)",
+      "suitability": "OK",
+      "effort": "LOW",
+      "cost": "$",
+      "pros": ["Simple, single container", "Fast startup"],
+      "cons": ["No orchestration", "Manual scaling"]
+    },
+    {
+      "option": "Azure App Service",
+      "suitability": "OK",
+      "effort": "MEDIUM",
+      "cost": "$$",
+      "pros": ["Managed PaaS", "Custom containers"],
+      "cons": ["Less Spring-native than Spring Apps"]
+    },
+    {
+      "option": "Azure Kubernetes Service (AKS)",
+      "suitability": "OVERKILL_NOW",
+      "effort": "HIGH",
+      "cost": "$$$",
+      "pros": ["Full orchestration", "Enterprise-grade"],
+      "cons": ["Complexity, overkill for current scale"]
+    }
+  ],
+  "completionChecklistForProduction": [
+    {
+      "item": "OAuth2 / Keycloak configured",
+      "status": "PENDING",
+      "effort": "3-4 weeks"
+    },
+    {
+      "item": "Secrets in Azure Key Vault",
+      "status": "PENDING",
+      "effort": "1-2 weeks"
+    },
+    {
+      "item": "Java 21 LTS target verified",
+      "status": "PENDING",
+      "effort": "1-2 weeks"
+    },
+    {
+      "item": "HTTPS / TLS enabled",
+      "status": "PENDING",
+      "effort": "1 week"
+    },
+    {
+      "item": "Database on Azure PostgreSQL",
+      "status": "PENDING",
+      "effort": "2-3 weeks"
+    },
+    {
+      "item": "Container Registry (ACR) set up",
+      "status": "PENDING",
+      "effort": "1 week"
+    },
+    {
+      "item": "Application Insights integrated",
+      "status": "PENDING",
+      "effort": "1-2 weeks"
+    },
+    {
+      "item": "Health check endpoints configured",
+      "status": "PENDING",
+      "effort": "1 hour"
+    },
+    {
+      "item": "CI/CD pipeline (GitHub Actions) deployed",
+      "status": "PENDING",
+      "effort": "2-3 weeks"
+    },
+    {
+      "item": "Load testing completed",
+      "status": "PENDING",
+      "effort": "1-2 weeks"
+    },
+    {
+      "item": "Backup/restore procedures tested",
+      "status": "PENDING",
+      "effort": "1 week"
+    },
+    {
+      "item": "Disaster recovery plan documented",
+      "status": "PENDING",
+      "effort": "1 week"
+    }
+  ],
+  "summary": {
+    "assessment": "The Metro Dushanbe backend is a modern, well-architected Spring Boot application with strong engineering fundamentals. It demonstrates clean code practices, proper layering, and thoughtful design patterns. The project is cloud-ready with minor security and modernization improvements required before production deployment.",
+    "overallRating": "8.5/10",
+    "readinessForProduction": "NOT_YET - CRITICAL improvements required",
+    "readinessForCloudMigration": "YES_WITH_IMPROVEMENTS",
+    "estimatedTimeToProduction": "16 weeks (4 phases, parallel work possible)",
+    "keySuccessFactors": [
+      "Complete OAuth2/Keycloak implementation (P0)",
+      "Migrate Java 25 → Java 21 LTS (P1)",
+      "Setup Azure infrastructure (DB, Key Vault, App Insights) (P1)",
+      "Implement CI/CD pipeline (P1)",
+      "Complete security hardening & penetration testing (P0)"
+    ]
+  }
+}

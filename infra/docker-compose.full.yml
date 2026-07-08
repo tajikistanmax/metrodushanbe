@@ -53,6 +53,38 @@ services:
       retries: 5
     restart: unless-stopped
 
+  tiles:
+    image: ghcr.io/maplibre/martin:latest
+    container_name: metro-tiles-full
+    ports:
+      - "3003:3000"
+    environment:
+      DATABASE_URL: postgres://metro:metro@postgres:5432/metro
+      RUST_LOG: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: metro-minio-full
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: metro
+      MINIO_ROOT_PASSWORD: metro-dev-key-change
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
   backend:
     build:
       context: ../backend
@@ -62,16 +94,27 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       # Relaxed binding Spring Boot: spring.datasource.* ← SPRING_DATASOURCE_*.
       # Внутри сети обращаемся к сервису postgres по ВНУТРЕННЕМУ порту 5432.
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-metro}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-metro}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-metro}
+      # Redis для кэша (@Cacheable во всех публичных read-сервисах). Без этого
+      # backend идёт на localhost:6379 внутри своего контейнера, где Redis нет,
+      # и кэшируемые эндпоинты падают с 500 (RedisConnectionFailureException).
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       # Секрет admin-контура (app.admin.dev-key) — через SPRING_APPLICATION_JSON,
       # чтобы обойти неоднозначность relaxed binding для ключа с дефисом (dev-key).
       # Значение согласовано с ADMIN_API_KEY у сервиса admin.
       SPRING_APPLICATION_JSON: '{"app":{"admin":{"dev-key":"${ADMIN_API_KEY:-dev-admin-key-change-me}"}}}'
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: metro
+      MINIO_SECRET_KEY: metro-dev-key-change
+      APP_TILES_BASE_URL: http://localhost:3003
     ports:
       - "8080:8080"
     healthcheck:
@@ -91,6 +134,7 @@ services:
         # NEXT_PUBLIC_* инлайнится в бандл на этапе build. Публичный портал ходит
         # в API ИЗ БРАУЗЕРА, поэтому это host-адрес backend (не имя сервиса).
         NEXT_PUBLIC_API_BASE: ${WEB_API_BASE:-http://localhost:8080/api/v1}
+        NEXT_PUBLIC_TILES_BASE_URL: http://localhost:3003
     image: metro-web:local
     container_name: metro-web-full
     depends_on:
@@ -119,3 +163,4 @@ services:
 
 volumes:
   pgdata-full:
+  minio-data:

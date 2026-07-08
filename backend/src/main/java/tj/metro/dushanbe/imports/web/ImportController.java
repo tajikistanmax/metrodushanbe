@@ -3,9 +3,11 @@ package tj.metro.dushanbe.imports.web;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tj.metro.dushanbe.imports.domain.ImportJob;
 import tj.metro.dushanbe.imports.service.ImportQueryService;
 import tj.metro.dushanbe.imports.service.ImportService;
@@ -46,15 +49,25 @@ public class ImportController {
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Импортировать сеть из GeoJSON",
             description = "Тело — GeoJSON FeatureCollection (линии/станции по образцу data/demo-network.geojson). "
-                    + "Апсерт по стабильному code (идемпотентно). Возвращает сводку джоба: статус и счётчики "
-                    + "created/updated/failed. Имя источника — заголовок X-Import-Source.")
-    public ImportJobDto importNetwork(
+                    + "Апсерт по стабильному code (идемпотентно). По умолчанию импорт синхронный и возвращает "
+                    + "200 OK со сводкой джоба (счётчики created/updated/failed). При включённом feature-флаге "
+                    + "import.async задание уходит в фон: 202 Accepted + Location, статус — по GET /{id}. "
+                    + "Имя источника — заголовок X-Import-Source.")
+    public ResponseEntity<ImportJobDto> importNetwork(
             @RequestBody String body,
             @Parameter(description = "Имя источника/файла (IMP-01)")
             @RequestHeader(name = "X-Import-Source", required = false) String sourceName,
             @RequestHeader(name = "X-Admin-Actor", defaultValue = "dev-admin") String actor) {
         ImportJob job = importService.importNetworkGeoJson(body, sourceName, actor);
-        return ImportQueryService.toDto(job);
+        ImportJobDto dto = ImportQueryService.toDto(job);
+        // Незавершённый джоб (pending/running) => импорт запущен в фоне (async-режим): 202 + Location.
+        // Завершённый (success|partial|failed) => синхронный импорт: 200 OK со сводкой.
+        if (ImportJob.STATUS_PENDING.equals(job.getStatus()) || ImportJob.STATUS_RUNNING.equals(job.getStatus())) {
+            URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                    .path("/{id}").buildAndExpand(job.getId()).toUri();
+            return ResponseEntity.accepted().location(location).body(dto);
+        }
+        return ResponseEntity.ok(dto);
     }
 
     @GetMapping("/{id}")

@@ -96,3 +96,46 @@ export type News = {
   /** ISO-8601 UTC. */
   publishedAt: string;
 };
+
+export type AiAgent = {
+  code: string;
+  name: I18nName;
+  role: string;
+  modelProvider: string;
+  modelClass: string;
+  status: string;
+  capabilities: string[];
+  signals: string[];
+  nextAction: string;
+};
+
+export type AiBriefing = {
+  generatedAt: string;
+  posture: string;
+  agents: AiAgent[];
+  recommendations: string[];
+};
+
+/** GET /api/v1/admin/audit — событие журнала аудита. */
+export type AuditEvent = {
+  id: string;
+  actor: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+  at: string;
+};
+
+export type AiChatRequest = {
+  agentCode: string;
+  message: string;
+  context?: Record<string, unknown>;
+};
+
+export type AiChatResponse = {
+  agentCode: string;
+  reply: string;
+  sources: string[];
+};

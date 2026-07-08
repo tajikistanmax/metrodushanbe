@@ -1,0 +1,48 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 10000
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+server:
+  ssl:
+    enabled: true
+    key-store: ${SSL_KEY_STORE_PATH}
+    key-store-password: ${SSL_KEY_STORE_PASSWORD}
+    key-store-type: PKCS12
+    key-alias: metro
+  shutdown: graceful
+
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  security:
+    issuer-uri: ${OIDC_ISSUER_URI}
+    # Свойство должно совпадать с полем AdminAuthProperties (app.admin.dev-key);
+    # иначе ADMIN_API_KEY молча игнорируется и ключ остаётся dev-дефолтным.
+  admin:
+    dev-key: ${ADMIN_API_KEY}
+
+ai:
+  llm:
+    base-url: ${AI_LLM_BASE_URL:http://localhost:11434/v1}
+    api-key: ${AI_LLM_API_KEY:}
+    provider: ${AI_LLM_PROVIDER:disabled}
+    model: ${AI_LLM_MODEL:llama3.2}

@@ -4,7 +4,7 @@
 #   docker build -f backend/Dockerfile -t metro-backend backend
 
 # ---- Stage 1: сборка fat-jar ----
-FROM eclipse-temurin:25-jdk AS build
+FROM eclipse-temurin:21-jdk AS build
 WORKDIR /build
 
 # maven-wrapper.jar в репозитории gitignored (нет в build-контексте), а mvnw
@@ -25,7 +25,7 @@ COPY src/ src/
 RUN ./mvnw -B -ntp -DskipTests clean package
 
 # ---- Stage 2: минимальный рантайм ----
-FROM eclipse-temurin:25-jre AS runtime
+FROM eclipse-temurin:21-jre AS runtime
 WORKDIR /app
 
 # Непривилегированный пользователь (не запускаем JVM из-под root).

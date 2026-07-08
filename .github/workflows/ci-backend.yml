@@ -11,10 +11,15 @@ on:
       - "backend/**"
       - ".github/workflows/ci-backend.yml"
   workflow_dispatch:
+  workflow_call:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
-    name: Сборка и тесты backend (JDK 25)
+  lint:
+    name: Линт — компиляция с failOnWarning
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -25,10 +30,78 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "25"
+          java-version: "21"
           cache: maven
 
-      - name: Сборка и тесты
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('backend/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Компиляция с var inspection
         run: |
           chmod +x mvnw
-          ./mvnw -B -ntp verify
+          ./mvnw -B -ntp compile \
+            -Dmaven.compiler.showWarnings=true \
+            -Dmaven.compiler.failOnWarning=true
+
+  test:
+    name: Unit-тесты
+    needs: lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('backend/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Unit-тесты (без интеграционных)
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -ntp test -Dtest='!*IntegrationTest'
+
+  integration-test:
+    name: Интеграционные тесты (Docker)
+    needs: lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('backend/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Интеграционные тесты
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -ntp test -Dtest='*IntegrationTest'

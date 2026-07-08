@@ -1,7 +1,6 @@
 package tj.metro.dushanbe.schedule.service;
 
 import java.time.Clock;
-import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -11,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tj.metro.dushanbe.common.error.BadRequestException;
@@ -38,8 +38,7 @@ import tj.metro.dushanbe.schedule.web.dto.StationArrivalsDto;
  *
  * <p>Прибытия — <b>оценочные</b> (из headway, не из realtime). TODO(realtime,
  * SCH-03/05/08): заменить оценку на прогноз из подтверждённого realtime-источника
- * (BR-SCH-1/2). TODO(SCH-02): исключения календаря (праздники) — сейчас day_type
- * holiday только явный, автоматически не выводится. TODO(BR-RTE-3, routing):
+ * (BR-SCH-1/2). TODO(BR-RTE-3, routing):
  * учёт service hours при построении маршрута — интеграция с модулем routing.
  */
 @Service
@@ -59,29 +58,33 @@ public class ScheduleService {
     private final MetroLineRepository lineRepository;
     private final MetroStationRepository stationRepository;
     private final MetroStationLineRepository stationLineRepository;
+    private final CalendarExceptionService calendarExceptionService;
     private final Clock clock;
 
     public ScheduleService(LineScheduleRepository scheduleRepository,
                            MetroLineRepository lineRepository,
                            MetroStationRepository stationRepository,
                            MetroStationLineRepository stationLineRepository,
+                           CalendarExceptionService calendarExceptionService,
                            Clock clock) {
         this.scheduleRepository = scheduleRepository;
         this.lineRepository = lineRepository;
         this.stationRepository = stationRepository;
         this.stationLineRepository = stationLineRepository;
+        this.calendarExceptionService = calendarExceptionService;
         this.clock = clock;
     }
 
     /**
      * График движения линии для типа дня. {@code dayType} опционален — если пуст,
-     * выводится из текущего дня недели Clock (сб/вс → weekend, иначе weekday;
-     * holiday автоматически не выводится, см. TODO SCH-02).
+ * выводится из текущего дня недели Clock с учётом календарных исключений
+ * (CalendarExceptionService, SCH-02).
      *
      * @throws NotFoundException   {@code line.not_found} — линии нет/soft-deleted
      * @throws NotFoundException   {@code schedule.not_found} — на этот тип дня графика нет
      * @throws BadRequestException {@code schedule.day_type_invalid} — недопустимый dayType
      */
+    @Cacheable(value = "schedules", key = "#lineCode + ':' + #dayType")
     public LineScheduleDto lineSchedule(String lineCode, String dayType) {
         requireLineExists(lineCode);
         String resolvedDayType = resolveDayType(dayType);
@@ -156,8 +159,16 @@ public class ScheduleService {
 
     private String resolveDayType(String dayType) {
         if (isBlank(dayType)) {
-            DayOfWeek dow = LocalDate.now(clock).getDayOfWeek();
-            return (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY) ? "weekend" : "weekday";
+            LocalDate today = LocalDate.now(clock);
+            String resolved = calendarExceptionService.resolveDayType(today);
+            // Праздник/особый день имеет собственный график (day_type='holiday'); без этой
+            // ветки "holiday" схлопывался бы в "weekday" и календарные исключения (V014/V016)
+            // в авто-режиме никогда не срабатывали.
+            if ("holiday".equals(resolved)) {
+                return "holiday";
+            }
+            return "weekend".equals(resolved) || "saturday".equals(resolved) || "sunday".equals(resolved)
+                    ? "weekend" : "weekday";
         }
         if (!DAY_TYPES.contains(dayType)) {
             throw new BadRequestException("schedule.day_type_invalid",

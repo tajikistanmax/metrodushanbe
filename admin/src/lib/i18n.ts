@@ -58,6 +58,8 @@ export type Dict = {
     stations: string;
     alerts: string;
     news: string;
+    agents: string;
+    audit: string;
   };
 
   /** Обзорная страница. */
@@ -67,6 +69,7 @@ export type Dict = {
   countStations: string;
   countAlerts: string;
   countNews: string;
+  countAgents: string;
 
   /** Состояния таблиц/данных. */
   loading: string;
@@ -80,6 +83,7 @@ export type Dict = {
   stationsTitle: string;
   alertsTitle: string;
   newsTitle: string;
+  auditTitle: string;
 
   colCode: string;
   colName: string;
@@ -96,6 +100,11 @@ export type Dict = {
   colTitle: string;
   colPublishedAt: string;
   colCover: string;
+  colActionType: string;
+  colEntityType: string;
+  colEntityCode: string;
+  colPerformedBy: string;
+  colCreatedAt: string;
 
   yes: string;
   no: string;
@@ -203,6 +212,8 @@ const tg: Dict = {
     stations: "Истгоҳҳо",
     alerts: "Огоҳиҳо",
     news: "Хабарҳо",
+    agents: "AI-агентҳо",
+    audit: "Аудит",
   },
   overviewTitle: "Шарҳи умумӣ",
   overviewLead: "Ҳолати ҷории шабака аз рӯи API-и оммавӣ.",
@@ -210,6 +221,7 @@ const tg: Dict = {
   countStations: "Истгоҳҳо",
   countAlerts: "Огоҳиҳои фаъол",
   countNews: "Хабарҳо",
+  countAgents: "Агентҳои AI",
   loading: "Бор шуда истодааст…",
   loadError: "Маълумот бор нашуд",
   loadErrorHint: "Санҷед, ки backend дар http://localhost:8080 фаъол аст.",
@@ -219,6 +231,7 @@ const tg: Dict = {
   stationsTitle: "Истгоҳҳо",
   alertsTitle: "Огоҳиҳои фаъол",
   newsTitle: "Хабарҳо",
+  auditTitle: "Журнали аудит",
   colCode: "Рамз",
   colName: "Ном",
   colColor: "Ранг",
@@ -234,6 +247,11 @@ const tg: Dict = {
   colTitle: "Сарлавҳа",
   colPublishedAt: "Санаи нашр",
   colCover: "Муқова",
+  colActionType: "Амал",
+  colEntityType: "Навъи объект",
+  colEntityCode: "Рамзи объект",
+  colPerformedBy: "Иҷрокунанда",
+  colCreatedAt: "Сана",
   yes: "Ҳа",
   no: "Не",
   none: "—",
@@ -345,6 +363,8 @@ const ru: Dict = {
     stations: "Станции",
     alerts: "Уведомления",
     news: "Новости",
+    agents: "AI-агенты",
+    audit: "Аудит",
   },
   overviewTitle: "Обзор",
   overviewLead: "Текущее состояние сети по данным публичного API.",
@@ -352,6 +372,7 @@ const ru: Dict = {
   countStations: "Станции",
   countAlerts: "Активные уведомления",
   countNews: "Новости",
+  countAgents: "AI-агенты",
   loading: "Загрузка…",
   loadError: "Не удалось загрузить данные",
   loadErrorHint: "Проверьте, что backend запущен на http://localhost:8080.",
@@ -361,6 +382,7 @@ const ru: Dict = {
   stationsTitle: "Станции",
   alertsTitle: "Активные уведомления",
   newsTitle: "Новости",
+  auditTitle: "Журнал аудита",
   colCode: "Код",
   colName: "Название",
   colColor: "Цвет",
@@ -376,6 +398,11 @@ const ru: Dict = {
   colTitle: "Заголовок",
   colPublishedAt: "Дата публикации",
   colCover: "Обложка",
+  colActionType: "Действие",
+  colEntityType: "Тип объекта",
+  colEntityCode: "Код объекта",
+  colPerformedBy: "Исполнитель",
+  colCreatedAt: "Дата",
   yes: "Да",
   no: "Нет",
   none: "—",
@@ -487,6 +514,8 @@ const en: Dict = {
     stations: "Stations",
     alerts: "Alerts",
     news: "News",
+    agents: "AI agents",
+    audit: "Audit",
   },
   overviewTitle: "Overview",
   overviewLead: "Current network status from the public API.",
@@ -494,6 +523,7 @@ const en: Dict = {
   countStations: "Stations",
   countAlerts: "Active alerts",
   countNews: "News",
+  countAgents: "AI agents",
   loading: "Loading…",
   loadError: "Failed to load data",
   loadErrorHint: "Make sure the backend is running at http://localhost:8080.",
@@ -503,6 +533,7 @@ const en: Dict = {
   stationsTitle: "Stations",
   alertsTitle: "Active alerts",
   newsTitle: "News",
+  auditTitle: "Audit log",
   colCode: "Code",
   colName: "Name",
   colColor: "Color",
@@ -518,6 +549,11 @@ const en: Dict = {
   colTitle: "Title",
   colPublishedAt: "Published",
   colCover: "Cover",
+  colActionType: "Action",
+  colEntityType: "Entity type",
+  colEntityCode: "Entity code",
+  colPerformedBy: "Performed by",
+  colCreatedAt: "Date",
   yes: "Yes",
   no: "No",
   none: "—",

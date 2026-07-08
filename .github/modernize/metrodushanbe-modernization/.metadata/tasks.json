@@ -1,0 +1,962 @@
+{
+  "tasks": [
+    {
+      "id": "001-oauth2-keycloak-setup",
+      "phase": 1,
+      "type": "security",
+      "title": "OAuth2/Keycloak Implementation",
+      "description": "Implement OAuth2 resource server with Keycloak, JWT validation, and role-based access control",
+      "details": "Replace dev-mode X-Admin-Key with enterprise OAuth2/JWT authentication, implement RBAC (admin/auditor/viewer roles), and set up MFA-ready Keycloak instance.",
+      "effort": {
+        "estimate": "18 person-days",
+        "durationWeeks": 3,
+        "persons": 2,
+        "startWeek": 1
+      },
+      "dependencies": [],
+      "skills": [
+        {
+          "name": "oauth2-keycloak-setup",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "criteria": [
+          "All admin endpoints require valid JWT with admin role",
+          "Unauthenticated requests return 401 Unauthorized",
+          "Role-based access enforced (test with auditor/viewer roles)",
+          "Integration tests pass with Keycloak TestContainers",
+          "Swagger UI shows OAuth2 scheme",
+          "Token refresh mechanism working",
+          "MFA capability enabled in Keycloak"
+        ],
+        "testStrategy": "Integration tests with Keycloak TestContainers, manual OAuth2 flow validation",
+        "passBuild": true,
+        "passUnitTests": true,
+        "passIntegrationTests": true
+      },
+      "subtasks": [
+        "001.1 Provision Keycloak instance (ACI or managed)",
+        "001.2 Configure Spring Security OAuth2 Resource Server",
+        "001.3 Implement JWT validation and Bearer token extraction",
+        "001.4 Create admin authorization filter with role-based access control",
+        "001.5 Migrate X-Admin-Actor header to JWT sub claim",
+        "001.6 Implement role-based endpoint protection (@RolesAllowed)",
+        "001.7 Create integration tests with Keycloak TestContainers",
+        "001.8 Update OpenAPI/Swagger security scheme to OAuth2",
+        "001.9 Deprecate X-Admin-Key with log warnings (removal in Phase 2)"
+      ],
+      "resources": {
+        "azure": [
+          "Azure Container Instances (Keycloak)",
+          "Azure Key Vault (client secret)"
+        ],
+        "tools": [
+          "Spring Security OAuth2",
+          "Keycloak",
+          "TestContainers"
+        ]
+      },
+      "risks": [
+        "Keycloak version compatibility with Spring Security",
+        "Token expiration and refresh logic complexity",
+        "RBAC model may need adjustment based on actual admin workflows"
+      ],
+      "owner": "Backend Engineer 1",
+      "status": "TODO"
+    },
+    {
+      "id": "002-azure-key-vault-integration",
+      "phase": 1,
+      "type": "security",
+      "title": "Azure Key Vault Integration",
+      "description": "Migrate all secrets from application.yml to Azure Key Vault with Spring Cloud Azure integration",
+      "details": "Move database credentials, Keycloak client secret, JWT signing key to Azure Key Vault. Remove secrets from git, clean git history, configure env vars for local dev.",
+      "effort": {
+        "estimate": "10 person-days",
+        "durationWeeks": 1.5,
+        "persons": 1,
+        "startWeek": 1
+      },
+      "dependencies": [],
+      "skills": [
+        {
+          "name": "azure-key-vault-setup",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "criteria": [
+          "Zero secrets in git (scan with git-secrets or TruffleHog passes)",
+          "App starts with env vars and Key Vault endpoint",
+          "Integration tests pass with mocked secrets",
+          "Local dev uses sensible defaults without vault access",
+          "Flyway migrations can retrieve secrets from Key Vault",
+          "Audit log shows no secret access without auth"
+        ],
+        "testStrategy": "Scan git history, unit tests with mocked secrets, integration tests with Key Vault",
+        "passBuild": true,
+        "passUnitTests": true
+      },
+      "subtasks": [
+        "002.1 Create Azure Key Vault resource and access policies",
+        "002.2 Migrate secrets (DB, Keycloak, JWT key)",
+        "002.3 Add Spring Cloud Azure Key Vault starter dependency",
+        "002.4 Configure PropertySourceLocator for Key Vault integration",
+        "002.5 Update CI/CD pipeline to inject AZURE_KEYVAULT_ENDPOINT",
+        "002.6 Remove secrets from application.yml, add placeholders",
+        "002.7 Audit git history, remove leaked credentials (git-filter-repo)",
+        "002.8 Test local dev with env vars"
+      ],
+      "resources": {
+        "azure": [
+          "Azure Key Vault (Standard tier, 10 keys quota)"
+        ],
+        "tools": [
+          "Spring Cloud Azure",
+          "git-secrets",
+          "git-filter-repo"
+        ]
+      },
+      "risks": [
+        "git-filter-repo may be destructive; test on clone first",
+        "Local dev experience degraded without Key Vault (need defaults)",
+        "Key rotation procedure not yet automated"
+      ],
+      "owner": "Backend Engineer 1",
+      "status": "TODO"
+    },
+    {
+      "id": "003-tls-https-configuration",
+      "phase": 1,
+      "type": "security",
+      "title": "TLS/HTTPS Configuration & Security Headers",
+      "description": "Enable HTTPS/TLS, add security headers (HSTS, CSP), and enforce redirects",
+      "details": "Configure SSL/TLS for production profile, enforce HTTP→HTTPS redirects, add security headers, configure CORS for HTTPS origins, validate with SSL Labs.",
+      "effort": {
+        "estimate": "3 person-days",
+        "durationWeeks": 0.5,
+        "persons": 1,
+        "startWeek": 1
+      },
+      "dependencies": [
+        "002-azure-key-vault-integration"
+      ],
+      "skills": [
+        {
+          "name": "tls-https-setup",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "criteria": [
+          "HTTPS enforced on all production endpoints",
+          "Mixed content warnings eliminated",
+          "SSL/TLS report score A+ (SSL Labs or similar)",
+          "HSTS header present (max-age=31536000)",
+          "X-Content-Type-Options: nosniff header present",
+          "X-Frame-Options: DENY header present"
+        ],
+        "testStrategy": "Manual testing with curl and browser tools, SSL Labs report",
+        "passBuild": true
+      },
+      "subtasks": [
+        "003.1 Configure server.ssl.* properties in production profile",
+        "003.2 Enable HTTP→HTTPS redirect (middleware)",
+        "003.3 Add Security headers (HSTS, X-Content-Type-Options, X-Frame-Options)",
+        "003.4 Configure CORS to use https:// origins in production",
+        "003.5 Test SSL/TLS with curl and browser tools",
+        "003.6 Document certificate renewal process"
+      ],
+      "resources": {
+        "azure": [
+          "Azure Key Vault (SSL certificate storage)"
+        ],
+        "tools": [
+          "curl",
+          "SSL Labs",
+          "browser DevTools"
+        ]
+      },
+      "risks": [
+        "Certificate rotation not yet automated",
+        "Potential performance impact of TLS termination (measure)"
+      ],
+      "owner": "Backend Engineer 1",
+      "status": "TODO"
+    },
+    {
+      "id": "004-java-21-lts-migration",
+      "phase": 2,
+      "type": "modernization",
+      "title": "Java 21 LTS Migration",
+      "description": "Upgrade from Java 25 (non-LTS) to Java 21 LTS for long-term support and stability",
+      "details": "Update Maven compiler, Dockerfile base images, validate ByteBuddy compatibility, run full test suite, update CI/CD to use Java 21.",
+      "effort": {
+        "estimate": "10 person-days",
+        "durationWeeks": 1.5,
+        "persons": 2,
+        "startWeek": 5
+      },
+      "dependencies": [
+        "001-oauth2-keycloak-setup",
+        "002-azure-key-vault-integration",
+        "003-tls-https-configuration"
+      ],
+      "skills": [
+        {
+          "name": "java-version-upgrade",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "criteria": [
+          "Maven build succeeds with Java 21 compiler",
+          "All tests pass (unit, integration)",
+          "Docker image builds and runs successfully",
+          "No ByteBuddy or runtime compatibility errors",
+          "Dockerfile uses eclipse-temurin:21-jre (runtime)",
+          "CI/CD pipeline updated to use Java 21",
+          "No performance regressions detected"
+        ],
+        "testStrategy": "Full test suite, Docker build validation, integration tests",
+        "passBuild": true,
+        "passUnitTests": true,
+        "passIntegrationTests": true
+      },
+      "subtasks": [
+        "004.1 Update Maven toolchain plugin to Java 21",
+        "004.2 Update Maven compiler plugin (release=21)",
+        "004.3 Update Dockerfile base images (eclipse-temurin:21)",
+        "004.4 Validate ByteBuddy compatibility",
+        "004.5 Run full test suite (mvn clean package)",
+        "004.6 Verify Docker builds and multi-stage compilation",
+        "004.7 Update CI/CD pipeline to use Java 21",
+        "004.8 Performance baseline comparison (Java 25 vs 21)"
+      ],
+      "resources": {
+        "tools": [
+          "Maven 3.8.x",
+          "Java 21 JDK (eclipse-temurin)",
+          "Docker"
+        ]
+      },
+      "risks": [
+        "Java 21 may have subtle behavioral differences from Java 25",
+        "Third-party libraries may have compatibility issues",
+        "Docker layer caching may cause issues if not careful"
+      ],
+      "owner": "Backend Engineer 2",
+      "status": "TODO"
+    },
+    {
+      "id": "005-static-code-analysis-setup",
+      "phase": 2,
+      "type": "modernization",
+      "title": "Static Code Analysis & Quality Gates",
+      "description": "Implement automated code quality checks (Checkstyle, SpotBugs, PMD) with build enforcement",
+      "details": "Add static analysis Maven plugins, fix all violations, integrate with CI/CD, set up SonarQube for continuous monitoring.",
+      "effort": {
+        "estimate": "12 person-days",
+        "durationWeeks": 1.5,
+        "persons": 2,
+        "startWeek": 5
+      },
+      "dependencies": [
+        "004-java-21-lts-migration"
+      ],
+      "skills": [
+        {
+          "name": "static-code-analysis-setup",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "criteria": [
+          "Maven build includes static analysis (mvn clean verify)",
+          "Zero critical/blocker issues",
+          "Build fails if new violations introduced",
+          "SonarQube dashboard shows clean code",
+          "Code style consistent (Checkstyle passing)",
+          "No potential bugs detected (SpotBugs passing)",
+          "PMD design issues resolved"
+        ],
+        "testStrategy": "Maven build with all plugins, SonarQube scan, manual code review",
+        "passBuild": true
+      },
+      "subtasks": [
+        "005.1 Add Checkstyle Maven plugin (Google style rules)",
+        "005.2 Add SpotBugs Maven plugin (bug detection)",
+        "005.3 Add maven-pmd-plugin (code smell detection)",
+        "005.4 Configure failOnViolation=true",
+        "005.5 Fix all Checkstyle violations",
+        "005.6 Fix all SpotBugs issues",
+        "005.7 Fix all PMD violations",
+        "005.8 Integrate SonarQube (optional cloud instance)",
+        "005.9 Update CI/CD to run static analysis pre-build"
+      ],
+      "resources": {
+        "tools": [
+          "Maven",
+          "Checkstyle",
+          "SpotBugs",
+          "PMD",
+          "SonarQube"
+        ]
+      },
+      "risks": [
+        "High number of violations may require iterative fixes",
+        "Team may push back on strict code style rules",
+        "SonarQube setup and configuration can be complex"
+      ],
+      "owner": "Backend Engineer 2",
+      "status": "TODO"
+    },
+    {
+      "id": "006-test-coverage-expansion",
+      "phase": 2,
+      "type": "modernization",
+      "title": "Test Coverage Expansion (41% → 70%)",
+      "description": "Expand test suite with unit, integration, and API tests to achieve 70% code coverage",
+      "details": "Write 30+ new tests, add TestContainers for PostgreSQL+PostGIS, implement JWT auth tests, add JaCoCo coverage reporting with enforced thresholds.",
+      "effort": {
+        "estimate": "14 person-days",
+        "durationWeeks": 1.5,
+        "persons": 2,
+        "startWeek": 6
+      },
+      "dependencies": [
+        "004-java-21-lts-migration"
+      ],
+      "skills": [
+        {
+          "name": "test-expansion-coverage",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "criteria": [
+          "Overall code coverage ≥ 70% (JaCoCo report)",
+          "All service classes covered (>80%)",
+          "All integration points tested with TestContainers",
+          "All API endpoints tested with JWT auth",
+          "Build fails if coverage drops below 70%",
+          "Test suite runs in < 5 minutes (local)",
+          "Test execution passes in CI/CD pipeline"
+        ],
+        "testStrategy": "JUnit 5, TestContainers (PostgreSQL), Mockito, AssertJ",
+        "passBuild": true,
+        "passUnitTests": true,
+        "passIntegrationTests": true
+      },
+      "subtasks": [
+        "006.1 Audit existing test suite, identify gaps",
+        "006.2 Write unit tests for service layer (AlertService, RoutingService, ScheduleService)",
+        "006.3 Write integration tests with TestContainers (PostgreSQL + PostGIS)",
+        "006.4 Write API integration tests (full request/response flow with JWT)",
+        "006.5 Test error responses (400, 401, 404, 500)",
+        "006.6 Add JaCoCo Maven plugin for coverage reporting",
+        "006.7 Configure CI/CD to fail build if coverage < 70%",
+        "006.8 Document test strategy and coverage targets"
+      ],
+      "resources": {
+        "tools": [
+          "JUnit 5",
+          "Mockito 5.x",
+          "AssertJ 3.x",
+          "TestContainers 1.21.4+",
+          "JaCoCo"
+        ]
+      },
+      "risks": [
+        "TestContainers startup time may slow CI/CD (parallelize if needed)",
+        "Achieving 70% coverage may require extensive refactoring of untestable code",
+        "API test complexity (JWT tokens, mock authentication)"
+      ],
+      "owner": "Backend Engineer 2",
+      "status": "TODO"
+    },
+    {
+      "id": "007-dependency-audit-upgrades",
+      "phase": 2,
+      "type": "modernization",
+      "title": "Dependency Audit & Security Upgrades",
+      "description": "Audit dependencies for CVEs, upgrade to latest secure versions, enforce policy in CI/CD",
+      "details": "Run OWASP dependency check, resolve all high-severity CVEs, pin TestContainers 1.21.4+, add CVE scanning to CI/CD pipeline.",
+      "effort": {
+        "estimate": "3 person-days",
+        "durationWeeks": 0.5,
+        "persons": 1,
+        "startWeek": 7
+      },
+      "dependencies": [
+        "004-java-21-lts-migration"
+      ],
+      "skills": [
+        {
+          "name": "dependency-audit-upgrade",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "criteria": [
+          "Zero high-severity CVEs detected by OWASP",
+          "All CVE scan results logged and tracked",
+          "Dependency policy documented",
+          "CI/CD includes dependency scanning on every build",
+          "TestContainers pinned to 1.21.4+ (Docker 29 compatibility)"
+        ],
+        "testStrategy": "OWASP dependency check, manual dependency review",
+        "passBuild": true
+      },
+      "subtasks": [
+        "007.1 Run mvn dependency:check and resolve CVEs",
+        "007.2 Review and update direct dependencies (9 managed by BOM)",
+        "007.3 Pin TestContainers 1.21.4+ (Docker API compatibility)",
+        "007.4 Add maven-dependency-check-plugin (OWASP scanning)",
+        "007.5 Document dependency upgrade policy (quarterly reviews)",
+        "007.6 Add CI/CD step to scan dependencies"
+      ],
+      "resources": {
+        "tools": [
+          "Maven",
+          "OWASP Dependency Check",
+          "Maven Dependency Plugin"
+        ]
+      },
+      "risks": [
+        "CVE patches may introduce breaking changes",
+        "Dependency updates may require code changes"
+      ],
+      "owner": "Backend Engineer 1",
+      "status": "TODO"
+    },
+    {
+      "id": "008-github-actions-ci-cd",
+      "phase": 3,
+      "type": "devops",
+      "title": "GitHub Actions CI/CD Pipeline",
+      "description": "Implement automated build, test, push-to-registry, and deploy-to-staging pipeline",
+      "details": "Create .github/workflows/build-test-publish.yml, set up ACR, configure GitHub OIDC federated identity, automate Docker builds and staging deployment.",
+      "effort": {
+        "estimate": "12 person-days",
+        "durationWeeks": 2,
+        "persons": 2,
+        "startWeek": 9
+      },
+      "dependencies": [
+        "005-static-code-analysis-setup",
+        "006-test-coverage-expansion",
+        "007-dependency-audit-upgrades"
+      ],
+      "skills": [
+        {
+          "name": "github-actions-ci-cd",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "criteria": [
+          "CI/CD runs on every push and PR",
+          "All checks pass (build, test, coverage, analysis)",
+          "Docker image built and pushed to ACR",
+          "Staging environment updates automatically",
+          "PR blocked if any check fails",
+          "No secrets in CI/CD (OIDC federated identity)"
+        ],
+        "testStrategy": "Test CI/CD with dummy PR, verify artifact storage, validate staging deployment",
+        "passBuild": true,
+        "passUnitTests": true,
+        "passIntegrationTests": true
+      },
+      "subtasks": [
+        "008.1 Create .github/workflows/build-test-publish.yml (build, test, static analysis)",
+        "008.2 Set up Azure Container Registry (ACR)",
+        "008.3 Configure GitHub OIDC federated identity for Azure auth",
+        "008.4 Create Docker BuildKit optimization",
+        "008.5 Set up test reports upload (JaCoCo, SonarQube)",
+        "008.6 Add PR checks (build, coverage ≥70%, no critical SQ issues)",
+        "008.7 Configure staging deployment (App Service or ACI slot)",
+        "008.8 Test full pipeline end-to-end (dummy PR)"
+      ],
+      "resources": {
+        "azure": [
+          "Azure Container Registry (ACR)",
+          "Azure App Service (staging slot)",
+          "GitHub OIDC"
+        ],
+        "tools": [
+          "GitHub Actions",
+          "Docker BuildKit",
+          "ACR"
+        ]
+      },
+      "risks": [
+        "CI/CD complexity; may require debugging if issues arise",
+        "Secrets management: ensure no secrets in logs",
+        "Build time may exceed GitHub Actions timeout (60 min)"
+      ],
+      "owner": "DevOps Engineer",
+      "status": "TODO"
+    },
+    {
+      "id": "009-application-insights-integration",
+      "phase": 3,
+      "type": "devops",
+      "title": "Application Insights & Observability",
+      "description": "Integrate Application Insights for distributed tracing, custom metrics, and operational dashboards",
+      "details": "Add Spring Cloud Azure Application Insights, enable distributed tracing, create custom metrics for API latency and alerts, set up dashboards and alarms.",
+      "effort": {
+        "estimate": "10 person-days",
+        "durationWeeks": 1.5,
+        "persons": 1,
+        "startWeek": 9
+      },
+      "dependencies": [
+        "008-github-actions-ci-cd"
+      ],
+      "skills": [
+        {
+          "name": "app-insights-setup",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "criteria": [
+          "Application Insights receives telemetry from all requests",
+          "Distributed traces visible with request flow",
+          "Custom metrics dashboard shows API latency, alert counts, DB queries",
+          "Alerts fire correctly for error/latency spikes",
+          "Logs searchable by request ID",
+          "Application Map shows service dependencies"
+        ],
+        "testStrategy": "Generate test traffic, verify telemetry in Azure Portal, validate dashboard",
+        "passBuild": true
+      },
+      "subtasks": [
+        "009.1 Create Azure Application Insights resource",
+        "009.2 Add Spring Cloud Azure Application Insights starter",
+        "009.3 Configure Application Insights connection string in Key Vault",
+        "009.4 Enable distributed tracing (Spring Cloud Sleuth with X-Request-Id)",
+        "009.5 Configure custom metrics (API latency, alert lifecycle, DB queries)",
+        "009.6 Set up log aggregation (filter by request ID)",
+        "009.7 Create Application Map and live metrics dashboard",
+        "009.8 Configure alerts (response time > 5s, error rate > 1%)",
+        "009.9 Create Azure Monitor workbooks for operational dashboards"
+      ],
+      "resources": {
+        "azure": [
+          "Azure Application Insights",
+          "Azure Monitor"
+        ],
+        "tools": [
+          "Spring Cloud Azure",
+          "Spring Cloud Sleuth"
+        ]
+      },
+      "risks": [
+        "High telemetry ingestion may increase costs",
+        "Distributed tracing adds minimal latency (measure)",
+        "Custom metrics may require KQL query expertise"
+      ],
+      "owner": "DevOps Engineer",
+      "status": "TODO"
+    },
+    {
+      "id": "010-azure-database-setup",
+      "phase": 3,
+      "type": "devops",
+      "title": "Azure Database for PostgreSQL & Migration",
+      "description": "Provision managed PostgreSQL with HA, migrate schema/data, test backups and DR",
+      "details": "Create Azure Database for PostgreSQL - Flexible Server with PostGIS, migrate schema and data, enable automated backups, test restore procedure.",
+      "effort": {
+        "estimate": "8 person-days",
+        "durationWeeks": 1,
+        "persons": 1,
+        "startWeek": 10
+      },
+      "dependencies": [
+        "002-azure-key-vault-integration"
+      ],
+      "skills": [
+        {
+          "name": "azure-db-postgres-setup",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "criteria": [
+          "Azure DB created with HA enabled",
+          "Schema and data migrated successfully",
+          "App Service connects with SSL",
+          "Connection pooling working (monitored)",
+          "Backup and restore tested",
+          "DR plan documented (RTO: 1h, RPO: 15min)"
+        ],
+        "testStrategy": "Connection test, data validation, backup/restore test",
+        "passBuild": true
+      },
+      "subtasks": [
+        "010.1 Create Azure Database for PostgreSQL - Flexible Server (2 vCores, 8 GB RAM)",
+        "010.2 Configure firewall rules (allow App Service subnet)",
+        "010.3 Enable SSL enforcement (REQUIRE in connection strings)",
+        "010.4 Export local DB schema and data (pg_dump)",
+        "010.5 Apply Flyway migrations on Azure",
+        "010.6 Validate data integrity (row counts, checksums)",
+        "010.7 Test connection pooling (HikariCP 20 connections)",
+        "010.8 Configure automated backups (7-day retention + monthly long-term)",
+        "010.9 Test restore procedure (point-in-time restore)",
+        "010.10 Document disaster recovery plan"
+      ],
+      "resources": {
+        "azure": [
+          "Azure Database for PostgreSQL - Flexible Server",
+          "Azure Backup"
+        ],
+        "tools": [
+          "pg_dump",
+          "psql",
+          "Flyway"
+        ]
+      },
+      "risks": [
+        "Data migration downtime (plan cutover window)",
+        "Connection string changes may affect local dev setup",
+        "PostGIS extension compatibility (test Geometry queries)"
+      ],
+      "owner": "Database Engineer / DevOps",
+      "status": "TODO"
+    },
+    {
+      "id": "011-redis-caching-implementation",
+      "phase": 4,
+      "type": "optimization",
+      "title": "Redis Caching Implementation",
+      "description": "Implement distributed caching with Redis and Spring Cache abstraction",
+      "details": "Create Azure Cache for Redis, configure Spring Data Redis, add caching to high-traffic endpoints, implement invalidation strategy.",
+      "effort": {
+        "estimate": "10 person-days",
+        "durationWeeks": 1.5,
+        "persons": 1,
+        "startWeek": 13
+      },
+      "dependencies": [
+        "008-github-actions-ci-cd",
+        "009-application-insights-integration",
+        "010-azure-database-setup"
+      ],
+      "skills": [
+        {
+          "name": "redis-caching-setup",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "criteria": [
+          "Cache hit ratio > 80% for popular endpoints",
+          "API response time: 200ms → 50ms for cached requests",
+          "Cache invalidation working correctly (no stale data)",
+          "Load test passes (1000 req/s with 50ms latency)",
+          "Redis memory usage < 500 MB"
+        ],
+        "testStrategy": "Load test with cache statistics, validate invalidation, memory monitoring",
+        "passBuild": true,
+        "passIntegrationTests": true
+      },
+      "subtasks": [
+        "011.1 Create Azure Cache for Redis (Premium tier, 1 GB)",
+        "011.2 Add Spring Data Redis starter dependency",
+        "011.3 Configure cache connection pooling and serialization",
+        "011.4 Add @Cacheable to GET /api/v1/lines (TTL: 1h)",
+        "011.5 Add @Cacheable to GET /api/v1/stations (TTL: 1h)",
+        "011.6 Add @Cacheable to GET /api/v1/network/geojson (TTL: 6h)",
+        "011.7 Add @Cacheable to GET /api/v1/alerts (TTL: 10m)",
+        "011.8 Implement @CacheEvict on POST/PUT/DELETE endpoints",
+        "011.9 Add cache statistics endpoint (Redis info command)",
+        "011.10 Load test cache effectiveness (1000 req/s)"
+      ],
+      "resources": {
+        "azure": [
+          "Azure Cache for Redis (Premium 1GB)"
+        ],
+        "tools": [
+          "Spring Data Redis",
+          "Spring Cache",
+          "Redis CLI"
+        ]
+      },
+      "risks": [
+        "Cache invalidation errors may lead to stale data",
+        "Memory usage may exceed budget (monitor and scale)",
+        "Serialization issues with custom objects (use JSON)"
+      ],
+      "owner": "Performance Engineer",
+      "status": "TODO"
+    },
+    {
+      "id": "012-database-query-optimization",
+      "phase": 4,
+      "type": "optimization",
+      "title": "Database Query Optimization",
+      "description": "Profile queries, fix N+1 problems, add indexes, optimize batch operations",
+      "details": "Enable query logging, profile all endpoints, fix N+1 issues with @Fetch joins and @EntityGraph, add composite indexes, batch bulk operations.",
+      "effort": {
+        "estimate": "10 person-days",
+        "durationWeeks": 1.5,
+        "persons": 1,
+        "startWeek": 14
+      },
+      "dependencies": [
+        "010-azure-database-setup"
+      ],
+      "skills": [
+        {
+          "name": "db-query-optimization",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "criteria": [
+          "Average query time < 50ms (99th percentile < 200ms)",
+          "No N+1 queries detected",
+          "Indexes optimized (query plans using indexes)",
+          "Bulk imports 10K records in < 5 seconds",
+          "Load test: 500 req/s with p99 latency < 500ms"
+        ],
+        "testStrategy": "Query profiling, slow-query log analysis, load testing",
+        "passBuild": true,
+        "passIntegrationTests": true
+      },
+      "subtasks": [
+        "012.1 Enable query logging (spring.jpa.show-sql=true + Hibernate SQLStatementLogger)",
+        "012.2 Profile all API endpoints with slow-query threshold (>100ms)",
+        "012.3 Fix N+1: service_alert_target @ElementCollection → @Fetch(FetchMode.JOIN)",
+        "012.4 Fix N+1: Line.stations relationship → @EntityGraph in repository",
+        "012.5 Fix N+1: Alert.targets → lazy-load with specific query",
+        "012.6 Add @Query with explicit fetch joins",
+        "012.7 Create composite indexes: (line_id, status), (station_id, created_at DESC)",
+        "012.8 Implement batch operations for bulk inserts (JdbcTemplate)",
+        "012.9 Test with realistic data volume (100K stations, 1M alerts)",
+        "012.10 Document query optimization guidelines"
+      ],
+      "resources": {
+        "tools": [
+          "Hibernate Profiler or Spring JDBC",
+          "PostgreSQL slow-query log",
+          "JMeter or Gatling"
+        ]
+      },
+      "risks": [
+        "Query optimization may require significant refactoring",
+        "Index creation may lock tables (plan maintenance window)",
+        "Batch operations may have unexpected side effects"
+      ],
+      "owner": "Database Engineer / Performance Engineer",
+      "status": "TODO"
+    },
+    {
+      "id": "013-azure-deployment-scaling",
+      "phase": 4,
+      "type": "optimization",
+      "title": "Azure Deployment & Auto-Scaling",
+      "description": "Deploy to production App Service, configure auto-scaling, CDN, and load balancer",
+      "details": "Create production App Service plan, configure auto-scaling rules (CPU/memory), set up Azure CDN and Application Gateway, enable WAF.",
+      "effort": {
+        "estimate": "6 person-days",
+        "durationWeeks": 0.75,
+        "persons": 1,
+        "startWeek": 15
+      },
+      "dependencies": [
+        "008-github-actions-ci-cd",
+        "009-application-insights-integration",
+        "010-azure-database-setup"
+      ],
+      "skills": [
+        {
+          "name": "azure-deployment-scaling",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "criteria": [
+          "App Service scales up/down based on metrics",
+          "CDN cache hit ratio > 90% for GeoJSON",
+          "Application Gateway health probes pass",
+          "WAF rules logged and monitored",
+          "Graceful shutdown working (in-flight requests complete)"
+        ],
+        "testStrategy": "Load test to trigger scaling, monitor Azure Portal, validate health probes",
+        "passBuild": true
+      },
+      "subtasks": [
+        "013.1 Create production App Service plan (Premium P1V2)",
+        "013.2 Deploy application container to App Service",
+        "013.3 Configure auto-scaling rules (CPU > 70%, memory > 80%)",
+        "013.4 Set min instances: 2 (HA), max instances: 10 (cost cap)",
+        "013.5 Set up Azure CDN (cache GeoJSON 1h, static 24h)",
+        "013.6 Enable GZip compression in CDN",
+        "013.7 Configure Application Gateway (load balancer, SSL termination)",
+        "013.8 Set up health probe (/api/v1/info)",
+        "013.9 Enable Azure WAF (DDoS, SQL injection detection)",
+        "013.10 Configure graceful shutdown (drain time)"
+      ],
+      "resources": {
+        "azure": [
+          "Azure App Service (Premium P1V2)",
+          "Azure CDN",
+          "Application Gateway",
+          "Azure WAF"
+        ]
+      },
+      "risks": [
+        "Auto-scaling may cause transient errors if not configured correctly",
+        "CDN cache invalidation may require manual intervention",
+        "WAF false positives may block legitimate traffic"
+      ],
+      "owner": "DevOps Engineer / Cloud Architect",
+      "status": "TODO"
+    },
+    {
+      "id": "014-performance-testing-validation",
+      "phase": 4,
+      "type": "optimization",
+      "title": "Load Testing & Performance Validation",
+      "description": "Conduct comprehensive load testing to validate SLAs before go-live",
+      "details": "Set up JMeter/Gatling, create realistic load scenarios, run tests against staging, collect metrics (latency, throughput, errors), identify bottlenecks.",
+      "effort": {
+        "estimate": "5 person-days",
+        "durationWeeks": 0.75,
+        "persons": 1,
+        "startWeek": 15
+      },
+      "dependencies": [
+        "011-redis-caching-implementation",
+        "012-database-query-optimization",
+        "013-azure-deployment-scaling"
+      ],
+      "skills": [
+        {
+          "name": "performance-testing-gatling",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "criteria": [
+          "Load test: 5000 concurrent users, <500ms p99 latency",
+          "Error rate < 0.1% (only timeout/connection errors under stress)",
+          "Throughput > 2000 req/s",
+          "Database connection pool not exhausted (< 80%)",
+          "Redis memory stable (no memory leaks)",
+          "Performance baselines documented"
+        ],
+        "testStrategy": "JMeter/Gatling load test, Application Insights metrics, Azure Portal monitoring",
+        "passBuild": true
+      },
+      "subtasks": [
+        "014.1 Set up JMeter or Gatling load testing framework",
+        "014.2 Create test scenarios (100 → 1000 → 5000 users, ramp-up 10min)",
+        "014.3 Create mixed traffic scenario (80% read, 20% write)",
+        "014.4 Create spike test (5000 → 10000 users)",
+        "014.5 Run load tests against staging environment",
+        "014.6 Collect metrics (response time, error rate, throughput, DB pool, Redis)",
+        "014.7 Identify bottlenecks and resolve (iterate with Phase 4.1-4.3)",
+        "014.8 Document performance baselines and SLAs",
+        "014.9 Create on-call playbook for performance incidents"
+      ],
+      "resources": {
+        "tools": [
+          "JMeter or Gatling",
+          "Application Insights",
+          "Azure Portal"
+        ]
+      },
+      "risks": [
+        "Load testing may overload staging environment",
+        "Bottleneck resolution may require additional optimization cycles",
+        "SLA targets may need adjustment based on test results"
+      ],
+      "owner": "Performance Engineer",
+      "status": "TODO"
+    }
+  ],
+  "metadata": {
+    "planName": "Metro Dushanbe Backend - 16-Week Modernization Plan",
+    "projectName": "Metro Dushanbe Backend",
+    "language": "java",
+    "projectLocation": "d:\\Projects\\metrodushanbe\\backend",
+    "createdAt": "2026-07-05T00:00:00Z",
+    "version": "1.0",
+    "totalTasks": 14,
+    "totalPhases": 4,
+    "estimatedEffort": "109 person-days",
+    "estimatedDuration": "16 weeks",
+    "targetDeployment": "Azure App Service + Azure Database for PostgreSQL",
+    "cloudReadiness": "READY_WITH_IMPROVEMENTS",
+    "assessmentScore": "8.5/10",
+    "phases": {
+      "phase1": {
+        "name": "Security Hardening",
+        "weeks": "1-4",
+        "effort": "31 person-days",
+        "focus": "OAuth2, Key Vault, TLS",
+        "blocksProd": true
+      },
+      "phase2": {
+        "name": "Java Modernization & Testing",
+        "weeks": "5-8",
+        "effort": "39 person-days",
+        "focus": "Java 21 LTS, 70% test coverage, SCA",
+        "dependencies": ["phase1"]
+      },
+      "phase3": {
+        "name": "Cloud DevOps & Observability",
+        "weeks": "9-12",
+        "effort": "30 person-days",
+        "focus": "CI/CD, Application Insights, Azure DB",
+        "dependencies": ["phase2"]
+      },
+      "phase4": {
+        "name": "Performance Optimization",
+        "weeks": "13-16",
+        "effort": "31 person-days",
+        "focus": "Caching, Query optimization, Load testing",
+        "dependencies": ["phase3"]
+      }
+    },
+    "successMetrics": {
+      "security": "OAuth2/JWT, 0 secrets in git, HTTPS enforced",
+      "quality": "70% test coverage, 0 critical SQ issues, 0 high-severity CVEs",
+      "performance": "5000 concurrent users, <500ms p99 latency, >2000 req/s throughput",
+      "devops": "Automated CI/CD, 99.9% availability, <5min MTTR"
+    },
+    "costEstimation": {
+      "appService": {
+        "tier": "Premium P1V2",
+        "monthlyCost": "$200"
+      },
+      "database": {
+        "service": "Azure Database for PostgreSQL",
+        "monthlyCost": "$300"
+      },
+      "cache": {
+        "service": "Azure Cache for Redis",
+        "monthlyCost": "$200"
+      },
+      "monitoring": {
+        "service": "Application Insights",
+        "monthlyCost": "$150"
+      },
+      "registry": {
+        "service": "Azure Container Registry",
+        "monthlyCost": "$60"
+      },
+      "cdn": {
+        "service": "Azure CDN",
+        "monthlyCost": "$100"
+      },
+      "totalMonthly": "$1,010",
+      "note": "Costs scale with data volume and traffic; implement auto-scaling and CDN to optimize"
+    }
+  }
+}
