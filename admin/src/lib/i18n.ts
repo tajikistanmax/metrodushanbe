@@ -84,17 +84,15 @@ export type Dict = {
     logout: string;
   };
 
-  /** Страница входа. */
+  /** Страница входа (макет photo/ChatGPT Image … 13_07_19). */
   login: {
-    brandLine1: string;
-    brandLine2: string;
-    heroTitle: string;
-    heroTitleAccent: string;
+    welcome1: string;
+    welcome2Prefix: string;
+    welcome2Accent: string;
     heroLead: string;
-    heroBadgesLabel: string;
     badgeSecure: string;
     badgeReliable: string;
-    badgeAccessible: string;
+    badgeConvenient: string;
     copyright: string;
     title: string;
     subtitle: string;
@@ -103,12 +101,18 @@ export type Dict = {
     passwordLabel: string;
     passwordPlaceholder: string;
     remember: string;
+    forgot: string;
+    forgotNote: string;
     submit: string;
     submitting: string;
     or: string;
-    ssoHint: string;
-    ssoHintTitle: string;
-    help: string;
+    ssoButton: string;
+    ssoNote: string;
+    noAccount: string;
+    contactAdmin: string;
+    footerPrivacy: string;
+    footerTerms: string;
+    footerSupport: string;
     errInvalid: string;
     errRequired: string;
     showPassword: string;
@@ -340,30 +344,36 @@ const tg: Dict = {
     logout: "Баромадан",
   },
   login: {
-    brandLine1: "Метрои Душанбе",
-    brandLine2: "Tajikistan",
-    heroTitle: "Платформаи миллии рақамии",
-    heroTitleAccent: "«Метрои Душанбе»",
+    welcome1: "Хуш омадед",
+    welcome2Prefix: "ба ",
+    welcome2Accent: "Метрои Душанбе",
     heroLead:
-      "Системаи ягонаи идоракунии метрополитени Душанбе: шабака, рӯйдодҳо, мундариҷа ва таҳлил барои Вазорати нақлиёти Ҷумҳурии Тоҷикистон.",
-    heroBadgesLabel: "Афзалиятҳои платформа",
+      "Платформаи ягонаи рақамӣ барои идоракунии метрополитени Душанбе ва пешниҳоди хидматҳо ба мусофирон.",
     badgeSecure: "Бехатар",
     badgeReliable: "Боэътимод",
-    badgeAccessible: "Дастрас",
-    copyright: "© 2026 Метрои Душанбе · Вазорати нақлиёти Ҷумҳурии Тоҷикистон",
+    badgeConvenient: "Қулай",
+    copyright: "© 2026 Метрои Душанбе. Ҳамаи ҳуқуқҳо ҳифз шудаанд.",
     title: "Вуруд ба система",
     subtitle: "Маълумоти худро барои вуруд ворид кунед",
-    usernameLabel: "Логин ё email",
-    usernamePlaceholder: "admin",
+    usernameLabel: "Номи корбар ё email",
+    usernamePlaceholder: "Email ё логини худро ворид кунед",
     passwordLabel: "Рамз",
-    passwordPlaceholder: "••••••••",
+    passwordPlaceholder: "Рамзи худро ворид кунед",
     remember: "Маро дар ёд дор",
+    forgot: "Рамзро фаромӯш кардед?",
+    forgotNote:
+      "Рамзро маъмури система барқарор мекунад — ба хадамоти дастгирӣ муроҷиат кунед.",
     submit: "Ворид шудан",
     submitting: "Ворид шуда истодааст…",
     or: "ё",
-    ssoHint: "Вуруд тавассути SSO-и давлатӣ — дар марҳилаи оянда (Keycloak)",
-    ssoHintTitle: "ТЗ §9.2: федератсия бо IdP-и давлатӣ",
-    help: "Дастрасӣ нест? Ба маъмури система муроҷиат кунед.",
+    ssoButton: "Вуруд тавассути SSO (системаҳои давлатӣ)",
+    ssoNote:
+      "SSO-и давлатӣ дар марҳилаи оянда пайваст мешавад (Keycloak, ТЗ §9.2). Ба маъмури система муроҷиат кунед.",
+    noAccount: "Ҳисоб надоред?",
+    contactAdmin: "Бо маъмур тамос гиред",
+    footerPrivacy: "Сиёсати махфият",
+    footerTerms: "Шартҳои истифода",
+    footerSupport: "Дастгирӣ",
     errInvalid: "Логин ё рамз нодуруст аст",
     errRequired: "Логин ва рамзро ворид кунед",
     showPassword: "Нишон додани рамз",
@@ -590,30 +600,36 @@ const ru: Dict = {
     logout: "Выйти",
   },
   login: {
-    brandLine1: "Метро Душанбе",
-    brandLine2: "Tajikistan",
-    heroTitle: "Национальная цифровая платформа",
-    heroTitleAccent: "«Метро Душанбе»",
+    welcome1: "Добро пожаловать",
+    welcome2Prefix: "в ",
+    welcome2Accent: "Метро Душанбе",
     heroLead:
-      "Единая система управления метрополитеном Душанбе: сеть, события, контент и аналитика для Министерства транспорта Республики Таджикистан.",
-    heroBadgesLabel: "Преимущества платформы",
+      "Единая цифровая платформа для управления метрополитеном Душанбе и предоставления сервисов для пассажиров.",
     badgeSecure: "Безопасно",
     badgeReliable: "Надёжно",
-    badgeAccessible: "Доступно",
-    copyright: "© 2026 Метро Душанбе · Министерство транспорта Республики Таджикистан",
+    badgeConvenient: "Удобно",
+    copyright: "© 2026 Метро Душанбе. Все права защищены.",
     title: "Вход в систему",
     subtitle: "Введите свои данные для входа",
-    usernameLabel: "Логин или email",
-    usernamePlaceholder: "admin",
+    usernameLabel: "Имя пользователя или email",
+    usernamePlaceholder: "Введите ваш email или логин",
     passwordLabel: "Пароль",
-    passwordPlaceholder: "••••••••",
+    passwordPlaceholder: "Введите ваш пароль",
     remember: "Запомнить меня",
+    forgot: "Забыли пароль?",
+    forgotNote:
+      "Пароль восстанавливает администратор системы — обратитесь в службу поддержки.",
     submit: "Войти",
     submitting: "Вход…",
     or: "или",
-    ssoHint: "Вход через государственный SSO — на следующей фазе (Keycloak)",
-    ssoHintTitle: "ТЗ §9.2: федерация с государственным IdP",
-    help: "Нет доступа? Обратитесь к администратору системы.",
+    ssoButton: "Войти через SSO (Государственные системы)",
+    ssoNote:
+      "Государственный SSO подключается на следующей фазе (Keycloak, ТЗ §9.2). Обратитесь к администратору системы.",
+    noAccount: "Нет аккаунта?",
+    contactAdmin: "Свяжитесь с администратором",
+    footerPrivacy: "Политика конфиденциальности",
+    footerTerms: "Условия использования",
+    footerSupport: "Поддержка",
     errInvalid: "Неверный логин или пароль",
     errRequired: "Введите логин и пароль",
     showPassword: "Показать пароль",
@@ -840,30 +856,36 @@ const en: Dict = {
     logout: "Sign out",
   },
   login: {
-    brandLine1: "Dushanbe Metro",
-    brandLine2: "Tajikistan",
-    heroTitle: "National digital platform",
-    heroTitleAccent: "Dushanbe Metro",
+    welcome1: "Welcome",
+    welcome2Prefix: "to ",
+    welcome2Accent: "Dushanbe Metro",
     heroLead:
-      "A single system for operating the Dushanbe metro: network, events, content and analytics for the Ministry of Transport of the Republic of Tajikistan.",
-    heroBadgesLabel: "Platform highlights",
+      "A single digital platform for operating the Dushanbe metro and serving passengers.",
     badgeSecure: "Secure",
     badgeReliable: "Reliable",
-    badgeAccessible: "Accessible",
-    copyright: "© 2026 Dushanbe Metro · Ministry of Transport of the Republic of Tajikistan",
+    badgeConvenient: "Convenient",
+    copyright: "© 2026 Dushanbe Metro. All rights reserved.",
     title: "Sign in",
     subtitle: "Enter your credentials to continue",
     usernameLabel: "Username or email",
-    usernamePlaceholder: "admin",
+    usernamePlaceholder: "Enter your email or username",
     passwordLabel: "Password",
-    passwordPlaceholder: "••••••••",
+    passwordPlaceholder: "Enter your password",
     remember: "Remember me",
+    forgot: "Forgot password?",
+    forgotNote:
+      "Passwords are reset by the system administrator — contact support.",
     submit: "Sign in",
     submitting: "Signing in…",
     or: "or",
-    ssoHint: "Government SSO sign-in arrives in the next phase (Keycloak)",
-    ssoHintTitle: "ToR §9.2: federation with the state IdP",
-    help: "No access? Contact your system administrator.",
+    ssoButton: "Sign in with SSO (Government systems)",
+    ssoNote:
+      "Government SSO arrives in the next phase (Keycloak, ToR §9.2). Contact your system administrator.",
+    noAccount: "No account?",
+    contactAdmin: "Contact the administrator",
+    footerPrivacy: "Privacy policy",
+    footerTerms: "Terms of use",
+    footerSupport: "Support",
     errInvalid: "Invalid username or password",
     errRequired: "Enter username and password",
     showPassword: "Show password",

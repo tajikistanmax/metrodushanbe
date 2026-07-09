@@ -13,11 +13,17 @@ type BrandMarkProps = {
    * на navy-фоне — var(--brand-navy), чтобы сохранить рисунок пути.
    */
   holeColor?: string;
+  /**
+   * Монохромный режим: буква M тоже рисуется currentColor (белый логотип
+   * поверх фотографии на странице входа).
+   */
+  monochrome?: boolean;
 };
 
 export default function BrandMark({
   className,
   holeColor = "#FFFFFF",
+  monochrome = false,
 }: BrandMarkProps) {
   return (
     <svg
@@ -33,9 +39,9 @@ export default function BrandMark({
           fillRule="evenodd"
           d="M260 555 L260 345 C260 169 404 70 600 70 C796 70 940 169 940 345 L940 555 L875 555 L875 345 C875 210 766 135 600 135 C434 135 325 210 325 345 L325 555 Z"
         />
-        {/* красная M */}
+        {/* красная M (в монохроме — currentColor) */}
         <path
-          fill="#E21B2D"
+          fill={monochrome ? "currentColor" : "#E21B2D"}
           d="M418 505 L448 250 L600 405 L752 250 L782 505 L690 505 L675 355 L600 435 L525 355 L510 505 Z"
         />
         {/* рельсы в перспективе */}
