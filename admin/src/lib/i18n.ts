@@ -54,12 +54,120 @@ export type Dict = {
   /** Навигация (ключи совпадают с сегментами маршрутов). */
   nav: {
     overview: string;
+    analytics: string;
     lines: string;
     stations: string;
     alerts: string;
     news: string;
     agents: string;
     audit: string;
+  };
+
+  /** Заголовки групп разделов в сайдбаре. */
+  navGroups: {
+    network: string;
+    content: string;
+    system: string;
+  };
+
+  /** Подпись версии/контура внизу сайдбара. */
+  sidebarFootnote: string;
+
+  /** Топбар консоли. */
+  topbar: {
+    searchLabel: string;
+    searchPlaceholder: string;
+    demoBadge: string;
+    demoHint: string;
+    userName: string;
+    userRole: string;
+    logout: string;
+  };
+
+  /** Страница входа. */
+  login: {
+    brandLine1: string;
+    brandLine2: string;
+    heroTitle: string;
+    heroTitleAccent: string;
+    heroLead: string;
+    heroBadgesLabel: string;
+    badgeSecure: string;
+    badgeReliable: string;
+    badgeAccessible: string;
+    copyright: string;
+    title: string;
+    subtitle: string;
+    usernameLabel: string;
+    usernamePlaceholder: string;
+    passwordLabel: string;
+    passwordPlaceholder: string;
+    remember: string;
+    submit: string;
+    submitting: string;
+    or: string;
+    ssoHint: string;
+    ssoHintTitle: string;
+    help: string;
+    errInvalid: string;
+    errRequired: string;
+    showPassword: string;
+    hidePassword: string;
+  };
+
+  /** Операционный дашборд. */
+  dash: {
+    greetingMorning: string;
+    greetingDay: string;
+    greetingEvening: string;
+    greetingNight: string;
+    lead: string;
+    kpiLinesSub: string;
+    kpiStationsSub: string;
+    kpiAlertsSub: string;
+    kpiNewsSub: string;
+    kpiAgentsSub: string;
+    networkTitle: string;
+    sourceApi: string;
+    sourceDemo: string;
+    legendStations: string;
+    legendTransfer: string;
+    viewAll: string;
+    alertsEmpty: string;
+    quickTitle: string;
+    quickLine: string;
+    quickStation: string;
+    quickAlert: string;
+    quickNews: string;
+    aiTitle: string;
+    aiPosture: string;
+    auditTitle: string;
+    auditEmpty: string;
+    systemTitle: string;
+    healthBackend: string;
+    healthUp: string;
+    healthDown: string;
+    healthData: string;
+    healthAlerts: string;
+    healthCalm: string;
+    systemFootnote: string;
+  };
+
+  /** Страница аналитики. */
+  analytics: {
+    title: string;
+    lead: string;
+    stationsPerLine: string;
+    totalStations: string;
+    lineLengths: string;
+    totalLength: string;
+    km: string;
+    lengthFootnote: string;
+    accessibilityTitle: string;
+    alertsBySeverity: string;
+    totalAlerts: string;
+    stationStatuses: string;
+    newsByMonth: string;
   };
 
   /** Обзорная страница. */
@@ -208,12 +316,111 @@ const tg: Dict = {
   readOnlyHint: "Танҳо намоиш — тағйирот дар итератсияи оянда",
   nav: {
     overview: "Шарҳи умумӣ",
+    analytics: "Таҳлил",
     lines: "Хатҳо",
     stations: "Истгоҳҳо",
     alerts: "Огоҳиҳо",
     news: "Хабарҳо",
     agents: "AI-агентҳо",
     audit: "Аудит",
+  },
+  navGroups: {
+    network: "Шабака",
+    content: "Мундариҷа",
+    system: "Система",
+  },
+  sidebarFootnote: "Контури демо · v0.1 · Вазорати нақлиёти ҶТ",
+  topbar: {
+    searchLabel: "Гузариши зуд",
+    searchPlaceholder: "Бахши консол…",
+    demoBadge: "Контури демо",
+    demoHint: "Маълумоти шабака намунавӣ аст; воридот тавассути конвейери импорт (ТЗ, боби 13)",
+    userName: "Маъмур",
+    userRole: "Оператори платформа",
+    logout: "Баромадан",
+  },
+  login: {
+    brandLine1: "Метрои Душанбе",
+    brandLine2: "Tajikistan",
+    heroTitle: "Платформаи миллии рақамии",
+    heroTitleAccent: "«Метрои Душанбе»",
+    heroLead:
+      "Системаи ягонаи идоракунии метрополитени Душанбе: шабака, рӯйдодҳо, мундариҷа ва таҳлил барои Вазорати нақлиёти Ҷумҳурии Тоҷикистон.",
+    heroBadgesLabel: "Афзалиятҳои платформа",
+    badgeSecure: "Бехатар",
+    badgeReliable: "Боэътимод",
+    badgeAccessible: "Дастрас",
+    copyright: "© 2026 Метрои Душанбе · Вазорати нақлиёти Ҷумҳурии Тоҷикистон",
+    title: "Вуруд ба система",
+    subtitle: "Маълумоти худро барои вуруд ворид кунед",
+    usernameLabel: "Логин ё email",
+    usernamePlaceholder: "admin",
+    passwordLabel: "Рамз",
+    passwordPlaceholder: "••••••••",
+    remember: "Маро дар ёд дор",
+    submit: "Ворид шудан",
+    submitting: "Ворид шуда истодааст…",
+    or: "ё",
+    ssoHint: "Вуруд тавассути SSO-и давлатӣ — дар марҳилаи оянда (Keycloak)",
+    ssoHintTitle: "ТЗ §9.2: федератсия бо IdP-и давлатӣ",
+    help: "Дастрасӣ нест? Ба маъмури система муроҷиат кунед.",
+    errInvalid: "Логин ё рамз нодуруст аст",
+    errRequired: "Логин ва рамзро ворид кунед",
+    showPassword: "Нишон додани рамз",
+    hidePassword: "Пинҳон кардани рамз",
+  },
+  dash: {
+    greetingMorning: "Субҳ ба хайр!",
+    greetingDay: "Рӯз ба хайр!",
+    greetingEvening: "Шом ба хайр!",
+    greetingNight: "Шаби хуш!",
+    lead: "Хулосаи оперативии платформаи миллии «Метрои Душанбе».",
+    kpiLinesSub: "{active} фаъол · {planned} дар нақша",
+    kpiStationsSub: "гузаришӣ: {transfer}",
+    kpiAlertsSub: "ҳассос: {critical} · огоҳӣ: {warning}",
+    kpiNewsSub: "охирин:",
+    kpiAgentsSub: "ҳолат:",
+    networkTitle: "Нақшаи шабака",
+    sourceApi: "маълумоти зинда",
+    sourceDemo: "маълумоти демо",
+    legendStations: "истгоҳ",
+    legendTransfer: "Гузаришҳо",
+    viewAll: "Ҳама",
+    alertsEmpty: "Огоҳиҳои фаъол нест — шабака муқаррарӣ кор мекунад",
+    quickTitle: "Амалҳои зуд",
+    quickLine: "Иловаи хат",
+    quickStation: "Иловаи истгоҳ",
+    quickAlert: "Эҷоди огоҳӣ",
+    quickNews: "Навиштани хабар",
+    aiTitle: "Брифинги AI",
+    aiPosture: "Омодагӣ",
+    auditTitle: "Тағйироти охирин",
+    auditEmpty: "Ҳоло сабтҳои аудит нест",
+    systemTitle: "Ҳолати системаҳо",
+    healthBackend: "Backend API",
+    healthUp: "фаъол",
+    healthDown: "дастнорас",
+    healthData: "Маълумоти шабака",
+    healthAlerts: "Вазъи рӯйдодҳо",
+    healthCalm: "ором",
+    systemFootnote:
+      "Ҳолатҳо ҳангоми боркунии саҳифа аз ҷавобҳои backend (actuator/health) ва API-и оммавӣ ҳисоб карда мешаванд.",
+  },
+  analytics: {
+    title: "Таҳлил",
+    lead: "Нишондиҳандаҳо аз маълумоти ҷории платформа ҳисоб карда мешаванд — хатҳо, истгоҳҳо, огоҳиҳо ва хабарҳо.",
+    stationsPerLine: "Истгоҳҳо аз рӯи хатҳо",
+    totalStations: "истгоҳ",
+    lineLengths: "Дарозии хатҳо",
+    totalLength: "Дарозии умумӣ",
+    km: "км",
+    lengthFootnote:
+      "Дарозӣ аз рӯи геометрияи трассаҳо ҳисоб шудааст (гаверсинус); то тасдиқи трассаҳои воқеӣ маълумот намунавӣ аст.",
+    accessibilityTitle: "Муҳити бемонеа",
+    alertsBySeverity: "Огоҳиҳо аз рӯи дараҷа",
+    totalAlerts: "фаъол",
+    stationStatuses: "Ҳолати истгоҳҳо",
+    newsByMonth: "Нашри хабарҳо аз рӯи моҳҳо",
   },
   overviewTitle: "Шарҳи умумӣ",
   overviewLead: "Ҳолати ҷории шабака аз рӯи API-и оммавӣ.",
@@ -359,12 +566,111 @@ const ru: Dict = {
   readOnlyHint: "Режим просмотра — редактирование в следующей итерации",
   nav: {
     overview: "Обзор",
+    analytics: "Аналитика",
     lines: "Линии",
     stations: "Станции",
     alerts: "Уведомления",
     news: "Новости",
     agents: "AI-агенты",
     audit: "Аудит",
+  },
+  navGroups: {
+    network: "Сеть",
+    content: "Контент",
+    system: "Система",
+  },
+  sidebarFootnote: "Демо-контур · v0.1 · Министерство транспорта РТ",
+  topbar: {
+    searchLabel: "Быстрый переход",
+    searchPlaceholder: "Раздел консоли…",
+    demoBadge: "Демо-контур",
+    demoHint: "Данные сети демонстрационные; реальные загружаются конвейером импорта (ТЗ, раздел 13)",
+    userName: "Администратор",
+    userRole: "Оператор платформы",
+    logout: "Выйти",
+  },
+  login: {
+    brandLine1: "Метро Душанбе",
+    brandLine2: "Tajikistan",
+    heroTitle: "Национальная цифровая платформа",
+    heroTitleAccent: "«Метро Душанбе»",
+    heroLead:
+      "Единая система управления метрополитеном Душанбе: сеть, события, контент и аналитика для Министерства транспорта Республики Таджикистан.",
+    heroBadgesLabel: "Преимущества платформы",
+    badgeSecure: "Безопасно",
+    badgeReliable: "Надёжно",
+    badgeAccessible: "Доступно",
+    copyright: "© 2026 Метро Душанбе · Министерство транспорта Республики Таджикистан",
+    title: "Вход в систему",
+    subtitle: "Введите свои данные для входа",
+    usernameLabel: "Логин или email",
+    usernamePlaceholder: "admin",
+    passwordLabel: "Пароль",
+    passwordPlaceholder: "••••••••",
+    remember: "Запомнить меня",
+    submit: "Войти",
+    submitting: "Вход…",
+    or: "или",
+    ssoHint: "Вход через государственный SSO — на следующей фазе (Keycloak)",
+    ssoHintTitle: "ТЗ §9.2: федерация с государственным IdP",
+    help: "Нет доступа? Обратитесь к администратору системы.",
+    errInvalid: "Неверный логин или пароль",
+    errRequired: "Введите логин и пароль",
+    showPassword: "Показать пароль",
+    hidePassword: "Скрыть пароль",
+  },
+  dash: {
+    greetingMorning: "Доброе утро!",
+    greetingDay: "Добрый день!",
+    greetingEvening: "Добрый вечер!",
+    greetingNight: "Доброй ночи!",
+    lead: "Оперативная сводка национальной платформы «Метро Душанбе».",
+    kpiLinesSub: "{active} действует · {planned} в проекте",
+    kpiStationsSub: "пересадочных: {transfer}",
+    kpiAlertsSub: "критичных: {critical} · предупреждений: {warning}",
+    kpiNewsSub: "последняя:",
+    kpiAgentsSub: "статус:",
+    networkTitle: "Схема сети",
+    sourceApi: "живые данные",
+    sourceDemo: "демо-данные",
+    legendStations: "ст.",
+    legendTransfer: "Пересадки",
+    viewAll: "Все",
+    alertsEmpty: "Активных уведомлений нет — сеть работает штатно",
+    quickTitle: "Быстрые действия",
+    quickLine: "Добавить линию",
+    quickStation: "Добавить станцию",
+    quickAlert: "Создать уведомление",
+    quickNews: "Написать новость",
+    aiTitle: "AI-брифинг",
+    aiPosture: "Готовность",
+    auditTitle: "Последние изменения",
+    auditEmpty: "Записей аудита пока нет",
+    systemTitle: "Состояние систем",
+    healthBackend: "Backend API",
+    healthUp: "работает",
+    healthDown: "недоступен",
+    healthData: "Данные сети",
+    healthAlerts: "Событийный фон",
+    healthCalm: "спокойно",
+    systemFootnote:
+      "Статусы рассчитываются при загрузке страницы по ответам backend (actuator/health) и публичного API.",
+  },
+  analytics: {
+    title: "Аналитика",
+    lead: "Показатели считаются из текущих данных платформы — линий, станций, уведомлений и новостей.",
+    stationsPerLine: "Станции по линиям",
+    totalStations: "станций",
+    lineLengths: "Протяжённость линий",
+    totalLength: "Общая протяжённость",
+    km: "км",
+    lengthFootnote:
+      "Длина вычислена по геометрии трасс (гаверсинус); до утверждения реальных трасс данные демонстрационные.",
+    accessibilityTitle: "Безбарьерная среда",
+    alertsBySeverity: "Уведомления по уровню",
+    totalAlerts: "активных",
+    stationStatuses: "Статусы станций",
+    newsByMonth: "Публикации новостей по месяцам",
   },
   overviewTitle: "Обзор",
   overviewLead: "Текущее состояние сети по данным публичного API.",
@@ -510,12 +816,111 @@ const en: Dict = {
   readOnlyHint: "View mode — editing arrives in the next iteration",
   nav: {
     overview: "Overview",
+    analytics: "Analytics",
     lines: "Lines",
     stations: "Stations",
     alerts: "Alerts",
     news: "News",
     agents: "AI agents",
     audit: "Audit",
+  },
+  navGroups: {
+    network: "Network",
+    content: "Content",
+    system: "System",
+  },
+  sidebarFootnote: "Demo environment · v0.1 · Ministry of Transport of Tajikistan",
+  topbar: {
+    searchLabel: "Quick navigation",
+    searchPlaceholder: "Console section…",
+    demoBadge: "Demo mode",
+    demoHint: "Network data is illustrative; real data arrives via the import pipeline (ToR, section 13)",
+    userName: "Administrator",
+    userRole: "Platform operator",
+    logout: "Sign out",
+  },
+  login: {
+    brandLine1: "Dushanbe Metro",
+    brandLine2: "Tajikistan",
+    heroTitle: "National digital platform",
+    heroTitleAccent: "Dushanbe Metro",
+    heroLead:
+      "A single system for operating the Dushanbe metro: network, events, content and analytics for the Ministry of Transport of the Republic of Tajikistan.",
+    heroBadgesLabel: "Platform highlights",
+    badgeSecure: "Secure",
+    badgeReliable: "Reliable",
+    badgeAccessible: "Accessible",
+    copyright: "© 2026 Dushanbe Metro · Ministry of Transport of the Republic of Tajikistan",
+    title: "Sign in",
+    subtitle: "Enter your credentials to continue",
+    usernameLabel: "Username or email",
+    usernamePlaceholder: "admin",
+    passwordLabel: "Password",
+    passwordPlaceholder: "••••••••",
+    remember: "Remember me",
+    submit: "Sign in",
+    submitting: "Signing in…",
+    or: "or",
+    ssoHint: "Government SSO sign-in arrives in the next phase (Keycloak)",
+    ssoHintTitle: "ToR §9.2: federation with the state IdP",
+    help: "No access? Contact your system administrator.",
+    errInvalid: "Invalid username or password",
+    errRequired: "Enter username and password",
+    showPassword: "Show password",
+    hidePassword: "Hide password",
+  },
+  dash: {
+    greetingMorning: "Good morning!",
+    greetingDay: "Good afternoon!",
+    greetingEvening: "Good evening!",
+    greetingNight: "Good night!",
+    lead: "Operational snapshot of the Dushanbe Metro national platform.",
+    kpiLinesSub: "{active} active · {planned} planned",
+    kpiStationsSub: "transfer hubs: {transfer}",
+    kpiAlertsSub: "critical: {critical} · warnings: {warning}",
+    kpiNewsSub: "latest:",
+    kpiAgentsSub: "posture:",
+    networkTitle: "Network diagram",
+    sourceApi: "live data",
+    sourceDemo: "demo data",
+    legendStations: "st.",
+    legendTransfer: "Transfers",
+    viewAll: "View all",
+    alertsEmpty: "No active alerts — the network is operating normally",
+    quickTitle: "Quick actions",
+    quickLine: "Add line",
+    quickStation: "Add station",
+    quickAlert: "Create alert",
+    quickNews: "Write news",
+    aiTitle: "AI briefing",
+    aiPosture: "Posture",
+    auditTitle: "Recent changes",
+    auditEmpty: "No audit records yet",
+    systemTitle: "System status",
+    healthBackend: "Backend API",
+    healthUp: "operational",
+    healthDown: "unavailable",
+    healthData: "Network data",
+    healthAlerts: "Alert level",
+    healthCalm: "calm",
+    systemFootnote:
+      "Statuses are computed at page load from backend responses (actuator/health) and the public API.",
+  },
+  analytics: {
+    title: "Analytics",
+    lead: "Metrics are computed from current platform data — lines, stations, alerts and news.",
+    stationsPerLine: "Stations by line",
+    totalStations: "stations",
+    lineLengths: "Line lengths",
+    totalLength: "Total length",
+    km: "km",
+    lengthFootnote:
+      "Length is computed from route geometry (haversine); data is illustrative until real routes are approved.",
+    accessibilityTitle: "Accessibility",
+    alertsBySeverity: "Alerts by severity",
+    totalAlerts: "active",
+    stationStatuses: "Station statuses",
+    newsByMonth: "News published by month",
   },
   overviewTitle: "Overview",
   overviewLead: "Current network status from the public API.",

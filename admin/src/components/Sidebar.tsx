@@ -1,29 +1,81 @@
 "use client";
 
 /**
- * Боковая навигация консоли (фон --brand-navy): марка + словесный знак сверху,
- * список разделов, а внизу — бейдж «только чтение», переключатель темы и
- * segmented-переключатель языков. Активный раздел определяется по usePathname.
- * На узких экранах сайдбар становится верхней панелью (см. layout.tsx).
+ * Боковая навигация консоли (фон --brand-navy): марка + словесный знак,
+ * разделы, сгруппированные по доменам (сеть / контент / система), внизу —
+ * переключатели темы и языка и версия контура. Активный раздел — по
+ * usePathname. На узких экранах сайдбар становится верхней панелью.
  */
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ComponentType, SVGProps } from "react";
 import { LANG_LABELS, LANG_SHORT_LABELS, LANGS } from "@/lib/i18n";
+import {
+  IconAudit,
+  IconBell,
+  IconChart,
+  IconHome,
+  IconLines,
+  IconNews,
+  IconSpark,
+  IconStation,
+} from "@/lib/icons";
 import BrandMark from "./BrandMark";
 import ThemeToggle from "./ThemeToggle";
 import { useI18n } from "./I18nProvider";
 
-type NavKey = "overview" | "lines" | "stations" | "alerts" | "news" | "agents" | "audit";
+type NavKey =
+  | "overview"
+  | "analytics"
+  | "lines"
+  | "stations"
+  | "alerts"
+  | "news"
+  | "agents"
+  | "audit";
 
-const NAV: { key: NavKey; href: string }[] = [
-  { key: "overview", href: "/" },
-  { key: "lines", href: "/lines" },
-  { key: "stations", href: "/stations" },
-  { key: "alerts", href: "/alerts" },
-  { key: "news", href: "/news" },
-  { key: "agents", href: "/agents" },
-  { key: "audit", href: "/audit" },
+type NavItem = {
+  key: NavKey;
+  href: string;
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
+};
+
+type NavGroup = {
+  /** null — группа без заголовка (верхний блок). */
+  labelKey: "network" | "content" | "system" | null;
+  items: NavItem[];
+};
+
+const GROUPS: NavGroup[] = [
+  {
+    labelKey: null,
+    items: [
+      { key: "overview", href: "/", icon: IconHome },
+      { key: "analytics", href: "/analytics", icon: IconChart },
+    ],
+  },
+  {
+    labelKey: "network",
+    items: [
+      { key: "lines", href: "/lines", icon: IconLines },
+      { key: "stations", href: "/stations", icon: IconStation },
+    ],
+  },
+  {
+    labelKey: "content",
+    items: [
+      { key: "alerts", href: "/alerts", icon: IconBell },
+      { key: "news", href: "/news", icon: IconNews },
+    ],
+  },
+  {
+    labelKey: "system",
+    items: [
+      { key: "agents", href: "/agents", icon: IconSpark },
+      { key: "audit", href: "/audit", icon: IconAudit },
+    ],
+  },
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -38,48 +90,57 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="sidebar flex shrink-0 flex-col gap-4 bg-brand-navy p-4 text-surface-light lg:h-dvh lg:w-64 lg:overflow-y-auto">
+    <aside className="sidebar flex shrink-0 flex-col gap-5 bg-brand-navy p-4 text-surface-light lg:sticky lg:top-0 lg:h-dvh lg:w-[264px] lg:overflow-y-auto">
       {/* Бренд */}
-      <div className="flex items-center gap-2.5">
-        <BrandMark
-          className="h-9 w-[39px] shrink-0"
-          holeColor="var(--brand-navy)"
-        />
-        <div className="min-w-0">
-          <p className="truncate text-[15px] font-bold leading-tight tracking-wide">
-            {dict.appTitle}
-          </p>
-          <p className="truncate text-xs text-surface-light/70">
+      <Link href="/" className="flex items-center gap-2.5 rounded-lg">
+        <BrandMark className="h-10 w-[43px] shrink-0" holeColor="var(--brand-navy)" />
+        <span className="min-w-0">
+          <span className="block truncate text-[15px] font-extrabold uppercase leading-tight tracking-wide">
             {dict.appSubtitle}
-          </p>
-        </div>
-      </div>
+          </span>
+          <span className="block truncate text-[11px] font-medium text-surface-light/65">
+            {dict.appTitle}
+          </span>
+        </span>
+      </Link>
 
       {/* Навигация */}
       <nav aria-label={dict.appTitle} className="flex-1">
-        <ul className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
-          {NAV.map(({ key, href }) => {
-            const active = isActive(pathname, href);
-            return (
-              <li key={key} className="shrink-0">
-                <Link
-                  href={href}
-                  aria-current={active ? "page" : undefined}
-                  className={
-                    active
-                      ? "block whitespace-nowrap rounded-lg bg-surface-light px-3 py-2 text-sm font-bold text-brand-navy"
-                      : "block whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-surface-light/85 transition-colors hover:bg-surface-light/15"
-                  }
-                >
-                  {dict.nav[key]}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="flex gap-4 overflow-x-auto lg:flex-col lg:gap-5 lg:overflow-visible">
+          {GROUPS.map((group, gi) => (
+            <div key={gi} className="shrink-0">
+              {group.labelKey && (
+                <p className="mb-1.5 hidden px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-surface-light/45 lg:block">
+                  {dict.navGroups[group.labelKey]}
+                </p>
+              )}
+              <ul className="flex gap-1 lg:flex-col">
+                {group.items.map(({ key, href, icon: Icon }) => {
+                  const active = isActive(pathname, href);
+                  return (
+                    <li key={key} className="shrink-0">
+                      <Link
+                        href={href}
+                        aria-current={active ? "page" : undefined}
+                        className={
+                          active
+                            ? "flex items-center gap-2.5 whitespace-nowrap rounded-xl bg-[var(--sidebar-active-bg)] px-3 py-2.5 text-sm font-bold text-[var(--sidebar-active-text)] shadow-[0_4px_14px_rgba(0,0,0,0.25)]"
+                            : "flex items-center gap-2.5 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-semibold text-surface-light/80 transition-colors hover:bg-surface-light/10 hover:text-surface-light"
+                        }
+                      >
+                        <Icon className="h-[18px] w-[18px] shrink-0" />
+                        {dict.nav[key]}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </div>
       </nav>
 
-      {/* Нижний блок: тема + языки */}
+      {/* Нижний блок: тема + языки + версия */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
           <ThemeToggle />
@@ -110,6 +171,9 @@ export default function Sidebar() {
             </div>
           </nav>
         </div>
+        <p className="hidden px-1 text-[10px] font-medium text-surface-light/40 lg:block">
+          {dict.sidebarFootnote}
+        </p>
       </div>
     </aside>
   );

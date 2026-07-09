@@ -36,7 +36,22 @@ cd backend && ./mvnw spring-boot:run
 # 3. Web-портал
 cd web && npm install && npm run dev
 # http://localhost:3000  (карта работает и БЕЗ backend — на демо-данных)
+
+# 4. Админ-панель (операционная консоль)
+cd admin && npm install && npm run dev
+# http://localhost:3001 — вход: admin / metro2026 (dev-значения)
 ```
+
+## Вход в админ-панель
+
+Консоль защищена страницей входа (dev-контур; целевая схема — OAuth2/Keycloak,
+ТЗ §9). Значения по умолчанию и переменные окружения:
+
+| Переменная | По умолчанию | Смысл |
+|---|---|---|
+| `ADMIN_UI_USER` | `admin` | логин оператора |
+| `ADMIN_UI_PASSWORD` | `metro2026` | пароль (в проде обязательно сменить) |
+| `ADMIN_SESSION_SECRET` | dev-заглушка | секрет подписи сессионной cookie |
 
 ## Полный стек в контейнерах (Docker)
 

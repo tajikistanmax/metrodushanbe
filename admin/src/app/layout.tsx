@@ -12,20 +12,19 @@ import "./globals.css";
 import { I18nProvider } from "@/components/I18nProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ToastProvider } from "@/components/admin/ToastProvider";
-import Sidebar from "@/components/Sidebar";
-import SkipLink from "@/components/SkipLink";
 
 export const metadata: Metadata = {
   title: "Консоль управления — Метро Душанбе",
   description:
-    "Операционная консоль метро Душанбе: линии, станции, сервисные уведомления и новости (только чтение).",
+    "Операционная консоль национальной цифровой платформы «Метро Душанбе»: сеть, события, контент, аудит.",
 };
 
 /**
- * Инлайн-скрипт до гидратации: выставляет data-theme из localStorage /
- * prefers-color-scheme, чтобы тёмная тема не «мигала» светлой.
- * Ключ хранилища совпадает с THEME_STORAGE_KEY (ThemeProvider.tsx) и с web.
+ * Корневой layout: только провайдеры (тема, язык, тосты). Каркас консоли
+ * (сайдбар + топбар) — в группе (console)/layout.tsx; страница входа /login
+ * рендерится без каркаса.
  */
+
 const themeInitScript = `(function(){try{var m=localStorage.getItem("metro-dushanbe.theme");var d=m==="dark"||(m!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.dataset.theme=d?"dark":"light";}catch(e){document.documentElement.dataset.theme="light";}})();`;
 
 export default function RootLayout({
@@ -42,15 +41,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <ThemeProvider>
           <I18nProvider>
-            <ToastProvider>
-              <SkipLink />
-              <div className="flex flex-col lg:flex-row">
-                <Sidebar />
-                <main id="main" className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
-                  {children}
-                </main>
-              </div>
-            </ToastProvider>
+            <ToastProvider>{children}</ToastProvider>
           </I18nProvider>
         </ThemeProvider>
       </body>

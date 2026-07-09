@@ -128,6 +128,38 @@ export type AuditEvent = {
   at: string;
 };
 
+/**
+ * Минимальная GeoJSON-модель сети для схемы на дашборде
+ * (GET /network/geojson; полная модель — в web/src/lib/types.ts).
+ */
+export type NetworkFeature = {
+  type: "Feature";
+  id?: string | number;
+  properties: {
+    feature_type: "line" | "station" | string;
+    code: string;
+    name?: Partial<I18nName>;
+    color_hex?: string;
+    status?: string;
+    lines?: string[];
+    is_transfer?: boolean;
+    sort_order?: number;
+  };
+  geometry:
+    | { type: "LineString"; coordinates: LngLat[] }
+    | { type: "Point"; coordinates: LngLat };
+};
+
+export type NetworkGeoJson = {
+  type: "FeatureCollection";
+  features: NetworkFeature[];
+};
+
+/** Ответ GET /actuator/health (Spring Boot). */
+export type HealthStatus = {
+  status: "UP" | "DOWN" | "OUT_OF_SERVICE" | "UNKNOWN" | string;
+};
+
 export type AiChatRequest = {
   agentCode: string;
   message: string;

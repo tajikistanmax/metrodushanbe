@@ -50,7 +50,7 @@ export default function DataTable<T>({
   totalLabel,
 }: DataTableProps<T>) {
   return (
-    <div className="overflow-hidden rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] shadow-[var(--shadow-card)]">
+    <div className="console-card overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <caption className="sr-only">{caption}</caption>
@@ -60,7 +60,7 @@ export default function DataTable<T>({
                 <th
                   key={col.key}
                   scope="col"
-                  className={`border-b border-[var(--table-border)] px-4 py-3 font-semibold text-text-secondary ${
+                  className={`border-b border-[var(--table-border)] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-text-secondary ${
                     ALIGN[col.align ?? "left"]
                   } ${col.srOnlyHeader ? "sr-only" : ""}`}
                 >

@@ -60,7 +60,10 @@ export default function Header({ source }: HeaderProps) {
         : dict.loading;
 
   return (
-    <header className="z-20 flex h-[60px] shrink-0 items-center gap-2 bg-brand-navy px-3 text-surface-light sm:gap-3 sm:px-4">
+    <header className="z-20 shrink-0">
+      {/* Лента флага РТ — государственная сигнатура портала */}
+      <div className="ribbon-flag" aria-hidden="true" />
+      <div className="flex h-[60px] items-center gap-2 bg-brand-navy px-3 text-surface-light sm:gap-3 sm:px-4">
       <div className="flex min-w-0 items-center gap-2.5">
         <BrandMark
           className="h-9 w-[39px] shrink-0"
@@ -154,6 +157,7 @@ export default function Header({ source }: HeaderProps) {
             ))}
           </div>
         </nav>
+      </div>
       </div>
     </header>
   );

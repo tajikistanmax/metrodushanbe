@@ -34,6 +34,20 @@
   /* Montserrat self-host; таджикские буквы (ӣ ӯ қ ғ ҳ ҷ) — субсет
      cyrillic-ext, fallback — Segoe UI (dev-conventions.md, §5) */
   --font-brand: "Montserrat", "Segoe UI", system-ui, sans-serif;
+
+  /* Моноширинный стек для операционных данных (ID, координаты, время):
+     системные шрифты, без загрузки — офлайн-принцип §8 */
+  --font-data: ui-monospace, "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+
+  /* Производные поверхности консоли */
+  --topbar-bg: rgba(255, 255, 255, 0.82);
+  --sidebar-active-bg: #ffffff;
+  --sidebar-active-text: var(--brand-navy);
+  --kpi-tint-navy: rgba(8, 39, 66, 0.08);
+  --kpi-tint-red: rgba(226, 27, 45, 0.1);
+  --kpi-tint-green: rgba(19, 138, 61, 0.12);
+  --kpi-tint-info: rgba(14, 90, 138, 0.1);
+  --kpi-tint-warning: rgba(224, 134, 0, 0.12);
 }
 
 [data-theme="dark"] {
@@ -49,6 +63,14 @@
   --table-border: rgba(242, 245, 248, 0.12);
   --chip-bg: rgba(242, 245, 248, 0.09);
   --shadow-card: 0 6px 24px rgba(0, 0, 0, 0.5);
+  --topbar-bg: rgba(11, 22, 34, 0.85);
+  --sidebar-active-bg: #f2f5f8;
+  --sidebar-active-text: #082742;
+  --kpi-tint-navy: rgba(142, 176, 205, 0.14);
+  --kpi-tint-red: rgba(226, 27, 45, 0.22);
+  --kpi-tint-green: rgba(19, 138, 61, 0.24);
+  --kpi-tint-info: rgba(64, 148, 200, 0.2);
+  --kpi-tint-warning: rgba(224, 134, 0, 0.22);
 }
 
 /* Проброс токенов в утилиты Tailwind v4 (bg-brand-navy, text-text-secondary и т.д.) */
@@ -68,6 +90,7 @@
   --color-card: var(--card-bg);
   --color-card-border: var(--card-border);
   --font-sans: var(--font-brand);
+  --font-mono: var(--font-data);
 }
 
 body {
@@ -141,4 +164,33 @@ body {
   line-height: 18px;
   letter-spacing: 0.02em;
   box-shadow: inset 0 0 0 999px rgba(8, 23, 42, 0.12);
+}
+
+/*
+ * Лента флага Республики Таджикистан (красный/белый/зелёный 2:3:2) —
+ * государственная сигнатура платформы: тонкая полоса на входе и в шапках.
+ */
+.ribbon-flag {
+  height: 4px;
+  background: linear-gradient(
+    to right,
+    #e21b2d 0 28.6%,
+    #ffffff 28.6% 71.4%,
+    #138a3d 71.4% 100%
+  );
+}
+
+/* Базовая карточка консоли: единый радиус/бордер/тень для всех панелей */
+.console-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+}
+
+/* Числа и коды в операционных данных: моно, табличные цифры */
+.data-text {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
