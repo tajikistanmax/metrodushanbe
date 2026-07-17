@@ -56,15 +56,14 @@ public class AiAgentReadinessService {
 
         List<AiAgentDto> agents = buildAgents(lines, stations, alerts, news, schedules);
 
-        List<String> recommendations = new ArrayList<>();
-        recommendations.add("Connect real model providers through environment variables only; keep local deterministic fallback for"
-                + " demos.");
-        recommendations.add("Prioritize production admin auth before enabling AI-assisted write actions.");
+        List<Map<String, String>> recommendations = new ArrayList<>();
+        recommendations.add(AiAgentTexts.recommendation("env_only_providers"));
+        recommendations.add(AiAgentTexts.recommendation("admin_auth_first"));
         if (alerts > 0) {
-            recommendations.add("Ask the operations agent to draft a passenger-safe summary for each critical or warning alert.");
+            recommendations.add(AiAgentTexts.recommendation("draft_alert_summaries"));
         }
         if (schedules > 0) {
-            recommendations.add("Use the schedule agent to compare headways against route planner travel-time assumptions.");
+            recommendations.add(AiAgentTexts.recommendation("compare_headways"));
         }
 
         if (!isLlmDisabled()) {
@@ -76,12 +75,14 @@ public class AiAgentReadinessService {
                         lines, stations, alerts, news, schedules);
                 var llmResponse = llmClient.chat(systemPrompt, userMessage, null);
                 if (llmResponse != null && !llmResponse.isBlank()) {
-                    recommendations.add("[AI] " + llmResponse);
+                    // Ответ модели приходит одной строкой в рантайме — переводить нечего и некогда,
+                    // кладём как есть во все три языка (см. AiAgentTexts#untranslated).
+                    recommendations.add(AiAgentTexts.untranslated("[AI] " + llmResponse));
                 }
             } catch (RuntimeException e) {
                 var llm = aiProperties.getLlm();
                 var provider = llm != null ? llm.getProvider() : "unknown";
-                recommendations.add("LLM (" + provider + ") recommendation unavailable; check connectivity.");
+                recommendations.add(AiAgentTexts.recommendation("llm_unavailable", provider));
             }
         }
 
@@ -103,95 +104,85 @@ public class AiAgentReadinessService {
         return List.of(
                 agent("network-data-agent",
                         Map.of("tg", "Агенти маълумоти шабака", "ru", "Агент данных сети", "en", "Network data agent"),
-                        "Checks canonical lines, stations, GeoJSON, and import readiness",
                         "openai-compatible/local", "reasoning",
                         lines > 0 && stations > 0 ? "ready" : "needs_data",
-                        List.of("schema_check", "geojson_review", "import_triage"),
-                        List.of(lines + " active lines", stations + " active stations"),
-                        lines > 0 && stations > 0 ? "Keep imported geometry versioned and reviewed." : "Load a trusted network dataset."),
+                        AiAgentTexts.capabilities("schema_check", "geojson_review", "import_triage"),
+                        List.of(AiAgentTexts.countSignal("active_lines", lines),
+                                AiAgentTexts.countSignal("active_stations", stations)),
+                        lines > 0 && stations > 0 ? "version_geometry" : "load_network_dataset"),
                 agent("operations-agent",
                         Map.of("tg", "Агенти амалиёт", "ru", "Операционный агент", "en", "Operations agent"),
-                        "Summarizes service alerts and prepares dispatcher actions",
                         "openai-compatible/local", "fast-reasoning",
                         alerts > 0 ? "watching" : "ready",
-                        List.of("alert_summary", "incident_draft", "priority_routing"),
-                        List.of(alerts + " active alerts"),
-                        alerts > 0 ? "Review active alerts for passenger-facing clarity." : "No active public disruption requires action."),
+                        AiAgentTexts.capabilities("alert_summary", "incident_draft", "priority_routing"),
+                        List.of(AiAgentTexts.countSignal("active_alerts", alerts)),
+                        alerts > 0 ? "review_alerts_clarity" : "no_disruption"),
                 agent("schedule-agent",
                         Map.of("tg", "Агенти ҷадвал", "ru", "Агент расписания", "en", "Schedule agent"),
-                        "Reviews static schedules, headways, and arrival estimates",
                         "openai-compatible/local", "planning",
                         schedules > 0 ? "ready" : "needs_schedule",
-                        List.of("headway_check", "arrival_explain", "service_window_review"),
-                        List.of(schedules + " schedule records"),
-                        schedules > 0 ? "Add holiday calendar exceptions before pilot operations." : "Create line schedule records."),
+                        AiAgentTexts.capabilities("headway_check", "arrival_explain", "service_window_review"),
+                        List.of(AiAgentTexts.countSignal("schedule_records", schedules)),
+                        schedules > 0 ? "add_holiday_calendar" : "create_schedules"),
                 agent("content-agent",
                         Map.of("tg", "Агенти мундариҷа", "ru", "Контент-агент", "en", "Content agent"),
-                        "Assists editors with multilingual news and passenger messages",
                         "openai-compatible/local", "multilingual",
                         news > 0 ? "ready" : "needs_content",
-                        List.of("tg_ru_en_copy", "tone_check", "accessibility_plain_language"),
-                        List.of(news + " published news items"),
-                        news > 0 ? "Use the agent to keep Tajik, Russian, and English content aligned."
-                                : "Publish baseline passenger information."),
+                        AiAgentTexts.capabilities("tg_ru_en_copy", "tone_check", "accessibility_plain_language"),
+                        List.of(AiAgentTexts.countSignal("published_news", news)),
+                        news > 0 ? "align_languages" : "publish_baseline_content"),
                 agent("security-agent",
                         Map.of("tg", "Агенти амният", "ru", "Агент безопасности", "en", "Security agent"),
-                        "Flags admin-write and deployment hardening work",
                         "policy/local", "rules-plus-llm", "needs_hardening",
-                        List.of("auth_gap_review", "audit_review", "secret_hygiene"),
-                        List.of("admin uses dev X-Admin-Key", "audit module present"),
-                        "Replace dev admin key with Keycloak/OAuth2 roles before production."),
+                        AiAgentTexts.capabilities("auth_gap_review", "audit_review", "secret_hygiene"),
+                        List.of(AiAgentTexts.signal("dev_admin_key"),
+                                AiAgentTexts.signal("audit_module_present")),
+                        "replace_dev_admin_key"),
                 agent("route-advisor-agent",
                         Map.of("tg", "Агенти роҳнамо", "ru", "Агент маршрутов", "en", "Route advisor agent"),
-                        "Suggests optimal passenger routes, transfers, and estimated travel time",
                         "openai-compatible/local", "planning", "ready",
-                        List.of("route_planning", "transfer_suggest", "travel_time_estimate"),
-                        List.of(lines + " lines", stations + " stations"),
-                        "Integrate real-time train positions for dynamic route suggestions."),
+                        AiAgentTexts.capabilities("route_planning", "transfer_suggest", "travel_time_estimate"),
+                        List.of(AiAgentTexts.countSignal("lines", lines),
+                                AiAgentTexts.countSignal("stations", stations)),
+                        "integrate_realtime_positions"),
                 agent("maintenance-agent",
                         Map.of("tg", "Агенти нигоҳдорӣ", "ru", "Агент обслуживания", "en", "Maintenance agent"),
-                        "Predicts maintenance needs, reviews line schedules, and flags degradation",
                         "openai-compatible/local", "predictive",
                         schedules > 0 ? "monitoring" : "needs_data",
-                        List.of("wear_prediction", "inspection_scheduling", "downtime_optimization"),
-                        List.of(schedules + " schedule records reviewed"),
-                        "Add sensor telemetry feeds for predictive maintenance."),
+                        AiAgentTexts.capabilities("wear_prediction", "inspection_scheduling", "downtime_optimization"),
+                        List.of(AiAgentTexts.countSignal("schedule_records_reviewed", schedules)),
+                        "add_sensor_telemetry"),
                 agent("station-guide-agent",
                         Map.of("tg", "Агенти роҳнамои истгоҳ", "ru", "Гид по станциям", "en", "Station guide agent"),
-                        "Provides station details: exits, accessibility, and nearby landmarks",
                         "openai-compatible/local", "knowledge", "ready",
-                        List.of("exit_info", "accessibility_check", "landmark_guide"),
-                        List.of(stations + " stations indexed"),
-                        "Complete station metadata with exit maps and point-of-interest lists."),
+                        AiAgentTexts.capabilities("exit_info", "accessibility_check", "landmark_guide"),
+                        List.of(AiAgentTexts.countSignal("stations_indexed", stations)),
+                        "complete_station_metadata"),
                 agent("analytics-agent",
                         Map.of("tg", "Агенти таҳлил", "ru", "Агент аналитики", "en", "Analytics agent"),
-                        "Analyzes network usage patterns and suggests improvements",
                         "openai-compatible/local", "analytical", "ready",
-                        List.of("passenger_flow", "peak_analysis", "capacity_optimization"),
-                        List.of(lines + " lines monitored"),
-                        "Ingest historical ridership data for trend analysis."),
+                        AiAgentTexts.capabilities("passenger_flow", "peak_analysis", "capacity_optimization"),
+                        List.of(AiAgentTexts.countSignal("lines_monitored", lines)),
+                        "ingest_ridership_history"),
                 agent("emergency-agent",
                         Map.of("tg", "Агенти фавқулодда", "ru", "Аварийный агент", "en", "Emergency agent"),
-                        "Emergency response coordination and alert escalation",
                         "openai-compatible/local", "fast-reasoning",
                         alerts > 0 ? "watching" : "ready",
-                        List.of("incident_response", "escalation_routing", "passenger_evacuation"),
-                        List.of(alerts + " active alerts"),
-                        alerts > 0 ? "Coordinate with operations agent for passenger-safe response." : "Run emergency drill scenarios."),
+                        AiAgentTexts.capabilities("incident_response", "escalation_routing", "passenger_evacuation"),
+                        List.of(AiAgentTexts.countSignal("active_alerts", alerts)),
+                        alerts > 0 ? "coordinate_with_operations" : "run_emergency_drills"),
                 agent("compliance-agent",
                         Map.of("tg", "Агенти риоя", "ru", "Агент соответствия", "en", "Compliance agent"),
-                        "Checks regulatory compliance for accessibility and safety standards",
                         "policy/local", "rules-plus-llm", "ready",
-                        List.of("accessibility_audit", "safety_check", "regulation_tracking"),
-                        List.of("all stations meet wheelchair standards"),
-                        "Review latest national transport regulations for policy updates."),
+                        AiAgentTexts.capabilities("accessibility_audit", "safety_check", "regulation_tracking"),
+                        List.of(AiAgentTexts.signal("wheelchair_standards_met")),
+                        "review_regulations"),
                 agent("fare-agent",
                         Map.of("tg", "Агенти тарофа", "ru", "Агент тарифов", "en", "Fare agent"),
-                        "Fare calculation, ticketing information, and discount eligibility",
                         "openai-compatible/local", "calculation", "ready",
-                        List.of("fare_calc", "discount_check", "ticket_type_info"),
-                        List.of("standard fare configured"),
-                        "Integrate with payment gateway for real-time fare queries.")
+                        AiAgentTexts.capabilities("fare_calc", "discount_check", "ticket_type_info"),
+                        List.of(AiAgentTexts.signal("standard_fare_configured")),
+                        "integrate_payment_gateway")
         );
     }
 
@@ -238,15 +229,20 @@ public class AiAgentReadinessService {
         };
     }
 
+    /**
+     * Роль агента однозначно следует из его кода, поэтому берётся из каталога, а не передаётся
+     * параметром: так роль и код не могут разъехаться. {@code nextActionCode} — код действия
+     * (у части агентов их два, выбор зависит от состояния данных).
+     */
     private AiAgentDto agent(String code,
                              Map<String, String> name,
-                             String role,
                              String modelProvider,
                              String modelClass,
                              String status,
-                             List<String> capabilities,
-                             List<String> signals,
-                             String nextAction) {
-        return new AiAgentDto(code, name, role, modelProvider, modelClass, status, capabilities, signals, nextAction);
+                             List<Map<String, String>> capabilities,
+                             List<Map<String, String>> signals,
+                             String nextActionCode) {
+        return new AiAgentDto(code, name, AiAgentTexts.role(code), modelProvider, modelClass, status,
+                capabilities, signals, AiAgentTexts.nextAction(nextActionCode));
     }
 }
