@@ -10,6 +10,8 @@ public class RateLimitProperties {
     private boolean enabled = true;
     private int capacity = 100;
     private int refillPerMinute = 100;
+    private boolean trustForwardedFor;
+    private int maxBuckets = 10_000;
 
     public boolean isEnabled() {
         return enabled;
@@ -33,5 +35,21 @@ public class RateLimitProperties {
 
     public void setRefillPerMinute(int refillPerMinute) {
         this.refillPerMinute = refillPerMinute;
+    }
+
+    public boolean isTrustForwardedFor() {
+        return trustForwardedFor;
+    }
+
+    public void setTrustForwardedFor(boolean trustForwardedFor) {
+        this.trustForwardedFor = trustForwardedFor;
+    }
+
+    public int getMaxBuckets() {
+        return maxBuckets;
+    }
+
+    public void setMaxBuckets(int maxBuckets) {
+        this.maxBuckets = maxBuckets;
     }
 }

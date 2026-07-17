@@ -36,6 +36,10 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         }
 
         String ip = resolveIp(request);
+        if (!buckets.containsKey(ip) && buckets.size() >= properties.getMaxBuckets()) {
+            // Не позволяем атакующему раздувать heap бесконечным числом поддельных IP.
+            ip = "rate-limit-overflow";
+        }
         TokenBucket bucket = buckets.computeIfAbsent(ip, k -> new TokenBucket(properties.getCapacity()));
 
         if (bucket.tryConsume(properties.getCapacity(), properties.getRefillPerMinute())) {
@@ -60,10 +64,12 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         return !path.startsWith("/v1/") || path.startsWith("/actuator/health");
     }
 
-    private static String resolveIp(HttpServletRequest request) {
-        String xff = request.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) {
-            return xff.split(",")[0].trim();
+    private String resolveIp(HttpServletRequest request) {
+        if (properties.isTrustForwardedFor()) {
+            String xff = request.getHeader("X-Forwarded-For");
+            if (xff != null && !xff.isBlank()) {
+                return xff.split(",")[0].trim();
+            }
         }
         String remoteAddr = request.getRemoteAddr();
         return remoteAddr != null ? remoteAddr : "unknown";

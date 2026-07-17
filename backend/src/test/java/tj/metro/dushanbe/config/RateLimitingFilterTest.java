@@ -75,6 +75,7 @@ class RateLimitingFilterTest {
 
     @Test
     void respectsXForwardedForHeader() throws Exception {
+        properties.setTrustForwardedFor(true);
         when(request.getHeader("X-Forwarded-For")).thenReturn("10.0.0.1, 10.0.0.2");
         when(request.getServletPath()).thenReturn("/v1/test");
         properties.setCapacity(100);

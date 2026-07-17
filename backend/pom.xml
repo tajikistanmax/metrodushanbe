@@ -234,7 +234,7 @@
                 <artifactId>dependency-check-maven</artifactId>
                 <version>${dependency.check.version}</version>
                 <configuration>
-                    <failBuildOnCVSS>11</failBuildOnCVSS>
+                    <failBuildOnCVSS>9</failBuildOnCVSS>
                     <skipTestScope>false</skipTestScope>
                     <formats>
                         <format>HTML</format>
