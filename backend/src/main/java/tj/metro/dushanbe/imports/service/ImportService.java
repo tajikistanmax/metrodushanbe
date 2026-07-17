@@ -1,8 +1,5 @@
 package tj.metro.dushanbe.imports.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -30,11 +27,15 @@ import tj.metro.dushanbe.audit.service.AuditService;
 import tj.metro.dushanbe.common.error.BadRequestException;
 import tj.metro.dushanbe.featureflag.service.FeatureFlagService;
 import tj.metro.dushanbe.imports.domain.ImportError;
+import tj.metro.dushanbe.imports.domain.ImportFormat;
 import tj.metro.dushanbe.imports.domain.ImportJob;
 import tj.metro.dushanbe.imports.repository.ImportErrorRepository;
 import tj.metro.dushanbe.imports.repository.ImportJobRepository;
 import tj.metro.dushanbe.imports.service.NetworkImportValidator.Kind;
 import tj.metro.dushanbe.imports.service.NetworkImportValidator.ParsedFeature;
+import tj.metro.dushanbe.imports.service.parser.NetworkImportParser;
+import tj.metro.dushanbe.imports.service.parser.NetworkImportParser.ImportOptions;
+import tj.metro.dushanbe.imports.service.parser.NetworkImportParser.ParseResult;
 import tj.metro.dushanbe.network.domain.MetroLine;
 import tj.metro.dushanbe.network.domain.MetroStation;
 import tj.metro.dushanbe.network.domain.MetroStationLine;
@@ -43,17 +44,20 @@ import tj.metro.dushanbe.network.repository.MetroStationLineRepository;
 import tj.metro.dushanbe.network.repository.MetroStationRepository;
 
 /**
- * Сервис импорта сети из GeoJSON FeatureCollection (INT-04, §13). Принимает тело
- * импорта, валидирует каждую фичу ({@link NetworkImportValidator}) и апсертит линии/
- * станции, переиспользуя admin-сервисы ({@link AdminLineService}/{@link AdminStationService})
- * — та же валидация, персистентность и запись в аудит, без дублирования доменной логики.
- * Итог фиксируется в {@link ImportJob} (счётчики/статус) и построчных {@link ImportError}
- * (IMP-03); идемпотентность — по стабильному {@code code} (IMP-02).
+ * Сервис импорта данных сети (INT-04, §13) — единый конвейер для всех обменных форматов
+ * (geojson/gtfs/csv). Разбор источника делегируется {@link NetworkImportParser} по коду
+ * формата, а применение уже нормализованных фич общее: апсерт линий/станций через
+ * admin-сервисы ({@link AdminLineService}/{@link AdminStationService}) — та же валидация,
+ * персистентность и запись в аудит, без дублирования доменной логики. Итог фиксируется в
+ * {@link ImportJob} (счётчики/статус) и построчных {@link ImportError} (IMP-03);
+ * идемпотентность — по стабильному {@code code} (IMP-02).
+ *
+ * <p>Новый формат = новый бин {@link NetworkImportParser}; трогать этот класс не нужно.
  *
  * <h2>Режимы применения</h2>
  * По умолчанию импорт выполняется <b>синхронно</b> в рамках HTTP-запроса. При включённом
  * feature-флаге {@code import.async} обработка уходит в фоновый поток, а запрос сразу
- * получает джоб в статусе pending (см. {@link #importNetworkGeoJson}). TODO(PERF-05):
+ * получает джоб в статусе pending (см. {@link #importNetwork}). TODO(PERF-05):
  * очередь/preview-diff (IMP-04/IMP-05) — модель ImportJob уже поддерживает жизненный
  * цикл pending → running → success|partial|failed.
  *
@@ -71,14 +75,13 @@ public class ImportService {
 
     private final ImportJobRepository jobRepository;
     private final ImportErrorRepository errorRepository;
-    private final NetworkImportValidator validator;
+    private final Map<String, NetworkImportParser> parsers;
     private final AdminLineService adminLineService;
     private final AdminStationService adminStationService;
     private final MetroLineRepository lineRepository;
     private final MetroStationRepository stationRepository;
     private final MetroStationLineRepository stationLineRepository;
     private final AuditService auditService;
-    private final ObjectMapper objectMapper;
     private final Clock clock;
     private final FeatureFlagService featureFlagService;
     private final ImportService self;
@@ -88,35 +91,50 @@ public class ImportService {
 
     public ImportService(ImportJobRepository jobRepository,
                          ImportErrorRepository errorRepository,
-                         NetworkImportValidator validator,
+                         List<NetworkImportParser> parsers,
                          AdminLineService adminLineService,
                          AdminStationService adminStationService,
                          MetroLineRepository lineRepository,
                          MetroStationRepository stationRepository,
                          MetroStationLineRepository stationLineRepository,
                          AuditService auditService,
-                         ObjectMapper objectMapper,
                          Clock clock,
                          FeatureFlagService featureFlagService,
                          @Lazy ImportService self) {
         this.jobRepository = jobRepository;
         this.errorRepository = errorRepository;
-        this.validator = validator;
+        Map<String, NetworkImportParser> byFormat = new LinkedHashMap<>();
+        for (NetworkImportParser parser : parsers) {
+            byFormat.put(parser.format(), parser);
+        }
+        this.parsers = Map.copyOf(byFormat);
         this.adminLineService = adminLineService;
         this.adminStationService = adminStationService;
         this.lineRepository = lineRepository;
         this.stationRepository = stationRepository;
         this.stationLineRepository = stationLineRepository;
         this.auditService = auditService;
-        this.objectMapper = objectMapper;
         this.clock = clock;
         this.featureFlagService = featureFlagService;
         this.self = self;
     }
 
     /**
-     * Импортирует сеть из GeoJSON-тела. Создаёт запись {@link ImportJob} и обрабатывает её
-     * в одном из двух режимов, в зависимости от feature-флага {@value #FLAG_IMPORT_ASYNC}:
+     * Импортирует сеть из GeoJSON-тела — совместимый вход для JSON-эндпоинта импорта.
+     *
+     * @param body       сырое тело импорта (GeoJSON FeatureCollection)
+     * @param sourceName имя источника/файла (IMP-01), может быть null
+     * @param actor      субъект действия (аудит)
+     */
+    public ImportJob importNetworkGeoJson(String body, String sourceName, String actor) {
+        byte[] source = body == null ? null : body.getBytes(StandardCharsets.UTF_8);
+        return importNetwork(source, ImportFormat.GEOJSON, ImportOptions.defaults(), sourceName, actor);
+    }
+
+    /**
+     * Импортирует сеть из источника заданного формата (INT-04). Создаёт запись
+     * {@link ImportJob} и обрабатывает её в одном из двух режимов, в зависимости от
+     * feature-флага {@value #FLAG_IMPORT_ASYNC}:
      * <ul>
      *   <li><b>синхронно</b> (по умолчанию, флаг выключен) — обработка выполняется в рамках
      *       HTTP-запроса; возвращается уже <i>завершённый</i> джоб (success|partial|failed)
@@ -126,21 +144,28 @@ public class ImportService {
      *       Контроллер отвечает 202 Accepted + Location, статус отслеживается по GET /{id}.</li>
      * </ul>
      *
-     * @param body       сырое тело импорта (GeoJSON FeatureCollection)
+     * @param source     сырые байты источника (GeoJSON/CSV в UTF-8, GTFS — ZIP-архив)
+     * @param format     код формата, см. {@link ImportFormat}
+     * @param options    параметры разбора (язык фида, статус сущностей) — см. {@link ImportOptions}
      * @param sourceName имя источника/файла (IMP-01), может быть null
      * @param actor      субъект действия (аудит)
      * @return {@link ImportJob}: завершённый (sync) либо в статусе pending (async)
+     * @throws BadRequestException {@code import.format_unsupported} — неизвестный формат
      */
-    public ImportJob importNetworkGeoJson(String body, String sourceName, String actor) {
+    public ImportJob importNetwork(byte[] source, String format, ImportOptions options,
+                                   String sourceName, String actor) {
+        // Формат проверяем ДО создания джоба: неизвестный формат — ошибка запроса,
+        // а не «неудачный импорт», и засорять им ленту джобов незачем.
+        requireParser(format);
         ImportJob job = jobRepository.save(new ImportJob(
-                UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, sourceName, sha256(body)));
+                UUID.randomUUID(), typeOf(format), format, sourceName, sha256(source)));
         if (featureFlagService.isEnabled(FLAG_IMPORT_ASYNC, false)) {
-            self.processImportAsync(job.getId(), body, actor);
+            self.processImportAsync(job.getId(), source, format, options, actor);
             return job;
         }
         // Синхронный режим (по умолчанию): обрабатываем сразу и возвращаем завершённый джоб.
         // Через self — чтобы сработал прокси @Caching (инвалидация кэшей сети).
-        return self.processImport(job.getId(), body, actor);
+        return self.processImport(job.getId(), source, format, options, actor);
     }
 
     /**
@@ -150,8 +175,9 @@ public class ImportService {
      * (через self-прокси), поэтому здесь дополнительных аннотаций нет.
      */
     @Async
-    public void processImportAsync(UUID jobId, String body, String actor) {
-        self.processImport(jobId, body, actor);
+    public void processImportAsync(UUID jobId, byte[] source, String format, ImportOptions options,
+                                   String actor) {
+        self.processImport(jobId, source, format, options, actor);
     }
 
     /**
@@ -165,43 +191,37 @@ public class ImportService {
     @Caching(evict = {
             @CacheEvict(value = "network.geojson", allEntries = true),
             @CacheEvict(value = "lines", allEntries = true),
-            @CacheEvict(value = "stations", allEntries = true)
+            @CacheEvict(value = "stations", allEntries = true),
+            @CacheEvict(value = "routes", allEntries = true),
+            @CacheEvict(value = "schedules", allEntries = true)
     })
-    public ImportJob processImport(UUID jobId, String body, String actor) {
+    public ImportJob processImport(UUID jobId, byte[] source, String format, ImportOptions options,
+                                   String actor) {
         ImportJob job = jobRepository.findById(jobId).orElseThrow();
         try {
             job.markRunning(OffsetDateTime.now(clock));
             job = jobRepository.save(job);
-            LOG.info("Import job {} started processing", jobId);
+            LOG.info("Import job {} started processing, format {}", jobId, format);
 
-            JsonNode root;
-            try {
-                root = objectMapper.readTree(body == null ? "" : body);
-            } catch (IOException ex) {
-                return fail(job, "тело импорта не является корректным JSON: " + ex.getMessage(), actor);
-            }
-            if (root == null || root.isMissingNode() || !"FeatureCollection".equals(root.path("type").asText(null))) {
-                return fail(job, "ожидался GeoJSON FeatureCollection (поле type)", actor);
-            }
-            JsonNode features = root.path("features");
-            if (!features.isArray()) {
-                return fail(job, "поле features должно быть массивом фич", actor);
+            ParseResult parsed = requireParser(format)
+                    .parse(source, options == null ? ImportOptions.defaults() : options);
+            if (parsed.rejected()) {
+                return fail(job, parsed.topLevelErrors(), actor);
             }
 
             Counters counters = new Counters();
-            for (JsonNode feature : features) {
-                ParsedFeature parsed = validator.parse(feature);
-                if (parsed.kind() == Kind.LINE) {
-                    applyLine(job, parsed, counters, actor);
+            // Линии — первым проходом: станции ссылаются на них при построении связей.
+            for (ParsedFeature feature : parsed.features()) {
+                if (feature.kind() == Kind.LINE) {
+                    applyLine(job, feature, counters, actor);
                 }
             }
             Map<String, Integer> positions = new LinkedHashMap<>();
-            for (JsonNode feature : features) {
-                ParsedFeature parsed = validator.parse(feature);
-                if (parsed.kind() == Kind.STATION) {
-                    applyStation(job, parsed, counters, positions, actor);
-                } else if (parsed.kind() == Kind.UNKNOWN) {
-                    recordError(job, parsed.ref(), String.join("; ", parsed.errors()), ImportError.SEVERITY_ERROR);
+            for (ParsedFeature feature : parsed.features()) {
+                if (feature.kind() == Kind.STATION) {
+                    applyStation(job, feature, counters, positions, actor);
+                } else if (feature.kind() == Kind.UNKNOWN) {
+                    recordError(job, feature.ref(), String.join("; ", feature.errors()), ImportError.SEVERITY_ERROR);
                     counters.failed++;
                 }
             }
@@ -241,6 +261,7 @@ public class ImportService {
                         parsed.sortOrder(), parsed.path()), actor);
                 counters.created++;
             }
+            recordWarnings(job, parsed);
         } catch (BadRequestException ex) {
             recordError(job, parsed.ref(), ex.getMessage(), ImportError.SEVERITY_ERROR);
             counters.failed++;
@@ -268,6 +289,7 @@ public class ImportService {
                         parsed.isTransfer(), parsed.accessibility(), parsed.description()), actor);
                 counters.created++;
             }
+            recordWarnings(job, parsed);
             relinkStation(job, parsed, positions);
         } catch (BadRequestException ex) {
             recordError(job, parsed.ref(), ex.getMessage(), ImportError.SEVERITY_ERROR);
@@ -278,7 +300,8 @@ public class ImportService {
     /**
      * Идемпотентно перепривязывает станцию к её линиям (metro_station_line): удаляет
      * прежние связи станции и создаёт заново из входных {@code lines[]}. Позиция вдоль
-     * линии — по порядку появления станций во входе (счётчик на линию). Ссылка на
+     * линии — из явных {@code linePositions} (GTFS выводит их из stop_times), иначе по
+     * порядку появления станций во входе (счётчик на линию — geojson/csv). Ссылка на
      * неизвестную линию — не ошибка импорта станции: связь пропускается с warning.
      */
     private void relinkStation(ImportJob job, ParsedFeature parsed, Map<String, Integer> positions) {
@@ -293,17 +316,51 @@ public class ImportService {
                         ImportError.SEVERITY_WARNING);
                 continue;
             }
-            int position = positions.merge(lineCode, 1, Integer::sum);
+            Integer explicit = parsed.linePositions() == null ? null : parsed.linePositions().get(lineCode);
+            int position = explicit != null ? explicit : positions.merge(lineCode, 1, Integer::sum);
             stationLineRepository.save(new MetroStationLine(station, line, position));
         }
     }
 
-    private ImportJob fail(ImportJob job, String message, String actor) {
-        recordError(job, ImportError.TOP_LEVEL_REF, message, ImportError.SEVERITY_ERROR);
+    /** Замечания применённой фичи (severity=warning): фича в БД, но у неё есть оговорка. */
+    private void recordWarnings(ImportJob job, ParsedFeature parsed) {
+        if (parsed.warnings() == null) {
+            return;
+        }
+        for (String warning : parsed.warnings()) {
+            recordError(job, parsed.ref(), warning, ImportError.SEVERITY_WARNING);
+        }
+    }
+
+    private ImportJob fail(ImportJob job, List<String> messages, String actor) {
+        for (String message : messages) {
+            recordError(job, ImportError.TOP_LEVEL_REF, message, ImportError.SEVERITY_ERROR);
+        }
         job.markFailed(OffsetDateTime.now(clock));
         ImportJob saved = jobRepository.save(job);
         auditService.record(actor, "network.import", "import_job", saved.getId().toString(), null, snapshot(saved));
         return saved;
+    }
+
+    /** Парсер формата; неизвестный формат — ошибка запроса, а не «неудачный импорт». */
+    private NetworkImportParser requireParser(String format) {
+        // parsers — immutable Map, у него get(null) бросает NPE: проверяем null явно.
+        NetworkImportParser parser = format == null ? null : parsers.get(format);
+        if (parser == null) {
+            throw new BadRequestException("import.format_unsupported",
+                    "Неподдерживаемый формат импорта: " + format,
+                    Map.of("format", String.valueOf(format), "supported", ImportFormat.codes()));
+        }
+        return parser;
+    }
+
+    /** Вид джоба по формату источника: импортируем всегда сеть, различается лишь формат. */
+    private static String typeOf(String format) {
+        return switch (format) {
+            case ImportFormat.GTFS -> ImportJob.TYPE_NETWORK_GTFS;
+            case ImportFormat.CSV -> ImportJob.TYPE_NETWORK_CSV;
+            default -> ImportJob.TYPE_NETWORK_GEOJSON;
+        };
     }
 
     private void recordError(ImportJob job, String featureRef, String message, String severity) {
@@ -314,6 +371,7 @@ public class ImportService {
         Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.put("id", job.getId().toString());
         snapshot.put("type", job.getType());
+        snapshot.put("format", job.getFormat());
         snapshot.put("status", job.getStatus());
         snapshot.put("sourceName", job.getSourceName());
         snapshot.put("sourceHash", job.getSourceHash());
@@ -324,13 +382,13 @@ public class ImportService {
         return snapshot;
     }
 
-    private static String sha256(String body) {
-        if (body == null) {
+    /** SHA-256 источника (IMP-01/IMP-02) — считается по сырым байтам, одинаково для всех форматов. */
+    private static String sha256(byte[] source) {
+        if (source == null) {
             return null;
         }
         try {
-            byte[] digest = MessageDigest.getInstance("SHA-256").digest(body.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(digest);
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(source));
         } catch (NoSuchAlgorithmException ex) {
             return null;
         }

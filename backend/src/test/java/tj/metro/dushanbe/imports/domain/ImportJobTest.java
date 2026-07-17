@@ -14,10 +14,11 @@ class ImportJobTest {
     @Test
     void constructorSetsFieldsAndDefaultsToPending() {
         var id = UUID.randomUUID();
-        var job = new ImportJob(id, ImportJob.TYPE_NETWORK_GEOJSON, "source.geojson", "abc123");
+        var job = new ImportJob(id, ImportJob.TYPE_NETWORK_GEOJSON, ImportFormat.GEOJSON, "source.geojson", "abc123");
 
         assertEquals(id, job.getId());
         assertEquals(ImportJob.TYPE_NETWORK_GEOJSON, job.getType());
+        assertEquals(ImportFormat.GEOJSON, job.getFormat());
         assertEquals(ImportJob.STATUS_PENDING, job.getStatus());
         assertEquals("source.geojson", job.getSourceName());
         assertEquals("abc123", job.getSourceHash());
@@ -31,7 +32,7 @@ class ImportJobTest {
 
     @Test
     void onCreateSetsTimestamps() {
-        var job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, null, null);
+        var job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, ImportFormat.GEOJSON, null, null);
 
         assertNull(job.getCreatedAt());
         assertNull(job.getUpdatedAt());
@@ -44,7 +45,7 @@ class ImportJobTest {
 
     @Test
     void onCreateDoesNotOverrideExistingCreatedAt() {
-        var job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, null, null);
+        var job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, ImportFormat.GEOJSON, null, null);
         job.onCreate();
         var original = job.getCreatedAt();
 
@@ -55,7 +56,7 @@ class ImportJobTest {
 
     @Test
     void onUpdateUpdatesUpdatedAt() {
-        var job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, null, null);
+        var job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, ImportFormat.GEOJSON, null, null);
         job.onCreate();
         var beforeUpdate = job.getUpdatedAt();
 
@@ -68,7 +69,7 @@ class ImportJobTest {
 
     @Test
     void markRunningSetsStatusAndStartedAt() {
-        var job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, null, null);
+        var job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, ImportFormat.GEOJSON, null, null);
         var when = OffsetDateTime.now();
 
         job.markRunning(when);
@@ -79,7 +80,7 @@ class ImportJobTest {
 
     @Test
     void finishWithAppliedAndNoFailuresSetsSuccess() {
-        var job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, null, null);
+        var job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, ImportFormat.GEOJSON, null, null);
         var when = OffsetDateTime.now();
 
         job.markRunning(when.minusMinutes(5));
@@ -95,7 +96,7 @@ class ImportJobTest {
 
     @Test
     void finishWithPartialFailuresSetsPartial() {
-        var job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, null, null);
+        var job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, ImportFormat.GEOJSON, null, null);
         var when = OffsetDateTime.now();
 
         job.finish(10, 6, 0, 4, when);
@@ -107,7 +108,7 @@ class ImportJobTest {
 
     @Test
     void finishWithNoAppliedSetsFailed() {
-        var job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, null, null);
+        var job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, ImportFormat.GEOJSON, null, null);
         var when = OffsetDateTime.now();
 
         job.finish(10, 0, 0, 10, when);
@@ -118,7 +119,7 @@ class ImportJobTest {
 
     @Test
     void finishWithAllFailedSetsFailed() {
-        var job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, null, null);
+        var job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, ImportFormat.GEOJSON, null, null);
         var when = OffsetDateTime.now();
 
         job.finish(5, 0, 0, 5, when);
@@ -128,7 +129,7 @@ class ImportJobTest {
 
     @Test
     void markFailedSetsStatusAndFinishedAt() {
-        var job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, null, null);
+        var job = new ImportJob(UUID.randomUUID(), ImportJob.TYPE_NETWORK_GEOJSON, ImportFormat.GEOJSON, null, null);
         var when = OffsetDateTime.now();
 
         job.markFailed(when);

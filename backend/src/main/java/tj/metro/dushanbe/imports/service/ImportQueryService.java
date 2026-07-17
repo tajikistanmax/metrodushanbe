@@ -69,7 +69,8 @@ public class ImportQueryService {
     }
 
     public static ImportJobDto toDto(ImportJob j) {
-        return new ImportJobDto(j.getId(), j.getType(), j.getStatus(), j.getSourceName(), j.getSourceHash(),
+        return new ImportJobDto(j.getId(), j.getType(), j.getFormat(), j.getStatus(),
+                j.getSourceName(), j.getSourceHash(),
                 j.getFeatureCount(), j.getCreatedCount(), j.getUpdatedCount(), j.getFailedCount(),
                 instant(j.getStartedAt()), instant(j.getFinishedAt()), instant(j.getCreatedAt()));
     }

@@ -15,7 +15,10 @@ import tj.metro.dushanbe.network.service.NetworkService;
  *
  * <p>Чистая логика без БД и Spring-состояния — легко покрывается юнит-тестами.
  * Фактический апсерт линий/станций выполняет {@link ImportService}, переиспользуя
- * admin-сервисы; здесь — только разбор и валидация входа.
+ * admin-сервисы; здесь — только разбор и валидация входа. Обвязка формата (чтение
+ * тела, разбор верхнего уровня) — в
+ * {@link tj.metro.dushanbe.imports.service.parser.GeoJsonImportParser}; этот класс
+ * остаётся форматно-специфичным разбором одной фичи GeoJSON.
  */
 @Component
 public class NetworkImportValidator {
@@ -29,8 +32,19 @@ public class NetworkImportValidator {
     public enum Kind { LINE, STATION, UNKNOWN }
 
     /**
-     * Нормализованная фича импорта. {@link #errors} пуст ⇒ фича валидна и может быть
+     * Нормализованная фича импорта — общий «язык» всех форматов (geojson/gtfs/csv):
+     * парсеры формата приводят вход именно к ней, а {@link ImportService} применяет её,
+     * не зная, откуда она пришла. {@link #errors} пуст ⇒ фича валидна и может быть
      * применена. Поля заполняются в меру наличия во входе (невалидные — остаются null).
+     *
+     * @param linePositions явные позиции станции на линиях ({@code lineCode → position},
+     *        1-based). Для GeoJSON/CSV — null: там порядок задаётся порядком следования
+     *        станций во входе и считается {@link ImportService}. GTFS же выводит порядок
+     *        из stop_times, и станция-пересадка стоит на разных позициях разных линий —
+     *        порядком во входе это не выразить, поэтому позиции передаются явно.
+     * @param warnings замечания, не отменяющие применение фичи (severity=warning в
+     *        IMP-03-отчёте). Основной потребитель — GTFS: им помечаются i18n-заглушки
+     *        (см. {@link tj.metro.dushanbe.imports.service.parser.GtfsImportParser}).
      */
     public record ParsedFeature(Kind kind,
                                 String ref,
@@ -45,7 +59,9 @@ public class NetworkImportValidator {
                                 Boolean isTransfer,
                                 List<String> accessibility,
                                 List<String> lineCodes,
-                                List<String> errors) {
+                                java.util.Map<String, Integer> linePositions,
+                                List<String> errors,
+                                List<String> warnings) {
 
         public boolean valid() {
             return errors.isEmpty() && kind != Kind.UNKNOWN;
@@ -68,7 +84,7 @@ public class NetworkImportValidator {
         List<String> errors = new ArrayList<>();
         errors.add("неизвестный или отсутствующий feature_type: " + (featureType == null ? "<нет>" : featureType));
         return new ParsedFeature(Kind.UNKNOWN, ref, null, null, null, null, null, null,
-                null, null, null, null, null, errors);
+                null, null, null, null, null, null, errors, List.of());
     }
 
     private ParsedFeature parseLine(JsonNode props, JsonNode geometry, String ref) {
@@ -85,7 +101,7 @@ public class NetworkImportValidator {
         List<List<Double>> path = lineStringCoordinates(geometry, errors);
 
         return new ParsedFeature(Kind.LINE, ref, code, name, null, status, colorHex, sortOrder,
-                null, path, null, null, null, errors);
+                null, path, null, null, null, null, errors, List.of());
     }
 
     private ParsedFeature parseStation(JsonNode props, JsonNode geometry, String ref) {
@@ -100,7 +116,7 @@ public class NetworkImportValidator {
         List<String> lineCodes = stringArray(props.path("lines"));
 
         return new ParsedFeature(Kind.STATION, ref, code, name, description, status, null, null,
-                coordinates, null, isTransfer, accessibility, lineCodes, errors);
+                coordinates, null, isTransfer, accessibility, lineCodes, null, errors, List.of());
     }
 
     // ---- Гейты полей ------------------------------------------------------

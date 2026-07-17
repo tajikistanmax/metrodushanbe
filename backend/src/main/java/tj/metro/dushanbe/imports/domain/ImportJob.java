@@ -10,10 +10,11 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /**
- * Задание импорта данных сети (таблица {@code import_job}, ТЗ §6.2.8 INT-04, §13.2, §15.3).
- * Одна строка на запуск конвейера импорта: вид, статус жизненного цикла, источник и его
- * hash (IMP-01), счётчики применённых/отклонённых фич (created/updated/failed) и окно
- * выполнения (started_at/finished_at).
+ * Задание импорта данных (таблица {@code import_job}, ТЗ §6.2.8 INT-04, §13.2, §15.3).
+ * Одна строка на запуск конвейера импорта: вид ({@code TYPE_*} — сеть или тарифы), формат
+ * источника, статус жизненного цикла, источник и его hash (IMP-01), счётчики
+ * применённых/отклонённых записей (created/updated/failed) и окно выполнения
+ * (started_at/finished_at).
  *
  * <p>Жизненный цикл: {@code pending → running → success|partial|failed}. Статус
  * {@code partial} — часть фич применена, часть отклонена (см. {@link #finish}); в MVP
@@ -23,8 +24,23 @@ import java.util.UUID;
 @Table(name = "import_job")
 public class ImportJob {
 
-    /** Вид импорта сети из GeoJSON FeatureCollection (задел под gtfs/csv). */
+    /** Вид импорта сети из GeoJSON FeatureCollection. */
     public static final String TYPE_NETWORK_GEOJSON = "network_geojson";
+
+    /** Вид импорта сети из GTFS-фида (ZIP с CSV), INT-04. */
+    public static final String TYPE_NETWORK_GTFS = "network_gtfs";
+
+    /** Вид импорта сети из плоской CSV-таблицы, INT-04/U-OPS-06. */
+    public static final String TYPE_NETWORK_CSV = "network_csv";
+
+    /**
+     * Вид импорта тарифов из GTFS Fares v2 (INT-04, FAR-01/02): контейнер тот же (ZIP+CSV,
+     * {@code format=gtfs}), но импортируется НЕ сеть, а {@code fare_product}. Отдельный
+     * вид, а не флаг у {@link #TYPE_NETWORK_GTFS}: у джобов разные приёмники и разные
+     * счётчики, и оператору в ленте должно быть видно, что именно поменял импорт —
+     * топологию или цены.
+     */
+    public static final String TYPE_FARE_GTFS = "fare_gtfs";
 
     public static final String STATUS_PENDING = "pending";
     public static final String STATUS_RUNNING = "running";
@@ -38,6 +54,10 @@ public class ImportJob {
 
     @Column(name = "type", nullable = false, length = 32)
     private String type;
+
+    /** Формат источника: geojson|gtfs|csv (INT-04), см. {@link ImportFormat}. */
+    @Column(name = "format", nullable = false, length = 16)
+    private String format;
 
     /** pending|running|success|partial|failed. */
     @Column(name = "status", nullable = false, length = 16)
@@ -79,9 +99,10 @@ public class ImportJob {
     protected ImportJob() {
     }
 
-    public ImportJob(UUID id, String type, String sourceName, String sourceHash) {
+    public ImportJob(UUID id, String type, String format, String sourceName, String sourceHash) {
         this.id = id;
         this.type = type;
+        this.format = format;
         this.status = STATUS_PENDING;
         this.sourceName = sourceName;
         this.sourceHash = sourceHash;
@@ -141,6 +162,10 @@ public class ImportJob {
 
     public String getType() {
         return type;
+    }
+
+    public String getFormat() {
+        return format;
     }
 
     public String getStatus() {

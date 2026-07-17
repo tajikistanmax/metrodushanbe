@@ -13,6 +13,15 @@ import tj.metro.dushanbe.fare.web.dto.FareProductDto;
 @Transactional(readOnly = true)
 public class FareService {
 
+    /**
+     * Допустимые категории пассажира ({@code fare_product.rider_category}). Значения
+     * обязаны совпадать с {@code chk_fare_category} (V018) и с {@code @Pattern} в
+     * {@code FareCreateRequest}/{@code FareUpdateRequest}. Порядок — от общего к частному:
+     * список попадает в сообщения об ошибках импорта, и оператору его читать.
+     */
+    public static final List<String> RIDER_CATEGORIES =
+            List.of("all", "adult", "child", "student", "senior");
+
     private final FareProductRepository repository;
 
     public FareService(FareProductRepository repository) {

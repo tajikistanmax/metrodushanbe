@@ -5,10 +5,11 @@ import java.util.UUID;
 
 /**
  * Сводка задания импорта в ответах админского API: статус жизненного цикла,
- * источник (IMP-01) и счётчики применённых/отклонённых фич.
+ * формат источника (INT-04), источник (IMP-01) и счётчики применённых/отклонённых фич.
  */
 public record ImportJobDto(UUID id,
                            String type,
+                           String format,
                            String status,
                            String sourceName,
                            String sourceHash,
