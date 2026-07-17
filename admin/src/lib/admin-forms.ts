@@ -139,6 +139,40 @@ export type FareCreateBody = {
 };
 export type FareUpdateBody = Omit<FareCreateBody, "code">;
 
+// --- Инциденты --------------------------------------------------------------
+
+export const INCIDENT_CATEGORIES = [
+  "safety",
+  "technical",
+  "passenger",
+  "infrastructure",
+  "other",
+] as const;
+export type IncidentCategoryInput = (typeof INCIDENT_CATEGORIES)[number];
+
+export const INCIDENT_SEVERITIES = ["low", "medium", "high", "critical"] as const;
+export type IncidentSeverityInput = (typeof INCIDENT_SEVERITIES)[number];
+
+export type IncidentCreateBody = {
+  category: IncidentCategoryInput;
+  severity: IncidentSeverityInput;
+  title: string;
+  description: string;
+  lineCode?: string;
+  stationCode?: string;
+  assignedTo?: string;
+  /** ISO-8601; момент возникновения, а не регистрации. */
+  occurredAt: string;
+};
+
+export type IncidentUpdateBody = IncidentCreateBody;
+
+/** Переход по workflow; resolution обязателен только для 'resolved'. */
+export type IncidentTransitionBody = {
+  status: string;
+  resolution?: string;
+};
+
 // --- Операторы консоли ------------------------------------------------------
 
 export const ADMIN_USER_ROLES = ["viewer", "operator", "editor", "superadmin"] as const;

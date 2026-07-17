@@ -28,6 +28,7 @@ import {
   IconStation,
   IconTicket,
   IconUsers,
+  IconWarning,
 } from "@/lib/icons";
 import BrandMark from "./BrandMark";
 import ThemeToggle from "./ThemeToggle";
@@ -42,6 +43,7 @@ type NavKey =
   | "alerts"
   | "news"
   | "requests"
+  | "incidents"
   | "fares"
   | "imports"
   | "calendar"
@@ -88,6 +90,7 @@ const GROUPS: NavGroup[] = [
       { key: "alerts", href: "/alerts", icon: IconBell },
       { key: "news", href: "/news", icon: IconNews },
       { key: "requests", href: "/requests", icon: IconRequests },
+      { key: "incidents", href: "/incidents", icon: IconWarning },
       { key: "fares", href: "/fares", icon: IconTicket },
     ],
   },

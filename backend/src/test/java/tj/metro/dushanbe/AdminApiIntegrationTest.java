@@ -155,6 +155,7 @@ class AdminApiIntegrationTest {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("X-Admin-Key", ADMIN_KEY);
+        headers.set("X-Admin-Actor", "admin");
         headers.set("X-Admin-Actor", "it-admin");
         return headers;
     }

@@ -16,6 +16,7 @@ export type Section =
   | "alerts"
   | "news"
   | "requests"
+  | "incidents"
   | "fares"
   | "imports"
   | "calendar"
@@ -33,6 +34,7 @@ export default function SectionHeader({ section }: { section: Section }) {
     alerts: dict.alertsTitle,
     news: dict.newsTitle,
     requests: dict.operations.requestsTitle,
+    incidents: dict.incidents.title,
     fares: dict.operations.faresTitle,
     imports: dict.operations.importsTitle,
     calendar: dict.operations.calendarTitle,
@@ -46,6 +48,7 @@ export default function SectionHeader({ section }: { section: Section }) {
     calendar: dict.operations.calendarLead,
     features: dict.operations.featuresLead,
     requests: dict.operations.requestsLead,
+    incidents: dict.incidents.lead,
     fares: dict.operations.faresLead,
     users: dict.users.lead,
   };

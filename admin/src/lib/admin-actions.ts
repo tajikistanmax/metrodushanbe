@@ -30,6 +30,9 @@ import type {
   CitizenRequestUpdateBody,
   FareCreateBody,
   FareUpdateBody,
+  IncidentCreateBody,
+  IncidentTransitionBody,
+  IncidentUpdateBody,
   StationCreateBody,
   StationUpdateBody,
 } from "./admin-forms";
@@ -43,6 +46,8 @@ import type {
   CitizenRequestAdmin,
   FeatureFlag,
   FareProduct,
+  Incident,
+  IncidentStats,
   ImportError,
   ImportJob,
   ImportPage,
@@ -414,6 +419,61 @@ export async function updateFareProduct(
 export async function deleteFareProduct(code: string): Promise<ActionResult<null>> {
   const result = await adminFetch<null>(`/fares/${encodeURIComponent(code)}`, "DELETE");
   if (result.ok) revalidatePath("/fares");
+  return result;
+}
+
+// --- Инциденты --------------------------------------------------------------
+
+/** Инциденты ведёт операционный контур: viewer их только читает. */
+export async function getIncidents(
+  status?: string,
+): Promise<ReadResult<Incident[]>> {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  return adminRead<Incident[]>(`/incidents${query}`);
+}
+
+export async function getIncidentStats(): Promise<ReadResult<IncidentStats>> {
+  return adminRead<IncidentStats>("/incidents/stats");
+}
+
+export async function createIncident(
+  body: IncidentCreateBody,
+): Promise<ActionResult<Incident>> {
+  await requireAdminRole("operator");
+  const result = await adminFetch<Incident>("/incidents", "POST", body);
+  if (result.ok) revalidatePath("/incidents");
+  return result;
+}
+
+export async function updateIncident(
+  code: string,
+  body: IncidentUpdateBody,
+): Promise<ActionResult<Incident>> {
+  await requireAdminRole("operator");
+  const result = await adminFetch<Incident>(
+    `/incidents/${encodeURIComponent(code)}`,
+    "PUT",
+    body,
+  );
+  if (result.ok) revalidatePath("/incidents");
+  return result;
+}
+
+/**
+ * Перевод инцидента по workflow. Допустимость перехода решает backend —
+ * консоль лишь показывает allowedTransitions из карточки.
+ */
+export async function transitionIncident(
+  code: string,
+  body: IncidentTransitionBody,
+): Promise<ActionResult<Incident>> {
+  await requireAdminRole("operator");
+  const result = await adminFetch<Incident>(
+    `/incidents/${encodeURIComponent(code)}/transition`,
+    "POST",
+    body,
+  );
+  if (result.ok) revalidatePath("/incidents");
   return result;
 }
 

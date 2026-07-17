@@ -15,6 +15,9 @@ import type {
   CitizenRequestType,
   FareRiderCategory,
   I18nName,
+  IncidentCategory,
+  IncidentSeverity,
+  IncidentStatus,
   LineStatus,
   StationStatus,
 } from "./types";
@@ -65,6 +68,7 @@ export type Dict = {
     alerts: string;
     news: string;
     requests: string;
+    incidents: string;
     fares: string;
     imports: string;
     calendar: string;
@@ -99,6 +103,42 @@ export type Dict = {
     operator: string;
     editor: string;
     superadmin: string;
+  };
+
+  /** Раздел операционного учёта инцидентов. */
+  incidents: {
+    title: string;
+    lead: string;
+    createTitle: string;
+    editTitle: string;
+    colCode: string;
+    colTitle: string;
+    colSeverity: string;
+    colStatus: string;
+    colWhere: string;
+    colAssignee: string;
+    colOccurred: string;
+    fieldCategory: string;
+    fieldSeverity: string;
+    fieldTitle: string;
+    fieldDescription: string;
+    fieldLine: string;
+    fieldStation: string;
+    fieldAssignee: string;
+    fieldAssigneeHint: string;
+    fieldOccurredAt: string;
+    fieldResolution: string;
+    fieldResolutionHint: string;
+    unassigned: string;
+    networkWide: string;
+    filterAll: string;
+    transitionTitle: string;
+    reportedBy: string;
+    statTodayLabel: string;
+    statOpenLabel: string;
+    categories: Record<IncidentCategory, string>;
+    severities: Record<IncidentSeverity, string>;
+    statuses: Record<IncidentStatus, string>;
   };
 
   /** Раздел управления операторами консоли (только для суперадмина). */
@@ -496,6 +536,7 @@ const tg: Dict = {
     alerts: "Огоҳиҳо",
     news: "Хабарҳо",
     requests: "Муроҷиатҳо",
+    incidents: "Ҳодисаҳо",
     fares: "Тарофаҳо",
     imports: "Воридот",
     calendar: "Тақвим",
@@ -522,6 +563,57 @@ const tg: Dict = {
     operator: "Оператор",
     editor: "Муҳаррир",
     superadmin: "Супермаъмур",
+  },
+  incidents: {
+    title: "Ҳодисаҳо",
+    lead: "Бақайдгирӣ ва баррасии ҳодисаҳои амалиётӣ.",
+    createTitle: "Ҳодисаи нав",
+    editTitle: "Тағйири ҳодиса",
+    colCode: "Рамз",
+    colTitle: "Ҳодиса",
+    colSeverity: "Дараҷа",
+    colStatus: "Ҳолат",
+    colWhere: "Ҷой",
+    colAssignee: "Масъул",
+    colOccurred: "Вақти рӯйдод",
+    fieldCategory: "Категория",
+    fieldSeverity: "Дараҷаи муҳиммӣ",
+    fieldTitle: "Сарлавҳа",
+    fieldDescription: "Тавсиф",
+    fieldLine: "Рамзи хат",
+    fieldStation: "Рамзи истгоҳ",
+    fieldAssignee: "Масъул",
+    fieldAssigneeHint: "Логини оператор; холӣ — таъин нашудааст.",
+    fieldOccurredAt: "Вақти рӯйдод",
+    fieldResolution: "Натиҷаи баррасӣ",
+    fieldResolutionHint: "Барои «Ҳал шуд» ҳатмист.",
+    unassigned: "Таъин нашуда",
+    networkWide: "Тамоми шабака",
+    filterAll: "Ҳама",
+    transitionTitle: "Тағйири ҳолат",
+    reportedBy: "Қайд кард",
+    statTodayLabel: "Имрӯз",
+    statOpenLabel: "Кушода",
+    categories: {
+      safety: "Бехатарӣ",
+      technical: "Техникӣ",
+      passenger: "Мусофир",
+      infrastructure: "Инфрасохтор",
+      other: "Дигар",
+    },
+    severities: {
+      low: "Паст",
+      medium: "Миёна",
+      high: "Баланд",
+      critical: "Критикӣ",
+    },
+    statuses: {
+      open: "Кушода",
+      acknowledged: "Қабул шуд",
+      in_progress: "Дар кор",
+      resolved: "Ҳал шуд",
+      closed: "Пӯшида",
+    },
   },
   users: {
     title: "Операторони консол",
@@ -924,6 +1016,7 @@ const ru: Dict = {
     alerts: "Уведомления",
     news: "Новости",
     requests: "Обращения",
+    incidents: "Инциденты",
     fares: "Тарифы",
     imports: "Импорты",
     calendar: "Календарь",
@@ -950,6 +1043,57 @@ const ru: Dict = {
     operator: "Оператор",
     editor: "Редактор",
     superadmin: "Суперадминистратор",
+  },
+  incidents: {
+    title: "Инциденты",
+    lead: "Регистрация и разбор операционных происшествий.",
+    createTitle: "Новый инцидент",
+    editTitle: "Изменение инцидента",
+    colCode: "Код",
+    colTitle: "Инцидент",
+    colSeverity: "Критичность",
+    colStatus: "Состояние",
+    colWhere: "Место",
+    colAssignee: "Ответственный",
+    colOccurred: "Произошёл",
+    fieldCategory: "Категория",
+    fieldSeverity: "Критичность",
+    fieldTitle: "Заголовок",
+    fieldDescription: "Описание",
+    fieldLine: "Код линии",
+    fieldStation: "Код станции",
+    fieldAssignee: "Ответственный",
+    fieldAssigneeHint: "Логин оператора; пусто — не назначен.",
+    fieldOccurredAt: "Время возникновения",
+    fieldResolution: "Разбор",
+    fieldResolutionHint: "Обязателен для перевода в «Устранён».",
+    unassigned: "Не назначен",
+    networkWide: "Вся сеть",
+    filterAll: "Все",
+    transitionTitle: "Смена состояния",
+    reportedBy: "Зарегистрировал",
+    statTodayLabel: "Сегодня",
+    statOpenLabel: "В работе",
+    categories: {
+      safety: "Безопасность",
+      technical: "Технические",
+      passenger: "Пассажир",
+      infrastructure: "Инфраструктура",
+      other: "Другое",
+    },
+    severities: {
+      low: "Низкая",
+      medium: "Средняя",
+      high: "Высокая",
+      critical: "Критическая",
+    },
+    statuses: {
+      open: "Открыт",
+      acknowledged: "Принят",
+      in_progress: "В работе",
+      resolved: "Устранён",
+      closed: "Закрыт",
+    },
   },
   users: {
     title: "Операторы консоли",
@@ -1352,6 +1496,7 @@ const en: Dict = {
     alerts: "Alerts",
     news: "News",
     requests: "Requests",
+    incidents: "Incidents",
     fares: "Fares",
     imports: "Imports",
     calendar: "Calendar",
@@ -1378,6 +1523,57 @@ const en: Dict = {
     operator: "Operator",
     editor: "Editor",
     superadmin: "Superadmin",
+  },
+  incidents: {
+    title: "Incidents",
+    lead: "Logging and resolution of operational incidents.",
+    createTitle: "New incident",
+    editTitle: "Edit incident",
+    colCode: "Code",
+    colTitle: "Incident",
+    colSeverity: "Severity",
+    colStatus: "Status",
+    colWhere: "Location",
+    colAssignee: "Assignee",
+    colOccurred: "Occurred",
+    fieldCategory: "Category",
+    fieldSeverity: "Severity",
+    fieldTitle: "Title",
+    fieldDescription: "Description",
+    fieldLine: "Line code",
+    fieldStation: "Station code",
+    fieldAssignee: "Assignee",
+    fieldAssigneeHint: "Operator username; empty means unassigned.",
+    fieldOccurredAt: "Occurred at",
+    fieldResolution: "Resolution",
+    fieldResolutionHint: "Required to move to “Resolved”.",
+    unassigned: "Unassigned",
+    networkWide: "Network-wide",
+    filterAll: "All",
+    transitionTitle: "Change status",
+    reportedBy: "Reported by",
+    statTodayLabel: "Today",
+    statOpenLabel: "Unresolved",
+    categories: {
+      safety: "Safety",
+      technical: "Technical",
+      passenger: "Passenger",
+      infrastructure: "Infrastructure",
+      other: "Other",
+    },
+    severities: {
+      low: "Low",
+      medium: "Medium",
+      high: "High",
+      critical: "Critical",
+    },
+    statuses: {
+      open: "Open",
+      acknowledged: "Acknowledged",
+      in_progress: "In progress",
+      resolved: "Resolved",
+      closed: "Closed",
+    },
   },
   users: {
     title: "Console operators",

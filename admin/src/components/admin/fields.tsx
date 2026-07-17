@@ -78,8 +78,11 @@ export function TextField({
   autoComplete,
 }: BaseProps & {
   mono?: boolean;
-  /** "password" маскирует ввод — для полей учётных данных. */
-  type?: "text" | "password";
+  /**
+   * "password" маскирует ввод; "datetime-local" даёт нативный выбор даты и
+   * времени (значение — "YYYY-MM-DDTHH:mm" в локальной зоне, без смещения).
+   */
+  type?: "text" | "password" | "datetime-local";
   autoComplete?: string;
 }) {
   const id = useId();

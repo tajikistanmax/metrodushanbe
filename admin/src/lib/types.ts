@@ -222,6 +222,57 @@ export type CitizenRequestAdmin = {
   resolvedAt: string | null;
 };
 
+export type IncidentCategory =
+  | "safety"
+  | "technical"
+  | "passenger"
+  | "infrastructure"
+  | "other";
+
+/**
+ * Критичность инцидента — внутренняя шкала реагирования. Не путать с
+ * AlertSeverity (info|warning|critical): та отвечает за громкость сообщения
+ * пассажиру, эта — за срочность для оператора.
+ */
+export type IncidentSeverity = "low" | "medium" | "high" | "critical";
+
+export type IncidentStatus =
+  | "open"
+  | "acknowledged"
+  | "in_progress"
+  | "resolved"
+  | "closed";
+
+/** Инцидент (GET /admin/incidents). */
+export type Incident = {
+  code: string;
+  category: IncidentCategory;
+  severity: IncidentSeverity;
+  status: IncidentStatus;
+  title: string;
+  description: string;
+  lineCode: string | null;
+  stationCode: string | null;
+  reportedBy: string;
+  assignedTo: string | null;
+  resolution: string | null;
+  publicAlertCode: string | null;
+  occurredAt: string;
+  acknowledgedAt: string | null;
+  resolvedAt: string | null;
+  closedAt: string | null;
+  updatedAt: string | null;
+  /** Разрешённые переходы из текущего статуса — источник истины на backend. */
+  allowedTransitions: IncidentStatus[];
+};
+
+/** Счётчики плиток дашборда (GET /admin/incidents/stats). */
+export type IncidentStats = {
+  today: number;
+  open: number;
+  byCategory: Record<IncidentCategory, number>;
+};
+
 /** Оператор консоли (GET /admin/users). Хеш пароля backend не отдаёт. */
 export type AdminUserAccount = {
   username: string;

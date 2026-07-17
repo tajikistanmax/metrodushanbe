@@ -24,6 +24,7 @@ type NavKey =
   | "alerts"
   | "news"
   | "requests"
+  | "incidents"
   | "fares"
   | "imports"
   | "calendar"
@@ -41,6 +42,7 @@ const ROUTES: { key: NavKey; href: string }[] = [
   { key: "alerts", href: "/alerts" },
   { key: "news", href: "/news" },
   { key: "requests", href: "/requests" },
+  { key: "incidents", href: "/incidents" },
   { key: "fares", href: "/fares" },
   { key: "imports", href: "/imports" },
   { key: "calendar", href: "/calendar" },

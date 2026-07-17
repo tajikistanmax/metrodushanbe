@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import tj.metro.dushanbe.identity.repository.AdminUserRepository;
 import tj.metro.dushanbe.admin.security.AdminAuthProperties;
 import tj.metro.dushanbe.ai.config.AiProperties;
 import tj.metro.dushanbe.ai.service.AiAgentReadinessService;
@@ -47,6 +48,14 @@ class AiControllerChatTest {
 
     @MockitoBean
     private RateLimitProperties rateLimitProperties;
+
+/**
+     * AdminKeyAuthFilter — бин типа Filter, поэтому @WebMvcTest создаёт его даже
+     * при addFilters = false. Фильтр резолвит актора через репозиторий, которого
+     * в web-срезе нет, — без этой заглушки контекст не поднимется.
+     */
+    @MockitoBean
+    private AdminUserRepository adminUserRepository;
 
     @Test
     void chatEndpointReturnsAgentReply() throws Exception {

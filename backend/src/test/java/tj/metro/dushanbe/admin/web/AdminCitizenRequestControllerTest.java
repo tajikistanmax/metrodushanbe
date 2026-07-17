@@ -18,6 +18,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import tj.metro.dushanbe.identity.repository.AdminUserRepository;
 import tj.metro.dushanbe.admin.security.AdminAuthProperties;
 import tj.metro.dushanbe.citizen.service.CitizenRequestService;
 import tj.metro.dushanbe.citizen.web.dto.CitizenRequestAdminDto;
@@ -42,6 +43,14 @@ class AdminCitizenRequestControllerTest {
 
     @MockitoBean
     private RateLimitProperties rateLimitProperties;
+
+/**
+     * AdminKeyAuthFilter — бин типа Filter, поэтому @WebMvcTest создаёт его даже
+     * при addFilters = false. Фильтр резолвит актора через репозиторий, которого
+     * в web-срезе нет, — без этой заглушки контекст не поднимется.
+     */
+    @MockitoBean
+    private AdminUserRepository adminUserRepository;
 
     @Test
     void listPassesOptionalStatusFilter() throws Exception {
