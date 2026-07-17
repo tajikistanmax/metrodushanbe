@@ -1,0 +1,51 @@
+name: CI Design
+
+# Общий слой дизайна не подключается пакетом, а РАСКЛАДЫВАЕТСЯ генератором по
+# обоим приложениям и коммитится (причина — в шапке packages/design/sync.mjs:
+# контексты docker build у web/ и admin/ не видят соседних каталогов).
+#
+# У такой схемы ровно одна слабость: копии могут разъехаться с источником —
+# именно так до её появления разъехались два блока :root в web и admin. Эта
+# джоба и закрывает слабость: если сгенерированное не совпадает с источником
+# или кто-то правил файл руками поверх генератора, сборка падает здесь, а не
+# всплывает расхождением тем через полгода.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/design/**"
+      - "web/src/shared/**"
+      - "admin/src/shared/**"
+      - "web/src/app/globals.css"
+      - "admin/src/app/globals.css"
+      - ".github/workflows/ci-design.yml"
+  pull_request:
+    paths:
+      - "packages/design/**"
+      - "web/src/shared/**"
+      - "admin/src/shared/**"
+      - "web/src/app/globals.css"
+      - "admin/src/app/globals.css"
+      - ".github/workflows/ci-design.yml"
+  workflow_dispatch:
+  workflow_call:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    name: Синхронность токенов
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # Зависимостей у генератора нет — это чистый Node ESM, npm ci не нужен.
+      - name: Проверка синхронности общего слоя дизайна
+        run: node packages/design/sync.mjs --check

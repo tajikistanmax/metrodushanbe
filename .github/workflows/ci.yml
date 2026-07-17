@@ -12,6 +12,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  design:
+    name: Design
+    uses: ./.github/workflows/ci-design.yml
   backend:
     name: Backend
     uses: ./.github/workflows/ci-backend.yml
@@ -23,7 +26,7 @@ jobs:
     uses: ./.github/workflows/ci-admin.yml
   summary:
     name: Сводка
-    needs: [backend, web, admin]
+    needs: [design, backend, web, admin]
     runs-on: ubuntu-latest
     steps:
       - name: Проверка статуса

@@ -105,3 +105,36 @@ jobs:
         run: |
           chmod +x mvnw
           ./mvnw -B -ntp test -Dtest='*IntegrationTest'
+
+  quality:
+    name: Verification and static analysis
+    needs: lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Tests, coverage report and dependency audit
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -ntp verify
+      - name: Checkstyle, SpotBugs, PMD and CPD
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -ntp -DskipTests \
+            checkstyle:check spotbugs:check pmd:check pmd:cpd-check
+      - name: Upload quality reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-quality-reports
+          if-no-files-found: ignore
+          path: |
+            backend/target/site/jacoco/
+            backend/target/dependency-check-report.*
