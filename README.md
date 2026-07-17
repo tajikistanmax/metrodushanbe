@@ -1,97 +1,166 @@
-# Метро Душанбе — национальная цифровая платформа
+# Метро Душанбе — локально готовый MVP
 
-Монорепозиторий платформы «Метро Душанбе»: публичный портал, backend API, административная панель и мобильное приложение. Техническое задание: [docs/metrodushanbe-v2.md](docs/metrodushanbe-v2.md). Конвенции: [docs/dev-conventions.md](docs/dev-conventions.md).
+Монорепозиторий цифровой платформы «Метро Душанбе»: публичный PWA-портал, backend API,
+операционная админ-панель и локальный приёмочный Docker-контур.
 
-## Состав
+- Техническое задание: [docs/metrodushanbe-v2.md](docs/metrodushanbe-v2.md)
+- Конвенции: [docs/dev-conventions.md](docs/dev-conventions.md)
+- Фактическая готовность и границы MVP: [docs/implementation-status.md](docs/implementation-status.md)
+- Аудит референсов `photo` и сценарий демонстрации: [docs/reference-audit-2026-07-16.md](docs/reference-audit-2026-07-16.md)
+- Международный benchmark и решения нового интерфейса: [docs/international-metro-benchmark-2026-07-17.md](docs/international-metro-benchmark-2026-07-17.md)
 
-| Каталог | Что это | Стек | Статус |
-|---|---|---|---|
-| `backend/` | API-платформа (модульный монолит) | Java 25, Spring Boot, PostgreSQL + PostGIS, Flyway, Redis | 🚧 первый срез |
-| `web/` | Публичный портал с картой сети | Next.js, TypeScript, MapLibre GL | 🚧 первый срез |
-| `admin/` | Админ-панель (operational console) | Next.js, TypeScript | ⏳ следующая итерация |
-| `mobile/` | Мобильное приложение | Flutter | ⏳ следующая итерация |
-| `infra/` | Локальное окружение | Docker Compose (PostGIS, Redis, Keycloak) | 🚧 первый срез |
-| `data/` | Демо-данные сети (placeholder) | GeoJSON | ✅ |
+## Статус
 
-> ⚠️ Данные сети в `data/` — **демонстрационные**. Реальные трассы и станции не утверждены; они будут загружаться через конвейер импорта (ТЗ, раздел 13).
-
-## Требования для разработки
-
-- **Node.js 20+** (web/admin)
-- **JDK 25** (backend) — например, [Eclipse Temurin](https://adoptium.net/)
-- **Docker Desktop** (PostgreSQL/PostGIS, Redis, Keycloak)
-- Flutter SDK (mobile, позже)
-
-## Быстрый старт
-
-```bash
-# 1. Инфраструктура (Postgres+PostGIS, Redis)
-cd infra && docker compose up -d
-
-# 2. Backend (после установки JDK 25)
-cd backend && ./mvnw spring-boot:run
-# API:      http://localhost:8080/api/v1/lines
-# OpenAPI:  http://localhost:8080/api/swagger-ui.html
-
-# 3. Web-портал
-cd web && npm install && npm run dev
-# http://localhost:3000  (карта работает и БЕЗ backend — на демо-данных)
-
-# 4. Админ-панель (операционная консоль)
-cd admin && npm install && npm run dev
-# http://localhost:3001 — вход: admin / metro2026 (dev-значения)
-```
-
-## Вход в админ-панель
-
-Консоль защищена страницей входа (dev-контур; целевая схема — OAuth2/Keycloak,
-ТЗ §9). Значения по умолчанию и переменные окружения:
-
-| Переменная | По умолчанию | Смысл |
+| Компонент | Стек | Состояние |
 |---|---|---|
-| `ADMIN_UI_USER` | `admin` | логин оператора |
-| `ADMIN_UI_PASSWORD` | `metro2026` | пароль (в проде обязательно сменить) |
-| `ADMIN_SESSION_SECRET` | dev-заглушка | секрет подписи сессионной cookie |
+| `backend/` | Java 21, Spring Boot, PostgreSQL/PostGIS, Redis, Flyway | ✅ локальный MVP |
+| `web/` | Next.js, TypeScript, Tailwind, MapLibre, PWA | ✅ локальный MVP |
+| `admin/` | Next.js, TypeScript | ✅ локальный MVP |
+| `infra/` | Docker Compose, PostGIS, Redis, MinIO, Martin | ✅ приёмочный контур |
+| `data/` | GeoJSON и seed-данные | ✅ демонстрационные данные |
+| `mobile/` | Flutter | ⏳ отдельная продуктовая фаза |
 
-## Полный стек в контейнерах (Docker)
+> Данные линий, станций и цены с пометкой «демо» не являются утверждёнными данными
+> метрополитена. Перед production-запуском их нужно заменить официальным импортом и
+> утверждёнными тарифами.
 
-Два независимых compose-файла в `infra/` под разные задачи:
+## Что входит в MVP
 
-| Файл | Назначение | Что поднимает |
-|---|---|---|
-| `infra/docker-compose.yml` | **dev-инфра** — для локального запуска backend/web из исходников | Postgres+PostGIS, Redis (+ Keycloak по профилю `auth`) |
-| `infra/docker-compose.full.yml` | **весь контур в образах** — демо/приёмка | postgres + redis + backend + web + admin |
+Публичный портал:
 
-Полный стек собирается и поднимается одной командой (из корня репозитория):
+- карта сети и доступный list-mode;
+- построение маршрута, карточки станций, ближайшие отправления и расписание;
+- новости и сервисные уведомления;
+- обращения граждан: создание, секретный tracking token и просмотр статуса;
+- тарифы и проездные с явной маркировкой демонстрационных цен;
+- TG/RU/EN, светлая/тёмная тема, адаптивность, PWA и offline fallback.
+
+Админ-панель:
+
+- защищённый вход и серверная проверка сессии;
+- линии, станции, уведомления, новости, обращения и тарифы;
+- импорт GeoJSON, календарные исключения, feature flags, аудит и аналитика;
+- SLA обращений, назначение исполнителя, ответ гражданину;
+- CRUD тарифов с аудитом и инвалидацией Redis-кэша.
+
+Backend:
+
+- публичный и admin REST API, OpenAPI, единый error envelope и request ID;
+- 18 Flyway-миграций, soft delete, аудит и Redis graceful degradation;
+- маршрутизация, расписания, импорт, feature flags, citizen requests и fares;
+- Testcontainers-интеграция с PostgreSQL/PostGIS.
+
+## Быстрый запуск всего контура
+
+Требуется Docker Desktop. Из корня репозитория:
 
 ```bash
 docker compose -f infra/docker-compose.full.yml up -d --build
-# web:     http://localhost:3000
-# admin:   http://localhost:3001
-# API:     http://localhost:8080/api/v1
-# Swagger: http://localhost:8080/api/swagger-ui.html
-
-docker compose -f infra/docker-compose.full.yml config     # проверить конфиг
-docker compose -f infra/docker-compose.full.yml down -v     # остановить + удалить данные БД
+docker compose -f infra/docker-compose.full.yml ps
 ```
 
-Порты на хосте те же, что в dev (5433/6379/8080/3000/3001), поэтому dev-инфру и
-полный стек **одновременно не поднимают**. Образы (`backend/Dockerfile`,
-`web/Dockerfile`, `admin/Dockerfile`) — multi-stage: Temurin JDK 25 → JRE 25 для
-backend и Next.js standalone для web/admin.
+Адреса:
 
-Ключевые env (все значения по умолчанию — dev-заглушки, менять для прода):
+- портал: <http://localhost:3000>
+- тарифы: <http://localhost:3000/fares>
+- обращения: <http://localhost:3000/requests>
+- админка: <http://localhost:3001> — dev-вход `admin` / `metro2026`
+- интерактивная карта в админке: <http://localhost:3001/map>
+- API: <http://localhost:8080/api/v1>
+- Swagger UI: <http://localhost:8080/api/swagger-ui.html>
+- health: <http://localhost:8080/api/actuator/health>
+- векторные тайлы Martin: <http://localhost:3003>
+- MinIO: <http://localhost:9001>
 
-| Переменная | Сервис | По умолчанию | Смысл |
-|---|---|---|---|
-| `POSTGRES_DB/USER/PASSWORD` | postgres | `metro` | учётные данные БД |
-| `WEB_API_BASE` | web (build-arg) | `http://localhost:8080/api/v1` | база API из **браузера** (публичный портал) |
-| `ADMIN_API_BASE` | admin (build-arg) | `http://backend:8080/api/v1` | база API для **серверных** вызовов админки |
-| `ADMIN_API_KEY` | admin + backend | `dev-admin-key-change-me` | секрет `X-Admin-Key` admin-контура (согласован с обеих сторон) |
+Остановка без удаления данных:
 
-## Фазы (по ТЗ v2, раздел 10)
+```bash
+docker compose -f infra/docker-compose.full.yml down
+```
 
-1. **Сейчас:** вертикальный срез — инфраструктура, ядро сети (линии/станции), карта.
-2. MVP: карточки станций, новости, service alerts, admin, i18n полный контур.
-3. Операционная готовность: импорт GTFS/GeoJSON, интеграции, дашборды.
-4. Далее: мультимодальность → билеты/AFC → realtime → запуск.
+Удаление именованных томов выполняйте только когда данные действительно больше не нужны:
+
+```bash
+docker compose -f infra/docker-compose.full.yml down -v
+```
+
+## Запуск из исходников
+
+Требования: Node.js 20+, JDK 21 LTS и Docker Desktop.
+
+```bash
+# инфраструктура
+cd infra
+docker compose up -d
+
+# backend
+cd ../backend
+./mvnw spring-boot:run
+
+# public web
+cd ../web
+npm ci
+npm run dev
+
+# admin (в другом терминале)
+cd ../admin
+npm ci
+npm run dev
+```
+
+## Ключевые переменные окружения
+
+| Переменная | Dev-значение | Назначение |
+|---|---|---|
+| `POSTGRES_DB/USER/PASSWORD` | `metro` | локальная БД |
+| `WEB_API_BASE` | `http://localhost:8080/api/v1` | API из браузера публичного портала |
+| `NEXT_PUBLIC_MAP_STYLE_URL` | `https://tiles.openfreemap.org/styles/liberty` | стиль реальной базовой карты; при недоступности включается локальный fallback |
+| `ADMIN_API_BASE` | `http://backend:8080/api/v1` | серверные вызовы админки в compose |
+| `ADMIN_API_KEY` | `dev-admin-key-change-me` | секрет admin API |
+| `ADMIN_UI_USER` | `admin` | локальный оператор |
+| `ADMIN_UI_PASSWORD` | `metro2026` | локальный пароль |
+| `ADMIN_SESSION_SECRET` | dev-заглушка | подпись сессионной cookie |
+
+Все dev-секреты обязательно заменяются в production.
+
+## Проверка качества
+
+Актуальный приёмочный прогон от 16 июля 2026 года:
+
+- backend: `292` теста, `0` failures, `0` errors, `0` skipped;
+- web: `npm run lint` и `npm run build` — успешно;
+- admin: `npm run lint` и `npm run build` — успешно;
+- Checkstyle, SpotBugs, PMD и CPD — настроенная Maven-команда завершилась успешно;
+- Docker E2E: health, сеть, тарифы, создание/трекинг обращения, admin-обновление статуса — успешно;
+- браузерная production-проверка desktop/mobile — без console errors и hydration mismatch.
+
+Команды:
+
+```bash
+cd backend
+./mvnw test
+./mvnw -DskipTests checkstyle:check spotbugs:check pmd:check pmd:cpd-check
+
+cd ../web
+npm run lint && npm run build
+
+cd ../admin
+npm run lint && npm run build
+```
+
+PMD продолжает показывать архитектурные предупреждения старого кода (в частности сложность
+классов маршрутизации), а CPD — одну небольшую дубликацию. Они не ломают настроенную сборку,
+но остаются зарегистрированным техническим долгом.
+
+## Что требуется перед production
+
+- официальные трассы, станции, расписания и тарифы;
+- production OAuth2/OIDC/Keycloak realm и ротация всех секретов;
+- реальные realtime/диспетчерские источники;
+- платёжный/AFC-контур и юридически утверждённые правила продаж;
+- внешняя система контакт-центра и политика вложений к обращениям;
+- production-домены, TLS, мониторинг, резервное копирование и эксплуатационные SLO;
+- отдельная реализация и публикация Flutter-приложения.
+
+Эти пункты требуют внешних данных, доступов или продуктовых решений и не подменяются
+локальными заглушками.

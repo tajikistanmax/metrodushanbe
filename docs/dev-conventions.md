@@ -6,10 +6,10 @@
 
 ```
 MetroDushanbe/
-├─ backend/     # Java 25 + Spring Boot (модульный монолит, Maven)
+├─ backend/     # Java 21 LTS + Spring Boot (модульный монолит, Maven)
 ├─ web/         # Next.js + TypeScript — публичный портал
-├─ admin/       # Next.js + TypeScript — админ-панель (следующая итерация)
-├─ mobile/      # Flutter (следующая итерация)
+├─ admin/       # Next.js + TypeScript — реализованная operational console
+├─ mobile/      # Flutter — отдельная продуктовая фаза
 ├─ infra/       # docker-compose, конфиги окружений
 ├─ data/        # канонические демо/импорт-данные (GeoJSON)
 └─ docs/        # ТЗ и проектная документация
@@ -24,6 +24,7 @@ MetroDushanbe/
 | Keycloak | `8081` | compose-профиль `auth`, подключается на фазе admin |
 | Backend (Spring Boot) | `8080` | API base: `http://localhost:8080/api/v1` |
 | Web (Next.js) | `3000` | |
+| Admin (Next.js) | `3001` | локальный dev-вход задаётся через env |
 
 ## 3. Контракт API
 
@@ -37,6 +38,8 @@ MetroDushanbe/
   - `GET /api/v1/stations/{code}` — карточка станции
   - `GET /api/v1/network/geojson` — FeatureCollection всей сети для карты (совместим по схеме с `data/demo-network.geojson`)
   - `GET /api/v1/alerts` — активные сервисные уведомления (фильтры `?lineCode=`, `?stationCode=`, `?severity=info|warning|critical`; пустой массив `targets` = вся сеть; невалидный `severity` → 400 `alert.severity_invalid`). Семантика таргет-фильтров: network-wide уведомления (без таргетов) попадают в выдачу всегда; `lineCode` — уведомления, таргетированные этой линией (станционные таргеты линию не расширяют); `stationCode` — таргетированные этой станцией ИЛИ любой линией, которой станция принадлежит (по связи станция-линия); оба фильтра сразу — объединение: уведомление попадает, если проходит хотя бы один фильтр («не потерять уведомление» важнее строгости)
+  - `GET /api/v1/fares` — активные тарифные продукты; demo-цены обязаны быть явно маркированы.
+  - `POST /api/v1/requests`, `POST /api/v1/requests/{code}/track` — создание и безопасное отслеживание обращения.
 - OpenAPI UI: `http://localhost:8080/api/swagger-ui.html` (springdoc).
 - CORS (dev): разрешён `http://localhost:3000`.
 
@@ -78,7 +81,7 @@ MetroDushanbe/
 
 ## 7. Качество
 
-- Backend: JDK 25, без Lombok (records/конструкторы), Testcontainers для интеграционных тестов, ошибки — через `@ControllerAdvice` в единый envelope.
+- Backend: JDK 21 LTS, без Lombok (records/конструкторы), Testcontainers для интеграционных тестов, ошибки — через `@ControllerAdvice` в единый envelope.
 - Web: TypeScript strict, ESLint; `npm run build` обязан проходить.
 - Секреты — только через env; в репозитории только dev-значения compose.
 - Git: ветка `main`, коммиты по Conventional Commits (`feat:`, `fix:`, `docs:`…).
