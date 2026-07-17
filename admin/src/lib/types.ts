@@ -128,6 +128,114 @@ export type AuditEvent = {
   at: string;
 };
 
+/** Задание импорта GeoJSON — GET/POST /api/v1/admin/imports. */
+export type ImportJob = {
+  id: string;
+  type: string;
+  status: "pending" | "running" | "success" | "partial" | "failed" | string;
+  sourceName: string | null;
+  sourceHash: string;
+  featureCount: number;
+  createdCount: number;
+  updatedCount: number;
+  failedCount: number;
+  startedAt: string | null;
+  finishedAt: string | null;
+  createdAt: string;
+};
+
+export type ImportPage = {
+  items: ImportJob[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+};
+
+export type ImportError = {
+  id: string;
+  featureRef: string;
+  message: string;
+  severity: string;
+  at: string;
+};
+
+/** Исключение календаря расписаний — /api/v1/admin/calendar-exceptions. */
+export type CalendarException = {
+  id: number;
+  exceptionDate: string;
+  dayType: "weekday" | "weekend" | "holiday" | string;
+  descriptionTg: string | null;
+  descriptionRu: string | null;
+  descriptionEn: string | null;
+  isRecurring: boolean;
+  createdAt: string;
+};
+
+/** Управляемый runtime-флаг — /api/v1/admin/feature-flags. */
+export type FeatureFlag = {
+  flagKey: string;
+  enabled: boolean;
+  description: string | null;
+  updatedAt: string;
+  updatedBy: string | null;
+};
+
+export type CitizenRequestType =
+  | "complaint"
+  | "suggestion"
+  | "incident"
+  | "question"
+  | "lost_item";
+
+export type CitizenRequestStatus =
+  | "new"
+  | "in_progress"
+  | "awaiting_info"
+  | "resolved"
+  | "closed"
+  | "reopened";
+
+export type CitizenRequestPriority = "low" | "normal" | "high";
+
+/** Полное операторское представление обращения — /api/v1/admin/requests. */
+export type CitizenRequestAdmin = {
+  code: string;
+  type: CitizenRequestType;
+  priority: CitizenRequestPriority;
+  status: CitizenRequestStatus;
+  subject: string;
+  message: string;
+  contactName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  lineCode: string | null;
+  stationCode: string | null;
+  response: string | null;
+  assignedTo: string | null;
+  responseDueAt: string;
+  resolutionDueAt: string;
+  responseSlaBreached: boolean;
+  resolutionSlaBreached: boolean;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt: string | null;
+};
+
+export type FareRiderCategory = "all" | "adult" | "child" | "student" | "senior";
+
+export type FareProduct = {
+  code: string;
+  name: I18nName;
+  description: I18nName;
+  amount: number;
+  currency: string;
+  riderCategory: FareRiderCategory;
+  validityMinutes: number | null;
+  active: boolean;
+  updatedAt: string | null;
+};
+
 /**
  * Минимальная GeoJSON-модель сети для схемы на дашборде
  * (GET /network/geojson; полная модель — в web/src/lib/types.ts).

@@ -382,7 +382,10 @@ function NewsByMonth({ news }: { news: News[] | null }) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       list.push({
         key: `${d.getFullYear()}-${d.getMonth()}`,
-        label: new Intl.DateTimeFormat(locale, { month: "short" }).format(d),
+        label: new Intl.DateTimeFormat(locale, {
+          month: "short",
+          timeZone: "Asia/Dushanbe",
+        }).format(d),
         count: 0,
       });
     }

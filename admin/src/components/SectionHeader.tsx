@@ -9,25 +9,43 @@
 import { useI18n } from "./I18nProvider";
 import PageHeader from "./PageHeader";
 
-export type Section = "overview" | "lines" | "stations" | "alerts" | "news" | "audit";
+export type Section =
+  | "overview"
+  | "lines"
+  | "stations"
+  | "alerts"
+  | "news"
+  | "requests"
+  | "fares"
+  | "imports"
+  | "calendar"
+  | "features"
+  | "audit";
 
 export default function SectionHeader({ section }: { section: Section }) {
   const { dict } = useI18n();
 
-  const title =
-    section === "overview"
-      ? dict.overviewTitle
-      : section === "lines"
-        ? dict.linesTitle
-        : section === "stations"
-          ? dict.stationsTitle
-          : section === "alerts"
-            ? dict.alertsTitle
-            : section === "news"
-              ? dict.newsTitle
-              : dict.auditTitle;
+  const titles: Record<Section, string> = {
+    overview: dict.overviewTitle,
+    lines: dict.linesTitle,
+    stations: dict.stationsTitle,
+    alerts: dict.alertsTitle,
+    news: dict.newsTitle,
+    requests: dict.operations.requestsTitle,
+    fares: dict.operations.faresTitle,
+    imports: dict.operations.importsTitle,
+    calendar: dict.operations.calendarTitle,
+    features: dict.operations.featuresTitle,
+    audit: dict.auditTitle,
+  };
+  const leads: Partial<Record<Section, string>> = {
+    overview: dict.overviewLead,
+    imports: dict.operations.importsLead,
+    calendar: dict.operations.calendarLead,
+    features: dict.operations.featuresLead,
+    requests: dict.operations.requestsLead,
+    fares: dict.operations.faresLead,
+  };
 
-  const lead = section === "overview" ? dict.overviewLead : undefined;
-
-  return <PageHeader title={title} lead={lead} />;
+  return <PageHeader title={titles[section]} lead={leads[section]} />;
 }

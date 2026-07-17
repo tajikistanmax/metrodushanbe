@@ -10,26 +10,39 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { logout } from "@/lib/auth-actions";
+import { formatConsoleDate } from "@/lib/i18n";
 import { IconLogout, IconSearch, IconUser } from "@/lib/icons";
 import { useI18n } from "./I18nProvider";
 
 type NavKey =
   | "overview"
+  | "map"
   | "analytics"
   | "lines"
   | "stations"
   | "alerts"
   | "news"
+  | "requests"
+  | "fares"
+  | "imports"
+  | "calendar"
+  | "features"
   | "agents"
   | "audit";
 
 const ROUTES: { key: NavKey; href: string }[] = [
   { key: "overview", href: "/" },
+  { key: "map", href: "/map" },
   { key: "analytics", href: "/analytics" },
   { key: "lines", href: "/lines" },
   { key: "stations", href: "/stations" },
   { key: "alerts", href: "/alerts" },
   { key: "news", href: "/news" },
+  { key: "requests", href: "/requests" },
+  { key: "fares", href: "/fares" },
+  { key: "imports", href: "/imports" },
+  { key: "calendar", href: "/calendar" },
+  { key: "features", href: "/features" },
   { key: "agents", href: "/agents" },
   { key: "audit", href: "/audit" },
 ];
@@ -51,20 +64,15 @@ export default function Topbar() {
   const searchRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Сегодняшняя дата в локали интерфейса. Считается ТОЛЬКО на клиенте
-  // (после mount): на сервере язык всегда tg, а в браузере — сохранённый
-  // выбор, и SSR-текст даты вызывал бы hydration mismatch.
-  const [today, setToday] = useState("");
-  useEffect(() => {
-    const locale = lang === "tg" ? "tg-TJ" : lang === "ru" ? "ru-RU" : "en-GB";
-    setToday(
-      new Intl.DateTimeFormat(locale, {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-        weekday: "long",
-      }).format(new Date()),
-    );
+  // Сегодняшняя дата в локали интерфейса. При смене языка пересчитываем
+  // значение без дополнительного render-pass; возможное отличие часового
+  // пояса сервера от браузера подавляется на самом <time> ниже.
+  const today = useMemo(() => {
+    const now = new Date();
+    return {
+      dateTime: now.toISOString(),
+      label: formatConsoleDate(now, lang),
+    };
   }, [lang]);
 
   // Подсказки: разделы, чьё название содержит запрос
@@ -104,7 +112,13 @@ export default function Topbar() {
           <p className="truncate text-lg font-extrabold leading-tight">
             {dict.nav[currentKey(pathname)]}
           </p>
-          <p className="min-h-4 truncate text-xs text-text-secondary">{today}</p>
+          <time
+            dateTime={today.dateTime}
+            suppressHydrationWarning
+            className="block min-h-4 truncate text-xs text-text-secondary"
+          >
+            {today.label}
+          </time>
         </div>
 
         {/* Быстрый переход */}

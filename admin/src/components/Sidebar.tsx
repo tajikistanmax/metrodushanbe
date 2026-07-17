@@ -14,12 +14,18 @@ import { LANG_LABELS, LANG_SHORT_LABELS, LANGS } from "@/lib/i18n";
 import {
   IconAudit,
   IconBell,
+  IconBolt,
+  IconCalendar,
   IconChart,
   IconHome,
+  IconImport,
   IconLines,
+  IconMap,
   IconNews,
+  IconRequests,
   IconSpark,
   IconStation,
+  IconTicket,
 } from "@/lib/icons";
 import BrandMark from "./BrandMark";
 import ThemeToggle from "./ThemeToggle";
@@ -27,11 +33,17 @@ import { useI18n } from "./I18nProvider";
 
 type NavKey =
   | "overview"
+  | "map"
   | "analytics"
   | "lines"
   | "stations"
   | "alerts"
   | "news"
+  | "requests"
+  | "fares"
+  | "imports"
+  | "calendar"
+  | "features"
   | "agents"
   | "audit";
 
@@ -52,6 +64,7 @@ const GROUPS: NavGroup[] = [
     labelKey: null,
     items: [
       { key: "overview", href: "/", icon: IconHome },
+      { key: "map", href: "/map", icon: IconMap },
       { key: "analytics", href: "/analytics", icon: IconChart },
     ],
   },
@@ -60,6 +73,8 @@ const GROUPS: NavGroup[] = [
     items: [
       { key: "lines", href: "/lines", icon: IconLines },
       { key: "stations", href: "/stations", icon: IconStation },
+      { key: "imports", href: "/imports", icon: IconImport },
+      { key: "calendar", href: "/calendar", icon: IconCalendar },
     ],
   },
   {
@@ -67,12 +82,15 @@ const GROUPS: NavGroup[] = [
     items: [
       { key: "alerts", href: "/alerts", icon: IconBell },
       { key: "news", href: "/news", icon: IconNews },
+      { key: "requests", href: "/requests", icon: IconRequests },
+      { key: "fares", href: "/fares", icon: IconTicket },
     ],
   },
   {
     labelKey: "system",
     items: [
       { key: "agents", href: "/agents", icon: IconSpark },
+      { key: "features", href: "/features", icon: IconBolt },
       { key: "audit", href: "/audit", icon: IconAudit },
     ],
   },

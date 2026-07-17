@@ -40,6 +40,18 @@ export function IconHome(props: IconProps) {
   );
 }
 
+/** Географическая карта / схема сети. */
+export function IconMap(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="m3 6 5-3 8 3 5-3v15l-5 3-8-3-5 3V6Z" />
+      <path d="M8 3v15" />
+      <path d="M16 6v15" />
+      <circle cx="12" cy="11" r="2" />
+    </Base>
+  );
+}
+
 /** Линии метро (разветвление маршрутов). */
 export function IconLines(props: IconProps) {
   return (
@@ -80,6 +92,26 @@ export function IconNews(props: IconProps) {
       <path d="M4 5h13v14H6a2 2 0 0 1-2-2V5Z" />
       <path d="M17 8h3v9a2 2 0 0 1-2 2h-1" />
       <path d="M7.5 9h6M7.5 12.5h6M7.5 16h4" />
+    </Base>
+  );
+}
+
+/** Обращения граждан (диалог). */
+export function IconRequests(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M4 5.5h16v11H9l-5 4v-15Z" />
+      <path d="M8 9h8M8 12.5h5" />
+    </Base>
+  );
+}
+
+/** Тарифы (билет). */
+export function IconTicket(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M4 7.5h16v3a2.5 2.5 0 0 0 0 5v3H4v-3a2.5 2.5 0 0 0 0-5v-3Z" />
+      <path d="M14 7.5v11" strokeDasharray="2 2" />
     </Base>
   );
 }

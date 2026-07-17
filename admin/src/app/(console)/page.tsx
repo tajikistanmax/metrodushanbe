@@ -7,7 +7,11 @@ import {
   getNews,
   getStations,
 } from "@/lib/api";
-import { getAuditEvents } from "@/lib/admin-actions";
+import {
+  getAuditEvents,
+  getCitizenRequests,
+  getImportJobs,
+} from "@/lib/admin-actions";
 import DashboardClient from "@/components/dashboard/DashboardClient";
 
 // Операционная консоль: рендер по запросу, без статического кэша —
@@ -20,7 +24,18 @@ export const dynamic = "force-dynamic";
  * (схема сети — к бандл-копии демо-данных).
  */
 export default async function OverviewPage() {
-  const [lines, stations, alerts, news, briefing, audit, network, health] =
+  const [
+    lines,
+    stations,
+    alerts,
+    news,
+    briefing,
+    audit,
+    requests,
+    imports,
+    network,
+    health,
+  ] =
     await Promise.all([
       getLines(),
       getStations(),
@@ -28,6 +43,8 @@ export default async function OverviewPage() {
       getNews(),
       getAiBriefing(),
       getAuditEvents(),
+      getCitizenRequests(),
+      getImportJobs(),
       getNetworkGeoJson(),
       getBackendHealth(),
     ]);
@@ -40,6 +57,8 @@ export default async function OverviewPage() {
       news={news.data}
       briefing={briefing.data}
       audit={audit.data}
+      requests={requests.data}
+      imports={imports.data}
       network={network.data}
       networkSource={network.source}
       health={health}

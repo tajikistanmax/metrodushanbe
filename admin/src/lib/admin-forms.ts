@@ -106,6 +106,39 @@ export type NewsCreateBody = {
 };
 export type NewsUpdateBody = Omit<NewsCreateBody, "slug">;
 
+export const SCHEDULE_DAY_TYPES = ["weekday", "weekend", "holiday"] as const;
+export type ScheduleDayType = (typeof SCHEDULE_DAY_TYPES)[number];
+
+export type CalendarExceptionBody = {
+  exceptionDate: string;
+  dayType: ScheduleDayType;
+  descriptionTg?: string;
+  descriptionRu?: string;
+  descriptionEn?: string;
+  isRecurring: boolean;
+};
+
+export type CitizenRequestUpdateBody = {
+  status: string;
+  response?: string;
+  assignedTo?: string;
+};
+
+export const FARE_RIDER_CATEGORIES = ["all", "adult", "child", "student", "senior"] as const;
+export type FareRiderCategory = (typeof FARE_RIDER_CATEGORIES)[number];
+
+export type FareCreateBody = {
+  code: string;
+  name: I18nInput;
+  description: I18nInput;
+  amount: number;
+  currency: string;
+  riderCategory: FareRiderCategory;
+  validityMinutes?: number;
+  active: boolean;
+};
+export type FareUpdateBody = Omit<FareCreateBody, "code">;
+
 // --- Результат серверного действия -----------------------------------------
 
 /** Ошибка из единого envelope backend {error:{code,message,details?},requestId}. */

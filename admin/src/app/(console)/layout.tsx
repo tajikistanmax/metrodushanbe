@@ -1,17 +1,20 @@
 import SkipLink from "@/components/SkipLink";
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
+import { requireAdminSession } from "@/lib/server-auth";
 
 /**
  * Каркас операционной консоли: слева — навигация (Sidebar), сверху — топбар
- * с поиском и профилем, контент — на приглушённом фоне. Доступ защищён
- * middleware (src/middleware.ts): без валидной сессии — редирект на /login.
+ * с поиском и профилем, контент — на приглушённом фоне. Доступ проверяется
+ * на сервере; proxy.ts выполняет дополнительный ранний redirect.
  */
-export default function ConsoleLayout({
+export default async function ConsoleLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  await requireAdminSession();
+
   return (
     <div className="flex min-h-dvh flex-col lg:flex-row">
       <SkipLink />

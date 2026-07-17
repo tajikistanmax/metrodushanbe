@@ -48,6 +48,15 @@
   --kpi-tint-green: rgba(19, 138, 61, 0.12);
   --kpi-tint-info: rgba(14, 90, 138, 0.1);
   --kpi-tint-warning: rgba(224, 134, 0, 0.12);
+  --map-panel-bg: #f5f8fb;
+  --map-city-start: #f8fbfd;
+  --map-city-end: #eaf1f5;
+  --map-road-minor: rgba(71, 102, 126, 0.15);
+  --map-road-major: #ffffff;
+  --map-water: #bfe5f2;
+  --map-water-core: #8ccde3;
+  --map-park: #d9eddc;
+  --map-label: #31536d;
 }
 
 [data-theme="dark"] {
@@ -71,6 +80,15 @@
   --kpi-tint-green: rgba(19, 138, 61, 0.24);
   --kpi-tint-info: rgba(64, 148, 200, 0.2);
   --kpi-tint-warning: rgba(224, 134, 0, 0.22);
+  --map-panel-bg: #0b1826;
+  --map-city-start: #132536;
+  --map-city-end: #0d1b29;
+  --map-road-minor: rgba(213, 229, 240, 0.09);
+  --map-road-major: rgba(213, 229, 240, 0.13);
+  --map-water: #173f55;
+  --map-water-core: #2d718f;
+  --map-park: #173c2c;
+  --map-label: #a9c2d6;
 }
 
 /* Проброс токенов в утилиты Tailwind v4 (bg-brand-navy, text-text-secondary и т.д.) */
@@ -193,4 +211,31 @@ body {
   font-family: var(--font-data);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
+}
+
+@keyframes country-map-pulse {
+  0%, 100% { transform: scale(0.78); opacity: 0.2; }
+  50% { transform: scale(1.25); opacity: 0.05; }
+}
+
+.country-map-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: country-map-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes network-selection-pulse {
+  0%, 100% { r: 16px; opacity: 0.42; }
+  50% { r: 21px; opacity: 0.12; }
+}
+
+.network-selection-ring {
+  animation: network-selection-pulse 1.9s ease-in-out infinite;
+}
+
+.showcase-hero {
+  background:
+    radial-gradient(circle at 82% 15%, rgba(19, 138, 61, 0.28), transparent 24%),
+    radial-gradient(circle at 58% 105%, rgba(226, 27, 45, 0.22), transparent 32%),
+    linear-gradient(128deg, #082742 0%, #0d385a 58%, #0b4a53 100%);
 }

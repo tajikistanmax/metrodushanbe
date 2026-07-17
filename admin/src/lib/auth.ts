@@ -12,8 +12,8 @@
  *  - ADMIN_SESSION_SECRET — секрет подписи cookie (в проде — обязателен).
  *
  * Токен вычисляется через Web Crypto (globalThis.crypto.subtle) — API доступен
- * и в Node-runtime (Server Actions), и в Edge-runtime (middleware), поэтому
- * обе стороны считают одинаковый HMAC без импорта node:crypto.
+ * в Node-runtime Server Actions и Next Proxy, поэтому оба контура считают
+ * одинаковый HMAC без импорта node:crypto.
  */
 
 export const SESSION_COOKIE = "metro-admin.session";
@@ -37,7 +37,7 @@ function sessionSecret(): string {
   return process.env.ADMIN_SESSION_SECRET ?? DEV_SECRET;
 }
 
-/** HMAC-SHA256(secret, payload) → hex. Работает в Node и Edge runtime. */
+/** HMAC-SHA256(secret, payload) → hex. Работает в серверном Node runtime. */
 export async function computeSessionToken(): Promise<string> {
   const enc = new TextEncoder();
   const key = await globalThis.crypto.subtle.importKey(

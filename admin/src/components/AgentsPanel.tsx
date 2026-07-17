@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { AiBriefing, AiChatResponse } from "@/lib/types";
 import { sendAiChat } from "@/lib/admin-actions";
+import { formatDateTime } from "@/lib/i18n";
 
 type AgentsPanelProps = {
   data: AiBriefing | null;
@@ -127,7 +128,7 @@ export default function AgentsPanel({ data, error }: AgentsPanelProps) {
             <p className="mt-1 text-2xl font-extrabold">{data.posture}</p>
           </div>
           <p className="rounded-full bg-[var(--chip-bg)] px-3 py-1 text-xs font-semibold text-text-secondary">
-            {new Date(data.generatedAt).toLocaleString()}
+            {formatDateTime(data.generatedAt, "en")}
           </p>
         </div>
         <ul className="mt-4 grid gap-2">

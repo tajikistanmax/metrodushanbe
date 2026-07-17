@@ -50,8 +50,12 @@ function isStationFeature(f: NetworkFeature): boolean {
 
 export default function NetworkSchematic({
   data,
+  selectedCode = null,
+  onStationSelect,
 }: {
   data: NetworkGeoJson;
+  selectedCode?: string | null;
+  onStationSelect?: (code: string) => void;
 }) {
   const { lang, dict } = useI18n();
 
@@ -143,8 +147,20 @@ export default function NetworkSchematic({
       role="img"
       aria-label={dict.dash.networkTitle}
     >
-      {/* Мягкая сетка фона — намёк на карту города */}
-      <g stroke="var(--card-border)" strokeWidth="1" opacity="0.5">
+      <defs>
+        <linearGradient id="city-map-bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="var(--map-city-start)" />
+          <stop offset="1" stopColor="var(--map-city-end)" />
+        </linearGradient>
+        <filter id="line-glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#082742" floodOpacity=".18" />
+        </filter>
+      </defs>
+
+      <rect width={VIEW_W} height={VIEW_H} rx="18" fill="url(#city-map-bg)" />
+
+      {/* Городская подложка: квартальная сетка, магистрали, река и зелёные зоны. */}
+      <g stroke="var(--map-road-minor)" strokeWidth="1" opacity="0.72">
         {Array.from({ length: 7 }, (_, i) => (
           <line
             key={`v${i}`}
@@ -165,7 +181,31 @@ export default function NetworkSchematic({
         ))}
       </g>
 
+      <g fill="var(--map-park)" opacity=".72">
+        <path d="M92 64h112l24 62-63 45-97-32Z" />
+        <path d="M666 312h126l22 112-75 44-104-51Z" />
+        <path d="M490 62h102l28 62-43 42-111-31Z" />
+      </g>
+
+      <g fill="none" strokeLinecap="round">
+        <path d="M312 -10C292 78 352 132 334 216S275 352 306 530" stroke="var(--map-water)" strokeWidth="20" opacity=".58" />
+        <path d="M312 -10C292 78 352 132 334 216S275 352 306 530" stroke="var(--map-water-core)" strokeWidth="3" opacity=".75" />
+        <path d="M28 398C168 332 264 355 398 300S646 202 842 244" stroke="var(--map-road-major)" strokeWidth="5" opacity=".65" />
+        <path d="M18 160C168 210 286 184 426 140S671 94 844 142" stroke="var(--map-road-major)" strokeWidth="4" opacity=".48" />
+        <path d="M118 16C176 118 187 208 160 318S152 448 210 508" stroke="var(--map-road-major)" strokeWidth="4" opacity=".42" />
+        <path d="M692 8C638 98 646 182 684 264S739 421 706 512" stroke="var(--map-road-major)" strokeWidth="4" opacity=".42" />
+      </g>
+
+      <text x="704" y="48" fill="var(--map-label)" fontSize="27" fontWeight="900" opacity=".19">
+        {lang === "en" ? "DUSHANBE" : "ДУШАНБЕ"}
+      </text>
+      <g transform="translate(814 476)" fill="var(--map-label)" opacity=".65">
+        <path d="M0 22 10 0l10 22-10-5Z" />
+        <text x="10" y="38" textAnchor="middle" fontSize="10" fontWeight="800">N</text>
+      </g>
+
       {/* Кассинг линий (подложка цвета карточки для «прорезания» сетки) */}
+      <g filter="url(#line-glow)">
       {lines.map((l) => (
         <polyline
           key={`case-${l.code}`}
@@ -192,12 +232,25 @@ export default function NetworkSchematic({
           <title>{`${lineBadgeLabel(l.code, lang)} — ${l.name}`}</title>
         </polyline>
       ))}
+      </g>
 
       {/* Станции */}
-      {stations.map((s) => (
-        <Link key={s.code} href="/stations" className="group focus:outline-none">
-          <g>
+      {stations.map((s) => {
+        const stationGraphic = (
+          <g className="group">
             <title>{s.name}</title>
+            {selectedCode === s.code && (
+              <circle
+                cx={s.x}
+                cy={s.y}
+                r="18"
+                fill="none"
+                stroke="#e21b2d"
+                strokeWidth="3"
+                opacity=".32"
+                className="network-selection-ring"
+              />
+            )}
             {s.isTransfer ? (
               <>
                 <circle
@@ -247,8 +300,31 @@ export default function NetworkSchematic({
               {s.name}
             </text>
           </g>
-        </Link>
-      ))}
+        );
+
+        return onStationSelect ? (
+          <g
+            key={s.code}
+            role="button"
+            tabIndex={0}
+            aria-label={s.name}
+            className="cursor-pointer focus:outline-none"
+            onClick={() => onStationSelect(s.code)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onStationSelect(s.code);
+              }
+            }}
+          >
+            {stationGraphic}
+          </g>
+        ) : (
+          <Link key={s.code} href="/map" className="group focus:outline-none">
+            {stationGraphic}
+          </Link>
+        );
+      })}
     </svg>
   );
 }
