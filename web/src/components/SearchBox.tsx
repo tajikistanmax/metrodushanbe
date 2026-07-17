@@ -39,7 +39,10 @@ export default function SearchBox({ value, onChange }: SearchBoxProps) {
         aria-label={dict.searchLabel}
         placeholder={dict.searchPlaceholder}
         autoComplete="off"
-        className="h-10 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--field-bg)] pl-9 pr-3 text-sm font-semibold text-[var(--text-primary)] placeholder:font-medium placeholder:text-text-secondary"
+        // placeholder:font-medium снят: вес 500 не загружен через
+        // @fontsource/montserrat — браузер его синтезировал. Плейсхолдер
+        // отличается от введённого текста цветом, а не мнимым весом.
+        className="h-10 w-full rounded-control border border-[var(--border-subtle)] bg-[var(--surface-raised)] pl-9 pr-3 text-small text-[var(--text-primary)] placeholder:text-text-secondary"
       />
     </div>
   );

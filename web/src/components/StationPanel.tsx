@@ -21,6 +21,7 @@ import {
   type StationDetail,
   type StationFeature,
 } from "@/lib/types";
+import { STATION_LIST_ID } from "@/lib/dom-ids";
 import SearchBox from "./SearchBox";
 import StationArrivals from "./StationArrivals";
 import { useI18n } from "./I18nProvider";
@@ -130,7 +131,7 @@ function LineDiagram({
 
   return (
     <div className="mb-4 last:mb-1">
-      <h3 className="mb-1 flex items-center gap-2 px-2 text-sm font-bold">
+      <h3 className="mb-1 flex items-center gap-2 px-2 text-small font-bold">
         <span className="line-badge" style={{ background: color }}>
           {lineBadgeLabel(line.properties.code, lang)}
         </span>
@@ -156,8 +157,8 @@ function LineDiagram({
                   type="button"
                   aria-current={selected ? "true" : undefined}
                   onClick={() => onSelect(code)}
-                  className={`relative flex w-full items-center gap-2 rounded-xl py-2 pl-10 pr-2 text-left text-sm font-semibold transition-colors duration-150 ease-out hover:bg-[var(--control-hover)] ${
-                    selected ? "bg-[var(--control-hover)]" : ""
+                  className={`relative flex w-full items-center gap-2 rounded-control py-2 pl-10 pr-2 text-left text-small font-semibold transition-colors duration-150 ease-out hover:bg-[var(--surface-hover)] ${
+                    selected ? "bg-[var(--surface-hover)]" : ""
                   }`}
                 >
                   <StationDot
@@ -168,7 +169,7 @@ function LineDiagram({
                     {pickName(station.properties.name, lang)}
                   </span>
                   {station.properties.is_transfer && (
-                    <span className="shrink-0 rounded-full border border-[var(--panel-border)] px-2 py-0.5 text-[11px] font-semibold text-text-secondary">
+                    <span className="shrink-0 rounded-chip border border-[var(--border-subtle)] px-2 py-0.5 text-caption font-semibold text-text-secondary">
                       {transferLabel}
                     </span>
                   )}
@@ -231,7 +232,7 @@ function featureStatusClass(status: StationDetail["accessibilityFeatures"][numbe
       return "border-[var(--brand-red)] text-[var(--brand-red)] font-bold";
     case "planned":
     default:
-      return "border-[var(--panel-border)] text-text-secondary";
+      return "border-[var(--border-subtle)] text-text-secondary";
   }
 }
 
@@ -266,12 +267,12 @@ function StationDetailCard({
   const lines = detail?.lines ?? station?.properties.lines ?? [];
 
   return (
-    <div className="mb-3 rounded-xl border border-[var(--panel-border)] bg-[var(--control-hover)] p-3">
-      <h3 className="text-sm font-bold">{name}</h3>
+    <div className="mb-3 rounded-control border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-3">
+      <h3 className="text-small font-bold">{name}</h3>
 
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
         {status && (
-          <span className="rounded-full border border-[var(--panel-border)] px-2 py-0.5 text-[11px] font-semibold text-text-secondary">
+          <span className="rounded-chip border border-[var(--border-subtle)] px-2 py-0.5 text-caption font-semibold text-text-secondary">
             {dict.status[status]}
           </span>
         )}
@@ -290,13 +291,13 @@ function StationDetailCard({
       />
 
       {loading && (
-        <p role="status" className="mt-2.5 text-xs text-text-secondary">
+        <p role="status" className="mt-2.5 text-caption text-text-secondary">
           {dict.detailsLoading}
         </p>
       )}
 
       {!loading && !detail && (
-        <p role="status" className="mt-2.5 text-xs text-text-secondary">
+        <p role="status" className="mt-2.5 text-caption text-text-secondary">
           {dict.detailsUnavailable}
         </p>
       )}
@@ -305,11 +306,11 @@ function StationDetailCard({
         <>
           {/* Выходы */}
           <section className="mt-3">
-            <h4 className="text-[11px] font-bold uppercase tracking-wide text-text-secondary">
+            <h4 className="text-caption font-bold uppercase tracking-[0.08em] text-text-secondary">
               {dict.exitsHeading}
             </h4>
             {detail.exits.length === 0 ? (
-              <p className="mt-1 text-xs text-text-secondary">
+              <p className="mt-1 text-caption text-text-secondary">
                 {dict.detailsNoExits}
               </p>
             ) : (
@@ -317,14 +318,16 @@ function StationDetailCard({
                 {detail.exits.map((exit) => (
                   <li
                     key={exit.code}
-                    className="flex items-center gap-2 text-sm"
+                    className="flex items-center gap-2 text-small"
                   >
                     <AccessIcon accessible={exit.isAccessible} />
-                    <span className="min-w-0 flex-1 truncate font-medium">
+                    {/* font-medium снят: вес 500 не загружен (@fontsource/montserrat
+                        даёт 400/600/700/800) — браузер его синтезировал */}
+                    <span className="min-w-0 flex-1 truncate">
                       {pickName(exit.name, lang)}
                     </span>
                     <span
-                      className={`shrink-0 text-[11px] font-semibold ${
+                      className={`shrink-0 text-caption font-semibold ${
                         exit.isAccessible
                           ? "text-[var(--brand-green)]"
                           : "text-text-secondary"
@@ -342,11 +345,11 @@ function StationDetailCard({
 
           {/* Объекты доступности */}
           <section className="mt-3">
-            <h4 className="text-[11px] font-bold uppercase tracking-wide text-text-secondary">
+            <h4 className="text-caption font-bold uppercase tracking-[0.08em] text-text-secondary">
               {dict.accessibilityFeaturesHeading}
             </h4>
             {detail.accessibilityFeatures.length === 0 ? (
-              <p className="mt-1 text-xs text-text-secondary">
+              <p className="mt-1 text-caption text-text-secondary">
                 {dict.detailsNoFeatures}
               </p>
             ) : (
@@ -364,18 +367,18 @@ function StationDetailCard({
                   return (
                   <li
                     key={`${feature.type}-${index}`}
-                    className="flex items-start gap-2 text-sm"
+                    className="flex items-start gap-2 text-small"
                   >
                     <span className="min-w-0 flex-1">
                       <span className="font-semibold">{primary}</span>
                       {secondary && (
-                        <span className="block text-xs text-text-secondary">
+                        <span className="block text-caption text-text-secondary">
                           {secondary}
                         </span>
                       )}
                     </span>
                     <span
-                      className={`mt-0.5 shrink-0 rounded-full border px-2 py-0.5 text-[11px] ${featureStatusClass(
+                      className={`mt-0.5 shrink-0 rounded-chip border px-2 py-0.5 text-caption ${featureStatusClass(
                         feature.status,
                       )}`}
                     >
@@ -501,10 +504,9 @@ export default function StationPanel({
 
   return (
     <section
-      id="station-list"
+      id={STATION_LIST_ID}
       aria-label={dict.stationsHeading}
-      style={{ background: "var(--panel-bg)" }}
-      className={`absolute inset-x-0 bottom-0 z-10 flex flex-col overflow-hidden rounded-t-2xl border border-[var(--panel-border)] text-[var(--text-primary)] shadow-[var(--shadow-card)] backdrop-blur-md md:inset-x-auto md:bottom-auto md:left-4 md:top-4 md:w-[360px] md:rounded-2xl ${
+      className={`absolute inset-x-0 bottom-0 z-10 flex flex-col overflow-hidden rounded-t-panel border border-[var(--border-subtle)] bg-[var(--surface-glass)] text-[var(--text-primary)] backdrop-blur-md md:inset-x-auto md:bottom-auto md:left-4 md:top-4 md:w-[360px] md:rounded-panel ${
         expanded
           ? "h-[45dvh] md:h-auto md:max-h-[calc(100dvh-160px)]"
           : "h-auto"
@@ -516,7 +518,7 @@ export default function StationPanel({
       </div>
 
       <div className="flex shrink-0 items-center gap-2 px-4 pb-2 pt-1.5 md:pt-3">
-        <h2 className="text-[15px] font-bold">{dict.stationsHeading}</h2>
+        <h2 className="text-body font-bold">{dict.stationsHeading}</h2>
         <button
           type="button"
           aria-expanded={expanded}
@@ -524,7 +526,7 @@ export default function StationPanel({
           aria-label={expanded ? dict.panelCollapse : dict.panelExpand}
           title={expanded ? dict.panelCollapse : dict.panelExpand}
           onClick={() => setExpanded((v) => !v)}
-          className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg transition-colors duration-150 ease-out hover:bg-[var(--control-hover)]"
+          className="ml-auto flex h-8 w-8 items-center justify-center rounded-control transition-colors duration-150 ease-out hover:bg-[var(--surface-hover)]"
         >
           <svg
             aria-hidden="true"
@@ -567,11 +569,11 @@ export default function StationPanel({
               />
             )}
             {groups.length === 0 ? (
-              <p className="px-2 py-3 text-sm text-text-secondary">
+              <p className="px-2 py-3 text-small text-text-secondary">
                 {dict.loading}
               </p>
             ) : visibleGroups.length === 0 ? (
-              <p role="status" className="px-2 py-3 text-sm text-text-secondary">
+              <p role="status" className="px-2 py-3 text-small text-text-secondary">
                 {dict.searchNoResults}
               </p>
             ) : (

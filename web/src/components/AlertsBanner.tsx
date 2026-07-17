@@ -18,6 +18,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { MAIN_CONTENT_ID } from "@/lib/dom-ids";
 import { lineBadgeLabel, pickName } from "@/lib/i18n";
 import {
   isLineFeature,
@@ -28,12 +29,6 @@ import {
   type ServiceAlert,
 } from "@/lib/types";
 import { useI18n } from "./I18nProvider";
-
-/**
- * id элемента <main> (задаётся в HomeClient вместе с tabIndex={-1}) —
- * fallback-цель фокуса после закрытия последнего баннера.
- */
-export const MAIN_CONTENT_ID = "main-content";
 
 type AlertsBannerProps = {
   /** Активные уведомления в порядке, который отдаёт API. */
@@ -211,11 +206,11 @@ export default function AlertsBanner({ alerts, data }: AlertsBannerProps) {
         style={{ background: leadStyle.bg, color: leadStyle.fg }}
       >
         <SeverityIcon severity={leadAlert.severity} />
-        <p className="min-w-0 flex-1 truncate text-[13px] font-bold">
+        <p className="min-w-0 flex-1 truncate text-small font-bold">
           {pickName(leadAlert.title, lang)}
         </p>
         <span
-          className="rounded-full border border-current/40 px-2 py-0.5 text-[10px] font-extrabold tabular-nums"
+          className="rounded-chip border border-current/40 px-2 py-0.5 text-caption font-bold tabular-nums"
           aria-label={`${visible.length} ${dict.alertCountLabel}`}
         >
           {visible.length}
@@ -226,7 +221,7 @@ export default function AlertsBanner({ alerts, data }: AlertsBannerProps) {
           aria-expanded={expanded}
           aria-controls={detailsId}
           onClick={() => setExpanded((value) => !value)}
-          className="flex h-7 items-center gap-1 rounded-lg px-2 text-[11px] font-extrabold transition-colors hover:bg-current/15"
+          className="flex h-7 items-center gap-1 rounded-control px-2 text-caption font-bold transition-colors hover:bg-current/15"
         >
           <span className="hidden sm:inline">{expanded ? dict.alertHideAll : dict.alertShowAll}</span>
           <svg
@@ -261,19 +256,19 @@ export default function AlertsBanner({ alerts, data }: AlertsBannerProps) {
 
             <div className="min-w-0 flex-1">
               {/* Заголовок жирно, перед ним — текстовая метка severity */}
-              <p className="text-[13px] font-bold leading-snug">
-                <span className="mr-1.5 inline-block rounded-md border border-current px-1.5 align-[1px] text-[10px] font-bold uppercase tracking-wider">
+              <p className="text-small font-bold leading-snug">
+                <span className="mr-1.5 inline-block rounded-chip border border-current px-1.5 align-[1px] text-caption font-bold uppercase tracking-[0.08em]">
                   {dict.alertSeverity[alert.severity]}
                 </span>
                 {pickName(alert.title, lang)}
               </p>
-              <p className="mt-0.5 text-[13px] leading-snug">
+              <p className="mt-0.5 text-small leading-snug">
                 {pickName(alert.body, lang)}
               </p>
 
               {/* Бейджи целей; пустой список = уведомление на всю сеть */}
               {alert.targets.length > 0 && (
-                <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs font-semibold">
+                <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-caption font-semibold">
                   <span>{dict.alertAffected}</span>
                   {alert.targets.map((target) => {
                     const key = `${target.type}-${target.code}`;
@@ -295,7 +290,7 @@ export default function AlertsBanner({ alerts, data }: AlertsBannerProps) {
                     return (
                       <span
                         key={key}
-                        className="rounded-full border border-current px-2 py-0.5 text-[11px] font-semibold"
+                        className="rounded-chip border border-current px-2 py-0.5 text-caption font-semibold"
                       >
                         {name ? pickName(name, lang) : target.code}
                       </span>
@@ -317,7 +312,7 @@ export default function AlertsBanner({ alerts, data }: AlertsBannerProps) {
               aria-label={dismissLabel}
               title={dismissLabel}
               onClick={() => dismiss(alert.code)}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors duration-150 ease-out hover:bg-current/15"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control transition-colors duration-150 ease-out hover:bg-current/15"
             >
               <svg
                 aria-hidden="true"

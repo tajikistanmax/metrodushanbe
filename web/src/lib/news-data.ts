@@ -30,7 +30,7 @@ function isI18nName(value: unknown): value is I18nName {
  * publishedAt или coverMediaUrl не-строка-и-не-null — статья отбрасывается
  * целиком (null). Отсутствующий coverMediaUrl нормализуется в null.
  */
-function parseNewsArticle(value: unknown): NewsArticle | null {
+export function parseNewsArticle(value: unknown): NewsArticle | null {
   const candidate = value as NewsArticle | null;
   if (
     !candidate ||

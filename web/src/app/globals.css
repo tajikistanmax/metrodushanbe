@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* >>> НАЧАЛО СГЕНЕРИРОВАННОГО БЛОКА — packages/design/tokens.mjs
+   Правки здесь затрутся: меняйте packages/design/tokens.mjs и
+   запускайте `node packages/design/sync.mjs`. <<< */
 /*
  * Дизайн-токены бренда «Метро Душанбе» (docs/dev-conventions.md, §5).
  * Шрифт — Montserrat, self-host через @fontsource (импорт весов в layout.tsx);
@@ -7,7 +10,8 @@
  * Тёмная тема — через [data-theme="dark"] на <html> (см. ThemeProvider).
  */
 :root {
-  /* Брендовые константы (одинаковы в обеих темах) */
+
+  /* --- Бренд (docs/dev-conventions.md §5); регистр hex — всегда нижний --- */
   --brand-navy: #082742;
   --brand-red: #e21b2d;
   --brand-green: #138a3d;
@@ -17,65 +21,163 @@
   --warning: #e08600;
   --info: #0e5a8a;
 
-  /* Семантические токены светлой темы */
-  --text-primary: var(--brand-navy);
-  --text-secondary: #3a4a5a;
-  --page-bg: #edf1f5;
-  --map-bg: #edf1f5;
-  --panel-bg: rgba(255, 255, 255, 0.88);
-  --panel-border: rgba(8, 39, 66, 0.12);
-  --field-bg: #ffffff;
-  --popup-bg: #ffffff;
-  --control-hover: rgba(8, 39, 66, 0.07);
-  --station-fill: #ffffff;
-  --diagram-ring: var(--brand-navy);
-  --pulse-color: var(--brand-red);
-  --shadow-card: 0 8px 32px rgba(8, 39, 66, 0.18);
-  --demo-bg: #fff6dc;
-  --demo-text: #634500;
-  --demo-border: rgba(224, 134, 0, 0.28);
+  /* --- Отступы: 4px-сетка, ограниченный нелинейный ряд --- */
+  --space-0: 0;
+  --space-1: 0.25rem;  /* 4px  — зазор иконки и подписи */
+  --space-2: 0.5rem;   /* 8px  — внутренний зазор контрола */
+  --space-3: 0.75rem;  /* 12px — паддинг компактного контрола */
+  --space-4: 1rem;     /* 16px — базовый паддинг карточки */
+  --space-5: 1.5rem;   /* 24px — между блоками */
+  --space-6: 2rem;     /* 32px — между секциями */
+  --space-7: 3rem;     /* 48px — крупные разделители */
+  --space-8: 4rem;     /* 64px — вертикальный ритм страницы */
+  --space-9: 6rem;     /* 96px — герой-блоки */
+
+  /* --- Радиусы: 0/2/4/8 + pill только для окружностей --- */
+  --corner-flat: 0;        /* полосы, таблицы, врезки во всю ширину */
+  --corner-chip: 2px;      /* бейджи, теги, индикатор фокуса */
+  --corner-control: 4px;   /* кнопки, поля ввода, селекты */
+  --corner-panel: 8px;     /* карточки, модалки, поповеры */
+  --corner-pill: 9999px;   /* ТОЛЬКО круги: точки, аватары, .station-pulse */
+
+  /* --- Типографика: 9 ступеней, line-height по 4px-сетке --- */
+  --type-caption: 0.75rem;      /* 12px — надписи, подписи колонок */
+  --type-small: 0.875rem;       /* 14px — вторичный текст, ячейки таблиц */
+  --type-body: 1rem;            /* 16px — базовый текст */
+  --type-lead: 1.1875rem;       /* 19px — вводный абзац */
+  --type-title-s: 1.25rem;      /* 20px — заголовок карточки */
+  --type-title-m: 1.5rem;       /* 24px — заголовок секции */
+  --type-title-l: 2rem;         /* 32px — заголовок страницы */
+  --type-title-xl: 2.5rem;      /* 40px — главный заголовок раздела */
+  --type-display: 3rem;         /* 48px — герой-блок портала */
+
+  --type-caption-lh: 1rem;      /* 16px */
+  --type-small-lh: 1.25rem;     /* 20px */
+  --type-body-lh: 1.5rem;       /* 24px */
+  --type-lead-lh: 1.75rem;      /* 28px */
+  --type-title-s-lh: 1.75rem;   /* 28px */
+  --type-title-m-lh: 2rem;      /* 32px */
+  --type-title-l-lh: 2.5rem;    /* 40px */
+  --type-title-xl-lh: 3rem;     /* 48px */
+  --type-display-lh: 3.5rem;    /* 56px */
+
+  /* Веса — только загруженные начертания Montserrat (400/600/700/800).
+     Соответствуют встроенным утилитам Tailwind: font-normal / font-semibold /
+     font-bold / font-extrabold. font-medium (500) НЕ использовать — вес не загружен. */
+  --weight-regular: 400;   /* body; ДЕФОЛТ текста */
+  --weight-semibold: 600;  /* подписи, навигация, подзаголовки */
+  --weight-bold: 700;      /* заголовки, кнопки */
+  --weight-black: 800;     /* ТОЛЬКО display и словесный знак */
 
   /* Montserrat self-host; таджикские буквы (ӣ ӯ қ ғ ҳ ҷ) — субсет
      cyrillic-ext, fallback — Segoe UI (dev-conventions.md, §5) */
   --font-brand: "Montserrat", "Segoe UI", system-ui, sans-serif;
+
+  /* Моноширинный стек для операционных данных (ID, координаты, время):
+     системные шрифты, без загрузки — офлайн-принцип §8 */
+  --font-data: ui-monospace, "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+
+  /* --- Тени: 2 ступени; плоскости разделяет граница, а не размытие --- */
+  --elevation-none: none;
+  --elevation-raised: 0 1px 2px rgba(8, 39, 66, 0.08);   /* липкие панели, шапки */
+  --elevation-overlay: 0 8px 24px rgba(8, 39, 66, 0.16); /* popup/модалка/тост */
+
+  /* --- Поверхности (единый словарь для web и admin) --- */
+  --text-primary: var(--brand-navy);
+  --text-secondary: #3a4a5a;
+  --surface-page: #edf1f5;      /* фон страницы */
+  --surface-raised: #ffffff;    /* карточка, панель, поле ввода */
+  --surface-sunken: #f2f5f8;    /* шапка таблицы, утопленная зона */
+  --surface-overlay: #ffffff;   /* popup, модалка, дропдаун */
+  --surface-glass: rgba(255, 255, 255, 0.88); /* полупрозрачные панели ПОВЕРХ карты */
+  --surface-chip: rgba(8, 39, 66, 0.06);      /* фон бейджа/чипа */
+  --surface-hover: rgba(8, 39, 66, 0.07);        /* ховер контрола */
+  --surface-hover-subtle: rgba(8, 39, 66, 0.04); /* ховер строки таблицы */
+  --border-subtle: rgba(8, 39, 66, 0.12);  /* граница карточки/таблицы */
+  --border-strong: rgba(8, 39, 66, 0.28);  /* граница secondary-кнопки */
+
+  /* --- Статусы: цвет — вспомогательный сигнал, не единственный носитель --- */
+  --status-ok: #4ade80;       /* индикатор на navy-шапке (≥3:1 к navy) */
+  --status-idle: #9fb3c8;     /* «загружается» на navy-шапке */
+  --status-neutral: #8aa1b4;  /* planned */
+  --status-retired: #6b7785;  /* decommissioned */
+
+  /* Тинты подложек (бейдж, alert, KPI) */
+  --tint-neutral: rgba(8, 39, 66, 0.06);
+  --tint-info: rgba(14, 90, 138, 0.1);
+  --tint-success: rgba(19, 138, 61, 0.12);
+  --tint-warning: rgba(224, 134, 0, 0.12);
+  --tint-critical: rgba(226, 27, 45, 0.1);
+
+  /* --- Фокус (WCAG 2.2 SC 1.4.11); контрасты посчитаны, не менять вслепую --- */
+  --focus-ring: var(--info);                  /* на светлом фоне */
+  --focus-ring-on-dark: var(--surface-light); /* на navy: белый ≈15:1 */
+  --focus-ring-on-amber: var(--brand-navy);   /* на #e08600: navy ≈5.5:1 */
+  --focus-width: 3px;
+  --focus-offset: 2px;
+
+  /* --- Только портал --- */
+  --station-fill: #ffffff;
+  --diagram-ring: var(--brand-navy);
+  --pulse-color: var(--brand-red);
+  --demo-bg: #fff6dc;
+  --demo-text: #634500;
+  --demo-border: rgba(224, 134, 0, 0.28);
+
+  /* --- Алиасы обратной совместимости (см. packages/design/MIGRATION.md) --- */
+  --page-bg: var(--surface-page);
+  --map-bg: var(--surface-page);
+  --panel-bg: var(--surface-glass);
+  --panel-border: var(--border-subtle);
+  --field-bg: var(--surface-raised);
+  --popup-bg: var(--surface-overlay);
+  --control-hover: var(--surface-hover);
+  --shadow-card: var(--elevation-raised);
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
+
+  --elevation-raised: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --elevation-overlay: 0 8px 24px rgba(0, 0, 0, 0.5);
+
   --text-primary: #f2f5f8;
   --text-secondary: #aebfce;
-  --page-bg: #0b1622;
-  --map-bg: #0b1622;
-  --panel-bg: rgba(15, 29, 46, 0.85);
-  --panel-border: rgba(242, 245, 248, 0.16);
-  --field-bg: #0b1b2c;
-  --popup-bg: #0f1d2e;
-  --control-hover: rgba(242, 245, 248, 0.1);
+  --surface-page: #0b1622;
+  --surface-raised: #0f1d2e;
+  --surface-sunken: rgba(242, 245, 248, 0.05);
+  --surface-overlay: #0f1d2e;
+  --surface-glass: rgba(15, 29, 46, 0.85);
+  --surface-chip: rgba(242, 245, 248, 0.09);
+  --surface-hover: rgba(242, 245, 248, 0.1);
+  --surface-hover-subtle: rgba(242, 245, 248, 0.06);
+  --border-subtle: rgba(242, 245, 248, 0.14);
+  --border-strong: rgba(242, 245, 248, 0.32);
+
+  --status-ok: #4ade80;
+  --status-idle: #9fb3c8;
+  --status-neutral: #8aa1b4;
+  --status-retired: #94a2b0;
+  --tint-neutral: rgba(242, 245, 248, 0.09);
+  --tint-info: rgba(64, 148, 200, 0.2);
+  --tint-success: rgba(19, 138, 61, 0.24);
+  --tint-warning: rgba(224, 134, 0, 0.22);
+  --tint-critical: rgba(226, 27, 45, 0.22);
+
+  --focus-ring: #8fc3ea; /* --info на тёмном даёт <3:1 — индикатор светлее */
+
   --station-fill: #0f1d2e;
   --diagram-ring: #f2f5f8;
   --pulse-color: #ff6b7a;
-  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.55);
   --demo-bg: #382b0c;
   --demo-text: #ffe6a2;
   --demo-border: rgba(255, 210, 92, 0.24);
 }
 
-/*
- * Лента флага Республики Таджикистан (красный/белый/зелёный 2:3:2) —
- * государственная сигнатура платформы: тонкая полоса над шапкой.
- */
-.ribbon-flag {
-  height: 4px;
-  background: linear-gradient(
-    to right,
-    #e21b2d 0 28.6%,
-    #ffffff 28.6% 71.4%,
-    #138a3d 71.4% 100%
-  );
-}
-
-/* Проброс токенов в утилиты Tailwind v4 (bg-brand-navy, text-text-secondary и т.д.) */
+/* Проброс токенов в утилиты Tailwind v4 (bg-brand-navy, text-title-l и т.д.) */
 @theme inline {
+
+  /* Цвета бренда */
   --color-brand-navy: var(--brand-navy);
   --color-brand-red: var(--brand-red);
   --color-brand-green: var(--brand-green);
@@ -86,64 +188,114 @@
   --color-warning: var(--warning);
   --color-info: var(--info);
   --color-ink: var(--text-primary);
+
+  /* Цвета поверхностей */
+  --color-surface-page: var(--surface-page);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-overlay: var(--surface-overlay);
+  --color-surface-glass: var(--surface-glass);
+  --color-surface-hover: var(--surface-hover);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+
+  /* Статусные цвета */
+  --color-status-ok: var(--status-ok);
+  --color-status-idle: var(--status-idle);
+  --color-status-neutral: var(--status-neutral);
+  --color-status-retired: var(--status-retired);
+
+  /* Радиусы (ролевые имена — встроенные sm/md/lg/xl не трогаем) */
+  --radius-flat: var(--corner-flat);
+  --radius-chip: var(--corner-chip);
+  --radius-control: var(--corner-control);
+  --radius-panel: var(--corner-panel);
+
+  /* Типографическая шкала */
+  --text-caption: var(--type-caption);
+  --text-caption--line-height: var(--type-caption-lh);
+  --text-small: var(--type-small);
+  --text-small--line-height: var(--type-small-lh);
+  --text-body: var(--type-body);
+  --text-body--line-height: var(--type-body-lh);
+  --text-lead: var(--type-lead);
+  --text-lead--line-height: var(--type-lead-lh);
+  --text-title-s: var(--type-title-s);
+  --text-title-s--line-height: var(--type-title-s-lh);
+  --text-title-m: var(--type-title-m);
+  --text-title-m--line-height: var(--type-title-m-lh);
+  --text-title-l: var(--type-title-l);
+  --text-title-l--line-height: var(--type-title-l-lh);
+  --text-title-xl: var(--type-title-xl);
+  --text-title-xl--line-height: var(--type-title-xl-lh);
+  --text-display: var(--type-display);
+  --text-display--line-height: var(--type-display-lh);
+
+  /* Тени */
+  --shadow-raised: var(--elevation-raised);
+  --shadow-overlay: var(--elevation-overlay);
+
+  /* Шрифты */
   --font-sans: var(--font-brand);
+  --font-mono: var(--font-data);
+
+  --color-page: var(--surface-page);
 }
 
 body {
-  background: var(--page-bg);
+  background: var(--surface-page);
   color: var(--text-primary);
   font-family: var(--font-brand);
+  font-weight: var(--weight-regular);
 }
 
-/* Горизонтальная навигация остаётся доступной для прокрутки на телефоне,
-   но системная полоса не отнимает высоту у компактной шапки. */
-.scrollbar-none {
-  scrollbar-width: none;
+/*
+ * Лента флага Республики Таджикистан (красный/белый/зелёный 2:3:2) —
+ * государственная сигнатура платформы: тонкая полоса над шапкой.
+ */
+.ribbon-flag {
+  height: 4px;
+  background: linear-gradient(
+    to right,
+    var(--brand-red) 0 28.6%,
+    var(--surface-light) 28.6% 71.4%,
+    var(--brand-green) 71.4% 100%
+  );
 }
 
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
+/*
+ * Бейдж линии («Л1»/«L1»): скруглённый прямоугольник цвета линии, белый
+ * текст 700. Inset-тень слегка затемняет фон (ложится ПОД текст), поднимая
+ * контраст белого на брендовых цветах выше 4.5:1 (WCAG 2.2 AA):
+ * #138a3d → ≈5.1:1, #e21b2d → ≈5.2:1.
+ */
+.line-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  padding: 1px 7px;
+  border-radius: var(--corner-control);
+  color: var(--surface-light);
+  font-weight: var(--weight-bold);
+  font-size: var(--type-caption);
+  line-height: 18px;
+  letter-spacing: 0.02em;
+  box-shadow: inset 0 0 0 999px rgba(8, 23, 42, 0.12);
+}
+
+/* Числа и коды в операционных данных: моно, табличные цифры */
+.data-text {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
 /* Видимый фокус для клавиатурной навигации (WCAG 2.2 AA) */
 :focus-visible {
-  outline: 3px solid var(--info);
-  outline-offset: 2px;
-  border-radius: 2px;
-}
-
-/* На тёмном фоне --info даёт <3:1 (SC 1.4.11) — индикатор фокуса светлее */
-[data-theme="dark"] :focus-visible {
-  outline-color: #8fc3ea;
-}
-
-/*
- * На тёмных поверхностях (шапка на navy, skip-link поверх шапки) --info даёт
- * контраст ≈2:1 к прилегающему фону — ниже 3:1 по SC 1.4.11 (нетекстовый
- * контраст). Поэтому индикатор фокуса здесь светлый: белый к navy ≈ 15:1.
- */
-header :focus-visible,
-.skip-link:focus-visible {
-  outline-color: var(--surface-light);
-}
-
-/* На amber-полосе (#E08600) и --info, и белый проваливают 3:1 — фокус navy */
-.demo-banner :focus-visible {
-  outline-color: var(--brand-navy);
-}
-
-/*
- * Баннеры сервисных уведомлений: индикатор фокуса читаем на каждом
- * severity-фоне (SC 1.4.11): на red (≈4.8:1) и info (≈7.4:1) — белый,
- * на amber — navy (≈5.5:1, как в .demo-banner).
- */
-.alert-banner-critical :focus-visible,
-.alert-banner-info :focus-visible {
-  outline-color: var(--surface-light);
-}
-
-.alert-banner-warning :focus-visible {
-  outline-color: var(--brand-navy);
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+  border-radius: var(--corner-chip);
 }
 
 /* Skip-link: скрыт, появляется при фокусе */
@@ -152,16 +304,17 @@ header :focus-visible,
   left: -9999px;
   top: 0;
   z-index: 100;
-  padding: 0.5rem 1rem;
+  padding: var(--space-2) var(--space-4);
   background: var(--brand-navy);
   color: var(--surface-light);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   text-decoration: none;
 }
 
 .skip-link:focus-visible {
-  left: 0.5rem;
-  top: 0.5rem;
+  left: var(--space-2);
+  top: var(--space-2);
+  outline-color: var(--focus-ring-on-dark);
 }
 
 /* Уважение к prefers-reduced-motion: минимизируем анимации CSS */
@@ -179,29 +332,56 @@ header :focus-visible,
   }
 }
 
+/* >>> КОНЕЦ СГЕНЕРИРОВАННОГО БЛОКА <<< */
+
+/* ==========================================================================
+   Ниже — стили ТОЛЬКО публичного портала. Общие токены, .ribbon-flag,
+   .line-badge, .data-text, базовый :focus-visible, .skip-link и блок
+   prefers-reduced-motion живут в сгенерированном блоке выше.
+   ========================================================================== */
+
+/* Горизонтальная навигация остаётся доступной для прокрутки на телефоне,
+   но системная полоса не отнимает высоту у компактной шапки. */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /*
- * Бейдж линии («Л1»/«L1»): скруглённый прямоугольник цвета линии, белый
- * текст 700. Inset-тень слегка затемняет фон (ложится ПОД текст), поднимая
- * контраст белого на брендовых цветах выше 4.5:1 (WCAG 2.2 AA):
- * #138A3D → ≈5.1:1, #E21B2D → ≈5.2:1.
+ * На тёмных поверхностях (шапка и подвал на navy, skip-link поверх шапки)
+ * --info даёт контраст ≈2:1 к прилегающему фону — ниже 3:1 по SC 1.4.11
+ * (нетекстовый контраст). Поэтому индикатор фокуса здесь светлый:
+ * белый к navy ≈ 15:1.
  */
-.line-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 30px;
-  padding: 1px 7px;
-  border-radius: 7px;
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 12px;
-  line-height: 18px;
-  letter-spacing: 0.02em;
-  box-shadow: inset 0 0 0 999px rgba(8, 23, 42, 0.12);
+header :focus-visible,
+footer :focus-visible {
+  outline-color: var(--focus-ring-on-dark);
+}
+
+/* На amber-полосе (#e08600) и --info, и белый проваливают 3:1 — фокус navy */
+.demo-banner :focus-visible {
+  outline-color: var(--focus-ring-on-amber);
+}
+
+/*
+ * Баннеры сервисных уведомлений: индикатор фокуса читаем на каждом
+ * severity-фоне (SC 1.4.11): на red (≈4.8:1) и info (≈7.4:1) — белый,
+ * на amber — navy (≈5.5:1, как в .demo-banner).
+ */
+.alert-banner-critical :focus-visible,
+.alert-banner-info :focus-visible {
+  outline-color: var(--focus-ring-on-dark);
+}
+
+.alert-banner-warning :focus-visible {
+  outline-color: var(--focus-ring-on-amber);
 }
 
 /* Пульсирующее кольцо выбранной станции (marker поверх карты).
-   При prefers-reduced-motion скрывается (см. блок выше) + JS-guard. */
+   При prefers-reduced-motion скрывается (см. сгенерированный блок) + JS-guard. */
 @keyframes metro-pulse {
   0% {
     transform: scale(0.35);
@@ -219,80 +399,52 @@ header :focus-visible,
 .station-pulse {
   width: 46px;
   height: 46px;
-  border-radius: 9999px;
+  border-radius: var(--corner-pill);
   border: 3px solid var(--pulse-color);
   animation: metro-pulse 1.8s ease-out infinite;
   pointer-events: none;
 }
 
-@keyframes mobility-dock-rise {
-  from {
-    transform: translateY(-8px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.mobility-dock {
-  isolation: isolate;
-  overflow: hidden;
-  background: var(--panel-bg);
-  animation: mobility-dock-rise 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.mobility-dock::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  width: 180px;
-  height: 180px;
-  right: -70px;
-  top: -105px;
-  border-radius: 9999px;
-  background: radial-gradient(circle, rgba(19, 138, 61, 0.18), transparent 70%);
-  pointer-events: none;
-}
-
-.mobility-primary {
-  background: linear-gradient(115deg, #082742 0%, #0e4f70 100%);
-}
-
-[data-theme="dark"] .mobility-primary {
-  background: linear-gradient(115deg, #123a59 0%, #0e5a78 100%);
-}
+/*
+ * Здесь были .mobility-dock (свечение 180px + въезд 420ms) и .mobility-primary
+ * (градиент 115°). Сняты при институциональном редизайне: панель дока держится
+ * на границе и --surface-glass, кнопка — на сплошном --brand-navy. Плоскости
+ * разделяет граница, а не размытие; движение — не декор (обоснование шкал —
+ * packages/design/tokens.mjs). Побочно упростился и prefers-reduced-motion:
+ * гасить теперь нечего, кроме пульса станции.
+ */
 
 /* --- MapLibre: карточка popup в стиле бренда (без дефолтного вида) --- */
 .maplibregl-popup-content {
-  background: var(--popup-bg);
+  background: var(--surface-overlay);
   color: var(--text-primary);
   font-family: var(--font-brand);
-  border-radius: 14px;
+  border-radius: var(--corner-panel);
   padding: 14px 16px 12px;
-  box-shadow: var(--shadow-card);
+  /* popup физически висит над картой — это единственный законный повод
+     для тени (см. обоснование шкалы теней в packages/design/tokens.mjs) */
+  box-shadow: var(--elevation-overlay);
   min-width: 210px;
 }
 
 .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
 .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
 .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
-  border-top-color: var(--popup-bg);
+  border-top-color: var(--surface-overlay);
 }
 
 .maplibregl-popup-anchor-top .maplibregl-popup-tip,
 .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
 .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
-  border-bottom-color: var(--popup-bg);
+  border-bottom-color: var(--surface-overlay);
 }
 
 .maplibregl-popup-anchor-left .maplibregl-popup-tip {
-  border-right-color: var(--popup-bg);
+  border-right-color: var(--surface-overlay);
 }
 
 .maplibregl-popup-anchor-right .maplibregl-popup-tip {
-  border-left-color: var(--popup-bg);
+  border-left-color: var(--surface-overlay);
 }
 
 .maplibregl-popup-close-button {
@@ -300,24 +452,24 @@ header :focus-visible,
   height: 28px;
   top: 6px;
   right: 6px;
-  border-radius: 8px;
+  border-radius: var(--corner-control);
   font-size: 18px;
   line-height: 1;
   color: var(--text-secondary);
 }
 
 .maplibregl-popup-close-button:hover {
-  background: var(--control-hover);
+  background: var(--surface-hover);
   color: var(--text-primary);
 }
 
 /* Кнопки зума MapLibre в тёмной теме */
 [data-theme="dark"] .maplibregl-ctrl-group {
-  background: var(--popup-bg);
+  background: var(--surface-overlay);
 }
 
 [data-theme="dark"] .maplibregl-ctrl-group button + button {
-  border-top-color: rgba(242, 245, 248, 0.16);
+  border-top-color: var(--border-subtle);
 }
 
 [data-theme="dark"] .maplibregl-ctrl button .maplibregl-ctrl-icon {

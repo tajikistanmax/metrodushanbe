@@ -40,7 +40,9 @@ export default function PwaRuntime() {
     <p
       role="status"
       aria-live="polite"
-      className="fixed bottom-4 left-1/2 z-[300] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 rounded-xl border border-warning/50 bg-brand-navy px-4 py-3 text-center text-sm font-semibold text-surface-light shadow-[var(--shadow-card)]"
+      // Тост физически висит над контентом — единственный законный повод
+      // для тени (--elevation-overlay, см. packages/design/tokens.mjs)
+      className="fixed bottom-4 left-1/2 z-[300] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 rounded-panel border border-warning/50 bg-brand-navy px-4 py-3 text-center text-small font-semibold text-surface-light shadow-overlay"
     >
       {dict.offlineStatus}
     </p>

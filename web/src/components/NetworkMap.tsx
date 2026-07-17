@@ -213,7 +213,7 @@ function buildPopupContent(
   const title = document.createElement("div");
   title.textContent = pickName(props.name, lang);
   title.lang = lang;
-  title.style.fontSize = "16px";
+  title.style.fontSize = "var(--type-body)";
   title.style.fontWeight = "700";
   title.style.lineHeight = "1.25";
   title.style.paddingRight = "18px";
@@ -222,7 +222,7 @@ function buildPopupContent(
   // Два остальных языка — мелко, вторичным цветом
   const otherLangs = LANGS.filter((code) => code !== lang);
   const subtitle = document.createElement("div");
-  subtitle.style.fontSize = "12px";
+  subtitle.style.fontSize = "var(--type-caption)";
   subtitle.style.color = "var(--text-secondary)";
   subtitle.style.margin = "2px 0 8px";
   otherLangs.forEach((code, index) => {
@@ -256,11 +256,11 @@ function buildPopupContent(
   if (props.is_transfer) {
     const transfer = document.createElement("span");
     transfer.textContent = dict.transferBadge;
-    transfer.style.fontSize = "11px";
+    transfer.style.fontSize = "var(--type-caption)";
     transfer.style.fontWeight = "600";
     transfer.style.padding = "1px 8px";
-    transfer.style.borderRadius = "999px";
-    transfer.style.border = "1px solid var(--panel-border)";
+    transfer.style.borderRadius = "var(--corner-chip)";
+    transfer.style.border = "1px solid var(--border-subtle)";
     transfer.style.color = "var(--text-secondary)";
     badges.appendChild(transfer);
   }
@@ -284,8 +284,8 @@ function buildPopupContent(
       chip.style.justifyContent = "center";
       chip.style.width = "26px";
       chip.style.height = "26px";
-      chip.style.borderRadius = "8px";
-      chip.style.background = "var(--control-hover)";
+      chip.style.borderRadius = "var(--corner-control)";
+      chip.style.background = "var(--surface-hover)";
       chip.style.color = "var(--text-primary)";
       chip.appendChild(buildAccessIcon(feature));
       row.appendChild(chip);

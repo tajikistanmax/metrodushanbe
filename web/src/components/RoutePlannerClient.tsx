@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MAIN_CONTENT_ID } from "@/lib/dom-ids";
 import { lineBadgeLabel, pickName } from "@/lib/i18n";
 import { loadNetworkData, type NetworkDataResult } from "@/lib/network-data";
 import { buildOfflineRoute } from "@/lib/offline-route";
@@ -23,11 +24,9 @@ import {
   type Route,
   type StationFeature,
 } from "@/lib/types";
-import Header from "./Header";
+import { Alert, Button, Card, Container, Select } from "@/shared/ui";
+import { useReportDataSource } from "./DataSourceProvider";
 import { useI18n } from "./I18nProvider";
-
-/** id основного контейнера — цель skip-link (A11Y). */
-const MAIN_ID = "route-content";
 
 type LineGroup = {
   line: LineFeature;
@@ -101,14 +100,12 @@ function TransferIcon() {
 
 /** Выпадающий список выбора станции, сгруппированный по линиям (optgroup). */
 function StationSelect({
-  id,
   label,
   placeholder,
   value,
   groups,
   onChange,
 }: {
-  id: string;
   label: string;
   placeholder: string;
   value: string;
@@ -116,40 +113,34 @@ function StationSelect({
   onChange: (code: string) => void;
 }) {
   const { lang } = useI18n();
+  // Плоским списком станции не показать: в сети из нескольких десятков станций
+  // без разбивки по линиям нужную не найти. Select принимает группы — они
+  // становятся нативными optgroup.
+  const options = useMemo(
+    () => [
+      { value: "", label: placeholder },
+      ...groups.map((group) => ({
+        label: `${lineBadgeLabel(group.line.properties.code, lang)} · ${pickName(
+          group.line.properties.name,
+          lang,
+        )}`,
+        options: group.stations.map((station) => ({
+          value: station.properties.code,
+          label: pickName(station.properties.name, lang),
+        })),
+      })),
+    ],
+    [groups, lang, placeholder],
+  );
+
   return (
     <div className="flex-1">
-      <label
-        htmlFor={id}
-        className="mb-1 block text-xs font-bold uppercase tracking-wide text-text-secondary"
-      >
-        {label}
-      </label>
-      <select
-        id={id}
+      <Select
+        label={label}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-11 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--field-bg)] px-3 text-sm font-semibold text-[var(--text-primary)]"
-      >
-        <option value="">{placeholder}</option>
-        {groups.map((group) => (
-          <optgroup
-            key={group.line.properties.code}
-            label={`${lineBadgeLabel(group.line.properties.code, lang)} · ${pickName(
-              group.line.properties.name,
-              lang,
-            )}`}
-          >
-            {group.stations.map((station) => (
-              <option
-                key={`${group.line.properties.code}-${station.properties.code}`}
-                value={station.properties.code}
-              >
-                {pickName(station.properties.name, lang)}
-              </option>
-            ))}
-          </optgroup>
-        ))}
-      </select>
+        options={options}
+      />
     </div>
   );
 }
@@ -157,11 +148,11 @@ function StationSelect({
 /** Плитка сводки маршрута (значение + подпись). */
 function SummaryTile({ value, label }: { value: string; label: string }) {
   return (
-    <div className="rounded-xl border border-[var(--panel-border)] bg-[var(--control-hover)] px-3 py-2.5 text-center">
-      <div className="text-lg font-extrabold leading-tight text-[var(--text-primary)]">
+    <div className="rounded-control border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-3 py-2.5 text-center">
+      <div className="text-title-s font-bold leading-tight text-[var(--text-primary)]">
         {value}
       </div>
-      <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
+      <div className="mt-0.5 text-caption font-semibold uppercase tracking-[0.08em] text-text-secondary">
         {label}
       </div>
     </div>
@@ -231,50 +222,62 @@ export default function RoutePlannerClient() {
     });
   }, [canSubmit, from, network, to]);
 
+  const changeFrom = useCallback((value: string) => {
+    reqRef.current += 1;
+    setFrom(value);
+    setRoute(null);
+    setStatus("idle");
+  }, []);
+
+  const changeTo = useCallback((value: string) => {
+    reqRef.current += 1;
+    setTo(value);
+    setRoute(null);
+    setStatus("idle");
+  }, []);
+
   const handleSwap = useCallback(() => {
+    reqRef.current += 1;
     setFrom(to);
     setTo(from);
+    setRoute(null);
+    setStatus("idle");
   }, [from, to]);
+
+  useReportDataSource(network?.source ?? null);
 
   const showRoute = status === "done" && route !== null && route.found;
   const showNotFound = status === "done" && route !== null && !route.found;
 
   return (
-    <div className="flex min-h-dvh w-full flex-col">
-      {/* Skip-link — первый фокусируемый элемент страницы (A11Y) */}
-      <a href={`#${MAIN_ID}`} className="skip-link">
-        {dict.route.skipToContent}
-      </a>
-
-      <Header source={network?.source ?? null} />
-
-      <main
-        id={MAIN_ID}
-        className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:px-6"
-      >
-        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+    <main id={MAIN_CONTENT_ID} className="flex-1 py-8 sm:py-12">
+      <Container width="narrow">
+        <h1 className="text-title-l font-bold sm:text-title-xl">
           {dict.route.heading}
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-text-secondary">
+        <p className="mt-3 max-w-[65ch] text-lead text-text-secondary">
           {dict.route.intro}
         </p>
 
         {/* Форма выбора «откуда»/«куда». onSubmit — чтобы работал Enter. */}
+        <Card
+          as="div"
+          padding="lg"
+          className="mt-6"
+        >
         <form
           onSubmit={(event) => {
             event.preventDefault();
             handleSubmit();
           }}
-          className="mt-6 rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4 shadow-[var(--shadow-card)] sm:p-5"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <StationSelect
-              id="route-from"
               label={dict.route.fromLabel}
               placeholder={dict.route.fromPlaceholder}
               value={from}
               groups={groups}
-              onChange={setFrom}
+              onChange={changeFrom}
             />
 
             <button
@@ -282,7 +285,7 @@ export default function RoutePlannerClient() {
               onClick={handleSwap}
               aria-label={dict.route.swap}
               title={dict.route.swap}
-              className="flex h-11 w-11 shrink-0 items-center justify-center self-center rounded-xl border border-[var(--panel-border)] text-text-secondary transition-colors duration-150 ease-out hover:bg-[var(--control-hover)] hover:text-[var(--text-primary)] sm:mb-0 sm:self-end"
+              className="flex h-11 w-11 shrink-0 items-center justify-center self-center rounded-control border border-[var(--border-strong)] text-text-secondary transition-colors duration-150 ease-out hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] sm:mb-0 sm:self-end"
             >
               <svg
                 aria-hidden="true"
@@ -303,67 +306,69 @@ export default function RoutePlannerClient() {
             </button>
 
             <StationSelect
-              id="route-to"
               label={dict.route.toLabel}
               placeholder={dict.route.toPlaceholder}
               value={to}
               groups={groups}
-              onChange={setTo}
+              onChange={changeTo}
             />
           </div>
 
           {/* Подсказки валидации: не только цветом — понятным текстом */}
           {sameStation && (
-            <p role="alert" className="mt-3 text-sm font-semibold text-brand-red">
+            <p role="alert" className="mt-3 text-small font-semibold text-brand-red">
               {dict.route.sameStation}
             </p>
           )}
 
-          <button
+          {/* Основное действие — navy (variant="primary"), а не красное:
+              красный в системе означает опасное действие (Button variant
+              "danger"), а построение маршрута ничего не разрушает. */}
+          <Button
             type="submit"
+            variant="primary"
+            size="lg"
+            block
             disabled={!canSubmit || status === "loading"}
-            className="mt-4 flex h-11 w-full items-center justify-center rounded-xl bg-brand-red px-4 text-sm font-bold text-surface-light transition-opacity duration-150 ease-out hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
+            className="mt-4"
           >
             {status === "loading" ? dict.route.building : dict.route.submit}
-          </button>
+          </Button>
 
           {!canSubmit && !sameStation && (
-            <p className="mt-2 text-center text-xs text-text-secondary">
+            <p className="mt-2 text-center text-caption text-text-secondary">
               {dict.route.selectBoth}
             </p>
           )}
         </form>
+        </Card>
 
         {/* Область результата: живой регион для скринридеров */}
         <div aria-live="polite" className="mt-6">
           {status === "loading" && (
-            <p role="status" className="text-text-secondary">
+            <p role="status" className="text-body text-text-secondary">
               {dict.route.building}
             </p>
           )}
 
+          {/* Недоступный backend и «пути нет» — РАЗНЫЕ исходы, поэтому разные
+              тона и разные текстовые метки, а не один серый прямоугольник. */}
           {status === "error" && (
-            <p
-              role="alert"
-              className="rounded-xl border border-[var(--brand-red)] bg-[var(--control-hover)] px-4 py-3 text-sm font-semibold text-brand-red"
-            >
+            <Alert tone="critical" label={dict.route.nav} live={false}>
               {dict.route.error}
-            </p>
+            </Alert>
           )}
 
           {showNotFound && (
-            <p
-              role="status"
-              className="rounded-xl border border-[var(--panel-border)] bg-[var(--control-hover)] px-4 py-3 text-sm font-semibold text-text-secondary"
-            >
+            <Alert tone="info" label={dict.route.nav} live={false}>
               {dict.route.notFound}
-            </p>
+            </Alert>
           )}
 
           {showRoute && route && (
             <section aria-label={dict.route.heading} className="flex flex-col gap-5">
               {/* Заголовок маршрута: откуда → куда */}
-              <h2 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-lg font-bold sm:text-xl">
+              <h2 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-title-s font-bold sm:text-title-m">
                 <span>{pickName(route.stops[0]?.name, lang)}</span>
                 <span aria-hidden="true" className="text-text-secondary">
                   →
@@ -394,7 +399,7 @@ export default function RoutePlannerClient() {
               </div>
 
               {/* Пометка оценочности времени — не только цветом, с иконкой */}
-              <p className="flex items-start gap-2 text-xs text-text-secondary">
+              <p className="flex items-start gap-2 text-small text-text-secondary">
                 <svg
                   aria-hidden="true"
                   focusable="false"
@@ -416,7 +421,7 @@ export default function RoutePlannerClient() {
 
               {/* Участки по линиям */}
               <section>
-                <h3 className="text-[11px] font-bold uppercase tracking-wide text-text-secondary">
+                <h3 className="text-caption font-bold uppercase tracking-[0.08em] text-text-secondary">
                   {dict.route.legsHeading}
                 </h3>
                 <ol className="mt-2 flex flex-col gap-2">
@@ -429,7 +434,7 @@ export default function RoutePlannerClient() {
                     const showTransfer = index < route.legs.length - 1;
                     return (
                       <li key={`${leg.lineCode}-${index}`}>
-                        <div className="flex items-center gap-2.5 rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-3">
+                        <div className="flex items-center gap-2.5 rounded-control border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-3">
                           <span
                             className="line-badge shrink-0"
                             style={{ background: leg.colorHex }}
@@ -437,17 +442,17 @@ export default function RoutePlannerClient() {
                             {lineBadgeLabel(leg.lineCode, lang)}
                           </span>
                           <span className="min-w-0 flex-1">
-                            <span className="block truncate font-semibold">
+                            <span className="block truncate text-small font-semibold">
                               {pickName(leg.lineName, lang)}
                             </span>
-                            <span className="block text-xs text-text-secondary">
+                            <span className="block text-caption text-text-secondary">
                               {leg.stations.length} {dict.route.stopsCountSuffix}{" "}
                               · {leg.estimatedMinutes} {dict.route.minutesSuffix}
                             </span>
                           </span>
                         </div>
                         {showTransfer && transferName && (
-                          <p className="flex items-center gap-1.5 py-1.5 pl-3 text-xs font-semibold text-text-secondary">
+                          <p className="flex items-center gap-1.5 py-1.5 pl-3 text-caption font-semibold text-text-secondary">
                             <TransferIcon />
                             <span>
                               {dict.route.transferAt}{" "}
@@ -463,7 +468,7 @@ export default function RoutePlannerClient() {
 
               {/* Остановки маршрута — вертикальный список с пометкой пересадок */}
               <section>
-                <h3 className="text-[11px] font-bold uppercase tracking-wide text-text-secondary">
+                <h3 className="text-caption font-bold uppercase tracking-[0.08em] text-text-secondary">
                   {dict.route.stopsHeading}
                 </h3>
                 <ol className="mt-2">
@@ -475,11 +480,11 @@ export default function RoutePlannerClient() {
                       <span className="line-badge shrink-0">
                         {lineBadgeLabel(stop.lineCode, lang)}
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+                      <span className="min-w-0 flex-1 truncate text-small font-semibold">
                         {pickName(stop.name, lang)}
                       </span>
                       {stop.transfer && (
-                        <span className="flex shrink-0 items-center gap-1 rounded-full border border-[var(--panel-border)] px-2 py-0.5 text-[11px] font-semibold text-text-secondary">
+                        <span className="flex shrink-0 items-center gap-1 rounded-chip border border-[var(--border-subtle)] px-2 py-0.5 text-caption font-semibold text-text-secondary">
                           <TransferIcon />
                           {dict.transferBadge}
                         </span>
@@ -491,7 +496,7 @@ export default function RoutePlannerClient() {
             </section>
           )}
         </div>
-      </main>
-    </div>
+      </Container>
+    </main>
   );
 }

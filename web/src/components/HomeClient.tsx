@@ -9,12 +9,13 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { loadActiveAlerts } from "@/lib/alerts-data";
+import { MAIN_CONTENT_ID, STATION_LIST_ID } from "@/lib/dom-ids";
 import { loadNetworkData, type NetworkDataResult } from "@/lib/network-data";
 import type { ServiceAlert } from "@/lib/types";
 import type { MapSelection } from "./NetworkMap";
-import AlertsBanner, { MAIN_CONTENT_ID } from "./AlertsBanner";
+import AlertsBanner from "./AlertsBanner";
+import { useReportDataSource } from "./DataSourceProvider";
 import DemoBanner from "./DemoBanner";
-import Header from "./Header";
 import Legend from "./Legend";
 import MobilityDock from "./MobilityDock";
 import StationPanel from "./StationPanel";
@@ -31,7 +32,7 @@ function MapPlaceholder() {
   const { dict } = useI18n();
   return (
     <div
-      className="absolute inset-0 flex items-center justify-center bg-[var(--map-bg)] text-sm text-text-secondary"
+      className="absolute inset-0 flex items-center justify-center bg-[var(--surface-page)] text-small text-text-secondary"
       role="status"
     >
       {dict.mapLoading}
@@ -83,14 +84,13 @@ export default function HomeClient() {
     setSelection((prev) => ({ code, seq: (prev?.seq ?? 0) + 1 }));
   }, []);
 
-  return (
-    <div className="flex h-dvh w-full flex-col overflow-hidden">
-      {/* Skip-link — первый фокусируемый элемент страницы (A11Y) */}
-      <a href="#station-list" className="skip-link">
-        {dict.skipToList}
-      </a>
+  // Источник данных публикуется в общую шапку; null — ещё грузится
+  useReportDataSource(result?.source ?? null);
 
-      <Header source={result?.source ?? null} />
+  return (
+    // h-dvh + overflow-hidden: главная — не документ, а холст. Шапка приходит
+    // из layout и стоит над этим блоком, поэтому подвала здесь нет (см. Footer).
+    <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
       <DemoBanner />
       <AlertsBanner alerts={alerts} data={result?.data ?? null} />
 
@@ -98,6 +98,13 @@ export default function HomeClient() {
           tabIndex={-1} — программная цель фокуса после закрытия последнего
           баннера уведомлений (см. AlertsBanner) */}
       <main id={MAIN_CONTENT_ID} tabIndex={-1} className="relative min-h-0 flex-1">
+        {/* Переход к списку станций — сверх общего skip-link: на этой странице
+            основной контент и есть карта, а list-mode (A11Y-06) обязан иметь
+            собственный быстрый путь с клавиатуры. */}
+        <a href={`#${STATION_LIST_ID}`} className="skip-link">
+          {dict.skipToList}
+        </a>
+
         <NetworkMap
           data={result?.data ?? null}
           lang={lang}
@@ -109,7 +116,8 @@ export default function HomeClient() {
         {loadFailed && (
           <p
             role="alert"
-            className="absolute left-1/2 top-4 z-20 -translate-x-1/2 rounded-xl bg-brand-red px-4 py-2 text-sm font-semibold text-surface-light shadow-[var(--shadow-card)]"
+            // Висит над картой — законный повод для тени (--elevation-overlay)
+            className="absolute left-1/2 top-4 z-20 -translate-x-1/2 rounded-control bg-brand-red px-4 py-2 text-small font-semibold text-surface-light shadow-overlay"
           >
             {dict.loadError}
           </p>

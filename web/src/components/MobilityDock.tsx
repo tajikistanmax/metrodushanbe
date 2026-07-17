@@ -1,6 +1,25 @@
 "use client";
 
+/**
+ * Док мобильности — панель поверх карты: назначение страницы, счётчики сети и
+ * переходы к маршруту, тарифам и обращениям.
+ *
+ * Здесь живёт <h1> главной страницы. Карта — холст, у неё нет заголовка, а
+ * страница без h1 не имеет названия ни для скринридера, ни для поиска. Прежний
+ * <h1> портала сидел в шапке (15px, скрыт до xl) и повторялся на всех экранах;
+ * теперь заголовок принадлежит странице и назван её словами.
+ *
+ * СНЯТО В РЕДИЗАЙНЕ (было декором, воюющим с институциональным тоном):
+ *  - радиальное зелёное свечение 180px (.mobility-dock::before);
+ *  - въезд панели 420ms (@keyframes mobility-dock-rise);
+ *  - градиент 115° на главной кнопке (.mobility-primary);
+ *  - «подпрыгивание» ссылки при наведении (hover:-translate-y-0.5);
+ *  - тени 0 8px 20px и радиус 22px.
+ * Панель отделена от карты границей и фоном --surface-glass, а не размытием.
+ */
+
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { isLineFeature, isStationFeature, type NetworkGeoJson } from "@/lib/types";
 import { useI18n } from "./I18nProvider";
 
@@ -37,6 +56,40 @@ function MessageIcon() {
   );
 }
 
+/** Счётчик сети: число и подпись. tabular-nums — чтобы цифры не «плясали». */
+function Stat({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="rounded-control bg-[var(--surface-hover)] px-2.5 py-2">
+      <dd className="text-title-s font-bold leading-none tabular-nums">{value}</dd>
+      <dt className="mt-1 truncate text-caption font-semibold text-text-secondary">
+        {label}
+      </dt>
+    </div>
+  );
+}
+
+/** Вторичное действие дока: квадратная кнопка-ссылка с иконкой. */
+function DockAction({
+  href,
+  label,
+  children,
+}: {
+  href: string;
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      title={label}
+      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-primary)] transition-colors duration-150 ease-out hover:bg-[var(--surface-hover)]"
+    >
+      {children}
+    </Link>
+  );
+}
+
 export default function MobilityDock({ data, alertsCount }: MobilityDockProps) {
   const { dict } = useI18n();
   const lineCount = data?.features.filter(isLineFeature).length ?? 0;
@@ -45,64 +98,48 @@ export default function MobilityDock({ data, alertsCount }: MobilityDockProps) {
   return (
     <section
       aria-label={dict.mobility.title}
-      className="mobility-dock absolute left-3 right-14 top-3 z-10 rounded-[22px] border border-[var(--panel-border)] p-3 text-[var(--text-primary)] shadow-[var(--shadow-card)] backdrop-blur-xl sm:left-auto sm:right-14 sm:top-4 sm:w-[330px] sm:p-4"
+      className="absolute left-3 right-14 top-3 z-10 rounded-panel border border-[var(--border-subtle)] bg-[var(--surface-glass)] p-3 text-[var(--text-primary)] backdrop-blur-xl sm:left-auto sm:right-14 sm:top-4 sm:w-[330px] sm:p-4"
     >
       <div className="hidden items-center justify-between gap-3 sm:flex">
-        <p className="flex min-w-0 items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-secondary">
-          <span className="h-2 w-2 shrink-0 rounded-full bg-brand-green shadow-[0_0_0_5px_rgba(19,138,61,0.12)]" aria-hidden="true" />
+        <p className="flex min-w-0 items-center gap-2 text-caption font-semibold uppercase tracking-[0.08em] text-text-secondary">
+          {/* Точка — вспомогательный сигнал; смысл несёт подпись рядом */}
+          <span className="h-2 w-2 shrink-0 rounded-full bg-brand-green" aria-hidden="true" />
           <span className="truncate">{dict.mobility.kicker}</span>
         </p>
-        <span className="rounded-full border border-[var(--panel-border)] bg-[var(--field-bg)] px-2 py-1 text-[10px] font-bold text-text-secondary">
+        <span className="rounded-chip border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-2 py-1 text-caption font-semibold text-text-secondary">
           {dict.mobility.network}
         </span>
       </div>
 
-      <h2 className="text-sm font-extrabold leading-tight sm:mt-2 sm:text-lg">
+      <h1 className="text-body font-bold leading-tight sm:mt-2 sm:text-title-s">
         {dict.mobility.title}
-      </h2>
-      <p className="mt-1 hidden text-xs leading-relaxed text-text-secondary sm:block">
+      </h1>
+      <p className="mt-1 hidden text-small leading-relaxed text-text-secondary sm:block">
         {dict.mobility.hint}
       </p>
 
       <dl className="mt-3 hidden grid-cols-3 gap-2 sm:grid">
-        <div className="rounded-xl bg-[var(--control-hover)] px-2.5 py-2">
-          <dd className="text-lg font-extrabold leading-none tabular-nums">{lineCount}</dd>
-          <dt className="mt-1 truncate text-[10px] font-semibold text-text-secondary">{dict.mobility.lines}</dt>
-        </div>
-        <div className="rounded-xl bg-[var(--control-hover)] px-2.5 py-2">
-          <dd className="text-lg font-extrabold leading-none tabular-nums">{stationCount}</dd>
-          <dt className="mt-1 truncate text-[10px] font-semibold text-text-secondary">{dict.mobility.stations}</dt>
-        </div>
-        <div className="rounded-xl bg-[var(--control-hover)] px-2.5 py-2">
-          <dd className="text-lg font-extrabold leading-none tabular-nums">{alertsCount}</dd>
-          <dt className="mt-1 truncate text-[10px] font-semibold text-text-secondary">{dict.mobility.alerts}</dt>
-        </div>
+        <Stat value={lineCount} label={dict.mobility.lines} />
+        <Stat value={stationCount} label={dict.mobility.stations} />
+        <Stat value={alertsCount} label={dict.mobility.alerts} />
       </dl>
 
       <div className="mt-2 flex gap-2 sm:mt-3">
+        {/* Главное действие дока — ссылка, а не кнопка: это переход на /route.
+            Вид совпадает с Button variant="primary" (navy, 4px, без тени). */}
         <Link
           href="/route"
-          className="mobility-primary flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-brand-navy px-3 py-2.5 text-xs font-extrabold text-surface-light shadow-[0_8px_20px_rgba(8,39,66,0.22)] transition-transform hover:-translate-y-0.5"
+          className="flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-control bg-brand-navy px-3 text-small font-bold text-surface-light transition-colors duration-150 ease-out hover:bg-brand-navy/90 focus-visible:outline-[var(--focus-ring-on-dark)]"
         >
           <RouteIcon />
           <span className="truncate">{dict.route.submit}</span>
         </Link>
-        <Link
-          href="/fares"
-          aria-label={dict.fares.nav}
-          title={dict.fares.nav}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--panel-border)] bg-[var(--field-bg)] text-[var(--text-primary)] transition-colors hover:bg-[var(--control-hover)]"
-        >
+        <DockAction href="/fares" label={dict.fares.nav}>
           <TicketIcon />
-        </Link>
-        <Link
-          href="/requests"
-          aria-label={dict.requests.nav}
-          title={dict.requests.nav}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--panel-border)] bg-[var(--field-bg)] text-[var(--text-primary)] transition-colors hover:bg-[var(--control-hover)]"
-        >
+        </DockAction>
+        <DockAction href="/requests" label={dict.requests.nav}>
           <MessageIcon />
-        </Link>
+        </DockAction>
       </div>
     </section>
   );

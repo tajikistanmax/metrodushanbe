@@ -300,6 +300,196 @@ export type FareProduct = {
 };
 
 // ---------------------------------------------------------------------------
+// Билеты: POST /tickets/purchase, /tickets/{code}/topup, /tickets/validate,
+// /tickets/{code}/refund, GET /tickets/{code}.
+//
+// ДЕМО-КОНТУР. Реального эквайринга нет: платежи имитирует DemoPaymentGateway,
+// поэтому у билета, платежа и возврата есть обязательное поле `demo`. Карточных
+// данных нет ни в одном запросе — backend их не принимает (см. javadoc
+// PaymentGateway), и портал их не собирает.
+// ---------------------------------------------------------------------------
+
+/** Состояние выпущенного билета (TicketStatus на backend). */
+export type TicketStatus =
+  | "issued"
+  | "active"
+  | "used"
+  | "expired"
+  | "refunded"
+  | "blocked";
+
+/** Вид билета: разовая поездка или пополняемый проездной. */
+export type TicketKind = "single" | "pass";
+
+/** Состояние платежа (PaymentStatus на backend). */
+export type PaymentStatus =
+  | "pending"
+  | "authorized"
+  | "captured"
+  | "failed"
+  | "refunded";
+
+/**
+ * Билет — контракт TicketDto.
+ *
+ * Токена здесь нет и быть не может: он существует ровно один раз, в ответе на
+ * покупку (см. TicketPurchaseResult). В системе хранится только его SHA-256.
+ */
+export type Ticket = {
+  code: string;
+  fareProductCode: string;
+  kind: TicketKind;
+  riderCategory: FareRiderCategory;
+  status: TicketStatus;
+  /** Начало окна действия, ISO-8601 UTC. */
+  validFrom: string;
+  /** Конец окна действия, ISO-8601 UTC. */
+  validUntil: string;
+  /** Цена, зафиксированная при покупке, а не текущая цена тарифа. */
+  priceAmount: number;
+  priceCurrency: string;
+  /** Внесённый остаток проездного; null у разового билета. */
+  balanceAmount: number | null;
+  /** Момент погашения, ISO-8601 UTC; null — билет не гасился. */
+  usedAt: string | null;
+  /** За билетом не стоит реального платежа. */
+  demo: boolean;
+  updatedAt: string;
+  allowedTransitions: TicketStatus[];
+};
+
+/** Платёж — контракт PaymentDto. Карточных данных не содержит. */
+export type TicketPayment = {
+  code: string;
+  /** null — платёж отклонён, билет не выпускался. */
+  ticketCode: string | null;
+  kind: string;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  provider: string;
+  providerRef: string | null;
+  /** Причина отказа; заполнена ровно при status = "failed". */
+  failureReason: string | null;
+  demo: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** Возврат — контракт RefundDto. */
+export type TicketRefund = {
+  code: string;
+  paymentCode: string;
+  amount: number;
+  currency: string;
+  status: string;
+  reason: string;
+  failureReason: string | null;
+  createdBy: string;
+  demo: boolean;
+  createdAt: string;
+};
+
+/**
+ * Результат покупки — контракт TicketPurchaseResponse.
+ *
+ * `ticket === null` и `token === null` — платёж отклонён (HTTP 402). Это штатный
+ * исход, а не сбой: причина лежит в `payment.failureReason`.
+ */
+export type TicketPurchaseResult = {
+  ticket: Ticket | null;
+  /** ЕДИНСТВЕННОЕ место, где существует токен. Повторно его не получить. */
+  token: string | null;
+  payment: TicketPayment;
+  demo: boolean;
+  /** Служебная пометка demo-контура от backend (RU, техническая). */
+  notice: string;
+};
+
+/** Результат пополнения — контракт TicketTopUpResponse. */
+export type TicketTopUpResult = {
+  ticket: Ticket;
+  payment: TicketPayment;
+  demo: boolean;
+  notice: string;
+};
+
+/** Машиночитаемая причина отказа при валидации (reason в 200-ответе). */
+export type TicketValidationReason =
+  | "ticket.token_unknown"
+  | "ticket.blocked"
+  | "ticket.already_used"
+  | "ticket.expired"
+  | "ticket.refunded"
+  | "ticket.not_started"
+  | "ticket.validation_too_soon";
+
+/**
+ * Решение по предъявленному билету — контракт TicketValidationDto.
+ * Всегда HTTP 200: недействительный билет — штатный исход, а не ошибка.
+ */
+export type TicketValidation = {
+  valid: boolean;
+  /** null при valid = true. */
+  reason: TicketValidationReason | null;
+  /** null, если билет по токену не найден. */
+  ticketCode: string | null;
+  status: TicketStatus | null;
+  kind: TicketKind | null;
+  riderCategory: FareRiderCategory | null;
+  validUntil: string | null;
+  demo: boolean;
+};
+
+/** Тело POST /tickets/purchase. Платёжных данных не содержит намеренно. */
+export type TicketPurchaseBody = {
+  fareProductCode: string;
+  /** Непроверенный идентификатор устройства для антифрода (НЕ персональные данные). */
+  riderRef?: string;
+  /** Код тест-сценария demo-эквайринга: approve | decline. */
+  demoScenario?: string;
+};
+
+// ---------------------------------------------------------------------------
+// Лента уведомлений (in-app): GET /api/v1/notifications
+// Семантика таргет-фильтров — та же, что у /alerts (dev-conventions.md §3):
+// рассылки без таргетов адресованы всей сети и попадают в выдачу всегда.
+// ---------------------------------------------------------------------------
+
+/** Тип рассылки (NotificationType на backend). */
+export type NotificationType =
+  | "info"
+  | "warning"
+  | "incident"
+  | "maintenance"
+  | "promo";
+
+/** Таргет рассылки; segment/role — адресация по аудитории, а не по географии. */
+export type NotificationTarget = {
+  type: "line" | "station" | "segment" | "role";
+  code: string;
+};
+
+/** Отправленная рассылка — контракт NotificationDto. */
+export type NotificationMessage = {
+  code: string;
+  templateCode: string | null;
+  /** Код связанного сервисного алерта; null — рассылка сама по себе. */
+  alertCode: string | null;
+  type: NotificationType;
+  title: I18nName;
+  body: I18nName;
+  channels: string[];
+  status: string;
+  /** Пустой массив = рассылка на всю сеть. */
+  targets: NotificationTarget[];
+  scheduledAt: string | null;
+  /** Момент отправки, ISO-8601 UTC; в публичном фиде всегда заполнен. */
+  sentAt: string | null;
+  updatedAt: string;
+};
+
+// ---------------------------------------------------------------------------
 // Маршрутный поиск «откуда/куда»: GET /api/v1/routes?from={code}&to={code}
 // Время в пути — ОЦЕНОЧНОЕ (до реального расписания). Несуществующий код
 // станции → 404 route.station_not_found; отсутствие пути → found:false с

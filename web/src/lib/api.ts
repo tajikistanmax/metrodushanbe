@@ -12,6 +12,17 @@ export const API_BASE =
 /** Таймаут запроса к API, мс. */
 export const API_TIMEOUT_MS = 2000;
 
+/** HTTP failure with a status code so server routes can distinguish a real 404. */
+export class ApiHttpError extends Error {
+  constructor(
+    public readonly status: number,
+    path: string,
+  ) {
+    super(`API returned HTTP ${status} for ${path}`);
+    this.name = "ApiHttpError";
+  }
+}
+
 /**
  * GET `{API_BASE}{path}` с таймаутом API_TIMEOUT_MS (AbortController).
  * Таймаут покрывает и чтение тела; бросает при не-2xx, таймауте, битом JSON.
@@ -29,7 +40,7 @@ export async function fetchApiJson(
       cache: "no-store",
     });
     if (!response.ok) {
-      throw new Error(`API вернул HTTP ${response.status}`);
+      throw new ApiHttpError(response.status, path);
     }
     return (await response.json()) as unknown;
   } finally {

@@ -28,8 +28,7 @@ export default function Legend({ data }: LegendProps) {
   return (
     <section
       aria-label={dict.legendHeading}
-      style={{ background: "var(--panel-bg)" }}
-      className="absolute bottom-4 left-4 z-10 hidden items-center gap-3 rounded-xl border border-[var(--panel-border)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)] shadow-[var(--shadow-card)] backdrop-blur-md md:flex"
+      className="absolute bottom-4 left-4 z-10 hidden items-center gap-3 rounded-panel border border-[var(--border-subtle)] bg-[var(--surface-glass)] px-3 py-2 text-caption font-semibold text-[var(--text-primary)] backdrop-blur-md md:flex"
     >
       {lines.map((line) => (
         <span

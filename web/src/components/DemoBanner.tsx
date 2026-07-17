@@ -86,7 +86,7 @@ export default function DemoBanner() {
       >
         <path d="M8 1.5c.36 0 .69.19.87.5l6.4 11.1a1 1 0 0 1-.87 1.5H1.6a1 1 0 0 1-.87-1.5L7.13 2c.18-.31.51-.5.87-.5Zm0 4a.8.8 0 0 0-.8.84l.17 3.2a.63.63 0 0 0 1.26 0l.17-3.2A.8.8 0 0 0 8 5.5Zm0 5.6a.9.9 0 1 0 0 1.8.9.9 0 0 0 0-1.8Z" />
       </svg>
-      <p className="min-w-0 flex-1 truncate text-[13px] font-semibold">
+      <p className="min-w-0 flex-1 truncate text-small font-semibold">
         {dict.demoBanner}
       </p>
       <button
@@ -94,7 +94,7 @@ export default function DemoBanner() {
         aria-label={dict.demoDismiss}
         title={dict.demoDismiss}
         onClick={writeDismissed}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors duration-150 ease-out hover:bg-brand-navy/15"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control transition-colors duration-150 ease-out hover:bg-brand-navy/15"
       >
         <svg
           aria-hidden="true"

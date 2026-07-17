@@ -7,6 +7,10 @@ const APP_SHELL = [
   "/news",
   "/requests",
   "/fares",
+  // Билеты офлайн только читаются: сам экран доступен и объясняет, что покупка,
+  // пополнение, проверка и возврат требуют сети (см. TicketsClient).
+  "/tickets",
+  "/notifications",
   "/offline",
   "/data/demo-network.geojson",
   "/brand/mark.svg",
