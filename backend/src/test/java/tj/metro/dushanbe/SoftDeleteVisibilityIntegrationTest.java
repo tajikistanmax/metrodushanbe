@@ -127,8 +127,11 @@ class SoftDeleteVisibilityIntegrationTest {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("X-Admin-Key", ADMIN_KEY);
+        // Актор обязан существовать в admin_user и быть активным (ADM-01), иначе
+        // AdminKeyAuthFilter вернёт 401 auth.session_revoked. Единственный
+        // гарантированно существующий пользователь — бутстрап-суперадмин
+        // (AdminUserBootstrap из app.admin.bootstrap.username, по умолчанию "admin").
         headers.set("X-Admin-Actor", "admin");
-        headers.set("X-Admin-Actor", "it-admin");
         return headers;
     }
 }
