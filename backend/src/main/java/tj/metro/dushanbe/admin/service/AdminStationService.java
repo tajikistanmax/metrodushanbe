@@ -68,7 +68,9 @@ public class AdminStationService {
     @Transactional
     @Caching(evict = {
             @CacheEvict(value = "stations", allEntries = true),
-            @CacheEvict(value = "network.geojson", allEntries = true)
+            @CacheEvict(value = "network.geojson", allEntries = true),
+            @CacheEvict(value = "routes", allEntries = true),
+            @CacheEvict(value = "schedules", allEntries = true)
     })
     public StationDto create(StationCreateRequest request, String actor) {
         AdminSupport.requireUnique(stationRepository.existsByCode(request.code()),
@@ -91,7 +93,9 @@ public class AdminStationService {
     @Transactional
     @Caching(evict = {
             @CacheEvict(value = "stations", allEntries = true),
-            @CacheEvict(value = "network.geojson", allEntries = true)
+            @CacheEvict(value = "network.geojson", allEntries = true),
+            @CacheEvict(value = "routes", allEntries = true),
+            @CacheEvict(value = "schedules", allEntries = true)
     })
     public StationDto update(String code, StationUpdateRequest request, String actor) {
         MetroStation station = stationRepository.findByCode(code)
@@ -117,7 +121,9 @@ public class AdminStationService {
     @Transactional
     @Caching(evict = {
             @CacheEvict(value = "stations", allEntries = true),
-            @CacheEvict(value = "network.geojson", allEntries = true)
+            @CacheEvict(value = "network.geojson", allEntries = true),
+            @CacheEvict(value = "routes", allEntries = true),
+            @CacheEvict(value = "schedules", allEntries = true)
     })
     public void softDelete(String code, String actor) {
         MetroStation station = stationRepository.findByCode(code)

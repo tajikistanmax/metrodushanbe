@@ -97,17 +97,38 @@ public class AdminKeyAuthFilter extends OncePerRequestFilter {
         if ("GET".equalsIgnoreCase(method)) {
             return path.startsWith(ADMIN_PREFIX + "/users") ? AdminRole.SUPERADMIN : AdminRole.VIEWER;
         }
+        // Разбор упавшей доставки вебхука (U-OPS-04) — рутина дежурной смены, и
+        // требовать ради повтора суперадмина значит парализовать смену ночью.
+        // Проверяется ДО общего /webhooks ниже: тот префикс перехватил бы этот
+        // путь и поднял требование до SUPERADMIN. Порядок здесь — не стилистика.
+        if (path.startsWith(ADMIN_PREFIX + "/webhooks/deliveries")) {
+            return AdminRole.OPERATOR;
+        }
         if (path.startsWith(ADMIN_PREFIX + "/users")
                 || path.startsWith(ADMIN_PREFIX + "/feature-flags")
-                || path.startsWith(ADMIN_PREFIX + "/imports")) {
+                || path.startsWith(ADMIN_PREFIX + "/imports")
+                // Подписчик вебхука — это внешний адрес, куда уходят данные сети,
+                // плюс секрет подписи и лимиты. Заводить их вправе только суперадмин.
+                || path.startsWith(ADMIN_PREFIX + "/webhooks")) {
             return AdminRole.SUPERADMIN;
         }
         // Операционный контур: дежурная смена ведёт его сама, без прав редактора
         // на справочники. Должно совпадать с requireAdminRole в admin-actions.ts —
         // иначе консоль покажет действие, которое backend отклонит с 403.
+        //
+        // /notifications — рассылки ведёт смена; /notification-templates сюда НЕ
+        // попадает (префиксы расходятся на '-' против 's') и остаётся редакционным
+        // справочником на EDITOR — это осознанно.
         if (path.startsWith(ADMIN_PREFIX + "/alerts")
                 || path.startsWith(ADMIN_PREFIX + "/requests")
-                || path.startsWith(ADMIN_PREFIX + "/incidents")) {
+                || path.startsWith(ADMIN_PREFIX + "/incidents")
+                || path.startsWith(ADMIN_PREFIX + "/notifications")
+                // Билеты, платежи и чёрный список: возврат пассажиру и блокировка
+                // скомпрометированного билета — работа кассы и дежурного, а не
+                // редактора справочников.
+                || path.startsWith(ADMIN_PREFIX + "/tickets")
+                || path.startsWith(ADMIN_PREFIX + "/payments")
+                || path.startsWith(ADMIN_PREFIX + "/blocklist")) {
             return AdminRole.OPERATOR;
         }
         return AdminRole.EDITOR;

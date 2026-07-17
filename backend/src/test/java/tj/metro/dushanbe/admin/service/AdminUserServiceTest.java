@@ -169,7 +169,7 @@ class AdminUserServiceTest {
     void updateRejectsDemotingLastActiveSuperadmin() {
         AdminUser user = user("root", AdminRole.SUPERADMIN, true);
         when(repository.findByUsername("root")).thenReturn(Optional.of(user));
-        when(repository.countByRoleAndActiveIsTrue(AdminRole.SUPERADMIN)).thenReturn(1L);
+        when(repository.findActiveByRoleForUpdate(AdminRole.SUPERADMIN)).thenReturn(List.of(user));
 
         BadRequestException error = assertThrows(BadRequestException.class, () ->
                 service.update("root", new AdminUserUpdateRequest("Root", null, "viewer", true), "root"));
@@ -181,8 +181,9 @@ class AdminUserServiceTest {
     @Test
     void updateAllowsDemotingSuperadminWhenAnotherExists() {
         AdminUser user = user("root", AdminRole.SUPERADMIN, true);
+        AdminUser another = user("other-root", AdminRole.SUPERADMIN, true);
         when(repository.findByUsername("root")).thenReturn(Optional.of(user));
-        when(repository.countByRoleAndActiveIsTrue(AdminRole.SUPERADMIN)).thenReturn(2L);
+        when(repository.findActiveByRoleForUpdate(AdminRole.SUPERADMIN)).thenReturn(List.of(another, user));
         when(repository.save(user)).thenReturn(user);
 
         var result = service.update("root",
@@ -207,7 +208,7 @@ class AdminUserServiceTest {
     void deleteRejectsLastActiveSuperadmin() {
         AdminUser user = user("root", AdminRole.SUPERADMIN, true);
         when(repository.findByUsername("root")).thenReturn(Optional.of(user));
-        when(repository.countByRoleAndActiveIsTrue(AdminRole.SUPERADMIN)).thenReturn(1L);
+        when(repository.findActiveByRoleForUpdate(AdminRole.SUPERADMIN)).thenReturn(List.of(user));
 
         BadRequestException error = assertThrows(BadRequestException.class,
                 () -> service.delete("root", "someone-else"));

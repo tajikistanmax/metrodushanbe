@@ -191,9 +191,9 @@ public class AdminIncidentService {
         if (username == null) {
             return null;
         }
-        if (!userRepository.existsByUsername(username)) {
+        if (!userRepository.existsByUsernameAndActiveIsTrue(username)) {
             throw new BadRequestException("incident.assignee_unknown",
-                    "Оператор '" + username + "' не найден",
+                    "Активный оператор '" + username + "' не найден",
                     Map.of("field", "assignedTo", "value", username));
         }
         return username;

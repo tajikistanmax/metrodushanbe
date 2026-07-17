@@ -104,7 +104,13 @@ public class CitizenRequest {
     public void updateWorkflow(String nextStatus, String response, String assignedTo,
                                OffsetDateTime updatedAt) {
         this.status = nextStatus;
-        this.response = response;
+        // null — «ответ не менялся», а не «стереть ответ». Смена статуса без
+        // текста (например, resolved → closed) не должна затирать ответ, уже
+        // отправленный гражданину: восстановить его будет неоткуда, а спор
+        // «что мне ответили» разобрать нечем.
+        if (response != null) {
+            this.response = response;
+        }
         this.assignedTo = assignedTo;
         this.updatedAt = updatedAt;
         if ("resolved".equals(nextStatus) || "closed".equals(nextStatus)) {

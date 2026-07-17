@@ -84,7 +84,8 @@ public class ScheduleService {
      * @throws NotFoundException   {@code schedule.not_found} — на этот тип дня графика нет
      * @throws BadRequestException {@code schedule.day_type_invalid} — недопустимый dayType
      */
-    @Cacheable(value = "schedules", key = "#lineCode + ':' + #dayType")
+    @Cacheable(value = "schedules", key = "#lineCode + ':' + #dayType",
+            condition = "#dayType != null && !#dayType.isBlank()")
     public LineScheduleDto lineSchedule(String lineCode, String dayType) {
         requireLineExists(lineCode);
         String resolvedDayType = resolveDayType(dayType);

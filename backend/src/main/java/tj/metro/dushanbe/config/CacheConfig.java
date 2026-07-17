@@ -47,16 +47,21 @@ public class CacheConfig implements CachingConfigurer {
                         serializer))
                 .disableCachingNullValues();
 
-        Map<String, RedisCacheConfiguration> cacheConfigurations = Map.of(
-                "lines", defaultConfig.entryTtl(Duration.ofHours(1)),
-                "stations", defaultConfig.entryTtl(Duration.ofHours(1)),
-                "network.geojson", defaultConfig.entryTtl(Duration.ofHours(6)),
-                "alerts", defaultConfig.entryTtl(Duration.ofMinutes(10)),
-                "news", defaultConfig.entryTtl(Duration.ofMinutes(30)),
-                "schedules", defaultConfig.entryTtl(Duration.ofMinutes(30)),
-                "routes", defaultConfig.entryTtl(Duration.ofMinutes(15)),
-                "feature.flags", defaultConfig.entryTtl(Duration.ofMinutes(1)),
-                "fares", defaultConfig.entryTtl(Duration.ofMinutes(30)));
+        // Map.ofEntries, а не Map.of: у последнего потолок в 10 пар, и кэшей уже больше.
+        Map<String, RedisCacheConfiguration> cacheConfigurations = Map.ofEntries(
+                Map.entry("lines", defaultConfig.entryTtl(Duration.ofHours(1))),
+                Map.entry("stations", defaultConfig.entryTtl(Duration.ofHours(1))),
+                Map.entry("network.geojson", defaultConfig.entryTtl(Duration.ofHours(6))),
+                Map.entry("alerts", defaultConfig.entryTtl(Duration.ofMinutes(10))),
+                Map.entry("news", defaultConfig.entryTtl(Duration.ofMinutes(30))),
+                Map.entry("schedules", defaultConfig.entryTtl(Duration.ofMinutes(30))),
+                Map.entry("routes", defaultConfig.entryTtl(Duration.ofMinutes(15))),
+                Map.entry("feature.flags", defaultConfig.entryTtl(Duration.ofMinutes(1))),
+                Map.entry("fares", defaultConfig.entryTtl(Duration.ofMinutes(30))),
+
+                // Лента рассылок (NTF-01): меняется только при отправке новой рассылки,
+                // и та инвалидирует кэш явно — TTL здесь лишь страховка от рассинхрона.
+                Map.entry("notifications", defaultConfig.entryTtl(Duration.ofMinutes(10))));
 
         return RedisCacheManager.builder(redisConnectionFactory)
                 .cacheDefaults(defaultConfig)

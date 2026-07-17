@@ -82,7 +82,7 @@ class AdminIncidentServiceTest {
     @Test
     void createRejectsUnknownAssignee() {
         when(repository.findMaxCodeWithPrefix(anyString())).thenReturn(Optional.empty());
-        when(userRepository.existsByUsername("ghost")).thenReturn(false);
+        when(userRepository.existsByUsernameAndActiveIsTrue("ghost")).thenReturn(false);
 
         BadRequestException error = assertThrows(BadRequestException.class,
                 () -> service.create(request("ghost"), "operator1"));
@@ -94,7 +94,7 @@ class AdminIncidentServiceTest {
     @Test
     void createAcceptsKnownAssigneeCaseInsensitively() {
         when(repository.findMaxCodeWithPrefix(anyString())).thenReturn(Optional.empty());
-        when(userRepository.existsByUsername("operator2")).thenReturn(true);
+        when(userRepository.existsByUsernameAndActiveIsTrue("operator2")).thenReturn(true);
         when(repository.save(any(Incident.class))).thenAnswer(i -> i.getArgument(0));
 
         assertEquals("operator2", service.create(request("OPERATOR2"), "operator1").assignedTo());

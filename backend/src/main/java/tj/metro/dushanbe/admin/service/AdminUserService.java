@@ -184,7 +184,7 @@ public class AdminUserService {
     }
 
     private void requireAnotherSuperadmin(AdminUser user) {
-        long activeSuperadmins = repository.countByRoleAndActiveIsTrue(AdminRole.SUPERADMIN);
+        long activeSuperadmins = repository.findActiveByRoleForUpdate(AdminRole.SUPERADMIN).size();
         boolean isLastOne = user.isActive() && activeSuperadmins <= 1;
         if (isLastOne) {
             throw new BadRequestException("admin_user.last_superadmin",

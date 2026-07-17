@@ -64,6 +64,25 @@ app:
   feature-flags:
     cache-ttl-seconds: 60
 
+  # Исходящие вебхуки (INT-02/03/05). Дефолты продублированы в
+  # IntegrationProperties, поэтому приложение поднимется и без этого блока —
+  # он здесь, чтобы значения были видны и правились без пересборки.
+  # Сам обход очереди включается флагом integration.webhooks (по умолчанию выкл.).
+  integration:
+    poll-ms: 15000        # период тика диспетчера
+    batch-size: 50        # доставок за тик
+    max-attempts: 6       # исчерпание попыток → dead (DLQ)
+    retry-base-delay: 30s # база экспоненты: base × 2^(attempts-1)
+    retry-max-delay: 30m  # потолок задержки между попытками
+    timeout: 10s          # HTTP-таймаут к подписчику
+    claim-lease: 30s      # lease worker-а; после сбоя доставка вернётся в очередь
+
+  # Отложенная публикация рассылок (NTF-05); включается флагом
+  # notification.scheduler (по умолчанию выкл.).
+  notifications:
+    poll-ms: 30000
+    batch-size: 50
+
 ai:
   llm:
     provider: openai-compatible

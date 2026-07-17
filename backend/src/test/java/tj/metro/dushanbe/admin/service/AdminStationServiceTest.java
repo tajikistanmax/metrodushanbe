@@ -41,6 +41,17 @@ import tj.metro.dushanbe.network.web.dto.StationExitDto;
 
 class AdminStationServiceTest {
 
+    @Test
+    void rejectsCoordinatesOutsideWgs84Range() {
+        BadRequestException longitude = assertThrows(BadRequestException.class,
+                () -> AdminSupport.point(List.of(181.0, 38.5)));
+        BadRequestException latitude = assertThrows(BadRequestException.class,
+                () -> AdminSupport.point(List.of(68.8, 91.0)));
+
+        assertEquals("validation.coordinates_invalid", longitude.getCode());
+        assertEquals("validation.coordinates_invalid", latitude.getCode());
+    }
+
     private static final Instant NOW = Instant.parse("2026-07-05T10:00:00Z");
     private static final String ACTOR = "admin-1";
     private static final Map<String, String> FULL_I18N =

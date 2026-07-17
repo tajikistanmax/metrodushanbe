@@ -108,6 +108,11 @@ class CitizenRequestServiceTest {
         assertEquals("Вопрос решён", resolved.response());
         assertEquals("operator-1", resolved.assignedTo());
         assertNotNull(resolved.resolvedAt());
+
+        var closed = service.update(request.getPublicCode(),
+                new CitizenRequestUpdateRequest("closed", null, "operator-1"), "admin");
+        assertEquals("closed", closed.status());
+        assertEquals("Вопрос решён", closed.response());
     }
 
     private static CitizenRequest requestEntity() {

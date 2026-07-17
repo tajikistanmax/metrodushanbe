@@ -45,7 +45,9 @@ public class AdminLineService {
     @Transactional
     @Caching(evict = {
             @CacheEvict(value = "lines", allEntries = true),
-            @CacheEvict(value = "network.geojson", allEntries = true)
+            @CacheEvict(value = "network.geojson", allEntries = true),
+            @CacheEvict(value = "routes", allEntries = true),
+            @CacheEvict(value = "schedules", allEntries = true)
     })
     public LineDto create(LineCreateRequest request, String actor) {
         AdminSupport.requireUnique(lineRepository.existsByCode(request.code()),
@@ -66,7 +68,9 @@ public class AdminLineService {
     @Transactional
     @Caching(evict = {
             @CacheEvict(value = "lines", allEntries = true),
-            @CacheEvict(value = "network.geojson", allEntries = true)
+            @CacheEvict(value = "network.geojson", allEntries = true),
+            @CacheEvict(value = "routes", allEntries = true),
+            @CacheEvict(value = "schedules", allEntries = true)
     })
     public LineDto update(String code, LineUpdateRequest request, String actor) {
         MetroLine line = lineRepository.findByCode(code).orElseThrow(() -> NotFoundException.line(code));
@@ -89,7 +93,9 @@ public class AdminLineService {
     @Transactional
     @Caching(evict = {
             @CacheEvict(value = "lines", allEntries = true),
-            @CacheEvict(value = "network.geojson", allEntries = true)
+            @CacheEvict(value = "network.geojson", allEntries = true),
+            @CacheEvict(value = "routes", allEntries = true),
+            @CacheEvict(value = "schedules", allEntries = true)
     })
     public void softDelete(String code, String actor) {
         MetroLine line = lineRepository.findByCode(code).orElseThrow(() -> NotFoundException.line(code));
