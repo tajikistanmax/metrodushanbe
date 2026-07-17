@@ -1,12 +1,19 @@
-import { getLines, getStations } from "@/lib/api";
+import { getLines, getNetworkGeoJson, getStations } from "@/lib/api";
 import SectionHeader from "@/components/SectionHeader";
 import StationsManager from "@/components/admin/StationsManager";
 
 export const dynamic = "force-dynamic";
 
-/** Раздел «Станции»: таблица станций с CRUD-формами (+ цвета линий для бейджей). */
+/**
+ * Раздел «Станции»: таблица станций с CRUD-формами (+ цвета линий для бейджей).
+ * Геометрия сети — подложка карты в форме (клик ставит точку станции).
+ */
 export default async function StationsPage() {
-  const [stations, lines] = await Promise.all([getStations(), getLines()]);
+  const [stations, lines, network] = await Promise.all([
+    getStations(),
+    getLines(),
+    getNetworkGeoJson(),
+  ]);
 
   const lineColors: Record<string, string> = {};
   for (const line of lines.data ?? []) {
@@ -20,6 +27,7 @@ export default async function StationsPage() {
         data={stations.data}
         error={stations.error}
         lineColors={lineColors}
+        network={network.data}
       />
     </>
   );

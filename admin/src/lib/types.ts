@@ -624,6 +624,9 @@ export type NetworkFeature = {
   };
   geometry:
     | { type: "LineString"; coordinates: LngLat[] }
+    // Многосегментная трасса (ветки): backend отдаёт MultiLineString только
+    // когда сегментов больше одного — GeoJsonBuilder.lineGeometry.
+    | { type: "MultiLineString"; coordinates: LngLat[][] }
     | { type: "Point"; coordinates: LngLat };
 };
 

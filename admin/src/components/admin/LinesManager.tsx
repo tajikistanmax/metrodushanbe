@@ -8,7 +8,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Line } from "@/lib/types";
+import type { Line, NetworkGeoJson } from "@/lib/types";
 import type { ActionError } from "@/lib/admin-forms";
 import { deleteLine } from "@/lib/admin-actions";
 import { useI18n } from "../I18nProvider";
@@ -20,12 +20,17 @@ import ConfirmDialog from "./ConfirmDialog";
 import LineForm from "./LineForm";
 import { useToast } from "./ToastProvider";
 
-type Props = { data: Line[] | null; error: string | null };
+type Props = {
+  data: Line[] | null;
+  error: string | null;
+  /** Геометрия сети — подложка карты и источник существующей трассы. */
+  network: NetworkGeoJson | null;
+};
 
 // undefined — форма закрыта; null — создание; Line — редактирование.
 type FormState = Line | null | undefined;
 
-export default function LinesManager({ data, error }: Props) {
+export default function LinesManager({ data, error, network }: Props) {
   const { dict } = useI18n();
   const router = useRouter();
   const toast = useToast();
@@ -82,6 +87,7 @@ export default function LinesManager({ data, error }: Props) {
         {formOpen ? (
           <LineForm
             row={form ?? null}
+            network={network}
             onSuccess={handleSuccess}
             onCancel={() => setForm(undefined)}
           />

@@ -17,7 +17,7 @@ import {
   type ActionError,
   type I18nInput,
 } from "@/lib/admin-forms";
-import type { AccessibilityFeature, Station } from "@/lib/types";
+import type { AccessibilityFeature, NetworkGeoJson, Station } from "@/lib/types";
 import { i18nComplete, isBlank, parseNumber } from "@/lib/validate";
 import {
   CheckboxField,
@@ -27,14 +27,16 @@ import {
   ServerError,
   TextField,
 } from "./fields";
+import StationPointField from "./StationPointField";
 
 type Props = {
   row: Station | null;
+  network: NetworkGeoJson | null;
   onSuccess: (verb: "created" | "updated") => void;
   onCancel: () => void;
 };
 
-export default function StationForm({ row, onSuccess, onCancel }: Props) {
+export default function StationForm({ row, network, onSuccess, onCancel }: Props) {
   const { dict } = useI18n();
   const editing = row !== null;
 
@@ -143,31 +145,16 @@ export default function StationForm({ row, onSuccess, onCancel }: Props) {
         required
       />
 
-      <fieldset
-        className={`rounded-control border ${
-          errors.coordinates ? "border-brand-red" : "border-[var(--border-subtle)]"
-        } px-3 pb-3 pt-2`}
-      >
-        <legend className="px-1 text-sm font-semibold">
-          {dict.form.fieldCoordinates}
-          <span aria-hidden="true" className="ml-0.5 text-brand-red">
-            *
-          </span>
-        </legend>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <TextField label={dict.form.fieldLon} value={lon} onChange={setLon} required />
-          <TextField label={dict.form.fieldLat} value={lat} onChange={setLat} required />
-        </div>
-        {errors.coordinates ? (
-          <p className="mt-1 text-xs font-semibold text-brand-red">
-            {errors.coordinates}
-          </p>
-        ) : (
-          <p className="mt-1 text-xs text-text-secondary">
-            {dict.form.hintCoordinates}
-          </p>
-        )}
-      </fieldset>
+      <StationPointField
+        lon={lon}
+        lat={lat}
+        onChange={(nextLon, nextLat) => {
+          setLon(nextLon);
+          setLat(nextLat);
+        }}
+        error={errors.coordinates}
+        context={network}
+      />
 
       <CheckboxField
         label={dict.colTransfer}

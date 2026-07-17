@@ -3,29 +3,46 @@
 /**
  * Форма создания/редактирования линии. Клиентская валидация зеркалит серверную
  * (полнота языков, #RRGGBB, статус из перечня). Код неизменен при редактировании.
+ *
+ * Трасса правится по карте (LinePathField) либо числами; существующая трасса
+ * подгружается из /network/geojson. Ветвистую (многосегментную) трассу форма
+ * не отправляет вовсе — см. комментарий у `path` в submit().
  */
 
 import { useState } from "react";
 import { useI18n } from "../I18nProvider";
 import { createLine, updateLine } from "@/lib/admin-actions";
 import { EMPTY_I18N, LINE_STATUSES, type I18nInput } from "@/lib/admin-forms";
-import type { Line } from "@/lib/types";
-import { i18nComplete, isBlank, isHexColor, parseNumber, parsePath } from "@/lib/validate";
+import type { Line, NetworkGeoJson } from "@/lib/types";
+import { lineSegmentsByCode } from "@/lib/map-config";
+import { i18nComplete, isBlank, isHexColor, parseNumber, parsePath, pathToText } from "@/lib/validate";
 import {
   FormActions,
   I18nField,
   SelectField,
   ServerError,
   TextField,
-  TextareaField,
 } from "./fields";
+import LinePathField from "./LinePathField";
 import type { ActionError } from "@/lib/admin-forms";
 
-type Props = { row: Line | null; onSuccess: (verb: "created" | "updated") => void; onCancel: () => void };
+type Props = {
+  row: Line | null;
+  network: NetworkGeoJson | null;
+  onSuccess: (verb: "created" | "updated") => void;
+  onCancel: () => void;
+};
 
-export default function LineForm({ row, onSuccess, onCancel }: Props) {
+export default function LineForm({ row, network, onSuccess, onCancel }: Props) {
   const { dict, lang } = useI18n();
   const editing = row !== null;
+
+  // Существующая трасса из /network/geojson: карточка линии (LineDto) геометрию
+  // не отдаёт, поэтому источник трассы — публичный слой сети.
+  const [segments] = useState(() =>
+    row ? lineSegmentsByCode(network, row.code) : [],
+  );
+  const multiSegment = segments.length > 1;
 
   const [code, setCode] = useState(row?.code ?? "");
   const [name, setName] = useState<I18nInput>(
@@ -34,7 +51,10 @@ export default function LineForm({ row, onSuccess, onCancel }: Props) {
   const [colorHex, setColorHex] = useState(row?.colorHex ?? "#");
   const [status, setStatus] = useState<string>(row?.status ?? "planned");
   const [sortOrder, setSortOrder] = useState(row ? String(row.sortOrder) : "0");
-  const [pathText, setPathText] = useState("");
+  // Односегментную трассу префиллим для правки; многосегментную — не трогаем.
+  const [pathText, setPathText] = useState(() =>
+    segments.length === 1 ? pathToText(segments[0]) : "",
+  );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -51,18 +71,24 @@ export default function LineForm({ row, onSuccess, onCancel }: Props) {
     const order = parseNumber(sortOrder);
     if (sortOrder.trim() !== "" && order === null) next.sortOrder = dict.form.errNumber;
     const path = parsePath(pathText);
-    if (path === null) next.path = dict.form.errCoordinates;
+    if (!multiSegment && path === null) next.path = dict.form.errCoordinates;
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
     setBusy(true);
     setServerError(null);
+    // `path` — плоский список точек, то есть ОДНА линия: AdminSupport.multiLine
+    // заворачивает его в MultiLineString из одного сегмента, а
+    // AdminLineService.update перезаписывает геометрию целиком. Для ветвистой
+    // (многосегментной) трассы это потеря сегментов, поэтому поле не
+    // отправляется вовсе: `path == null` на backend означает «геометрию не
+    // трогать» — остальные атрибуты линии при этом правятся штатно.
     const common = {
       name,
       colorHex: colorHex.trim(),
       status,
       ...(order !== null ? { sortOrder: order } : {}),
-      ...(path && path.length > 0 ? { path } : {}),
+      ...(!multiSegment && path && path.length > 0 ? { path } : {}),
     };
     const result = editing
       ? await updateLine(row.code, common)
@@ -135,13 +161,13 @@ export default function LineForm({ row, onSuccess, onCancel }: Props) {
         />
       </div>
 
-      <TextareaField
-        label={dict.form.fieldPath}
+      <LinePathField
         value={pathText}
         onChange={setPathText}
         error={errors.path}
-        hint={dict.form.hintPath}
-        placeholder={"68.78, 38.57\n68.79, 38.58"}
+        context={network}
+        color={isHexColor(colorHex) ? colorHex.trim() : undefined}
+        segments={segments}
       />
 
       <p className="text-xs text-text-secondary" lang={lang}>

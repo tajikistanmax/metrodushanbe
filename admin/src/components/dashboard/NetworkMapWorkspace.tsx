@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { pickName } from "@/lib/i18n";
@@ -7,8 +8,26 @@ import { IconArrowRight, IconSearch, IconStation } from "@/lib/icons";
 import type { Line, NetworkGeoJson, Station } from "@/lib/types";
 import LineBadge from "../LineBadge";
 import { useI18n } from "../I18nProvider";
-import NetworkSchematic from "./NetworkSchematic";
+import { useTheme } from "@/shared/ThemeProvider";
 import { Badge } from "@/shared/ui";
+
+// MapLibre работает только в браузере — SSR отключён.
+const NetworkMapCanvas = dynamic(() => import("../map/NetworkMapCanvas"), {
+  ssr: false,
+  loading: () => <MapPlaceholder />,
+});
+
+function MapPlaceholder() {
+  const { dict } = useI18n();
+  return (
+    <div
+      className="flex h-full w-full items-center justify-center text-small text-text-secondary"
+      role="status"
+    >
+      {dict.geo.mapLoading}
+    </div>
+  );
+}
 
 type Props = {
   network: NetworkGeoJson;
@@ -24,6 +43,7 @@ export default function NetworkMapWorkspace({
   stations,
 }: Props) {
   const { lang, dict } = useI18n();
+  const { resolved: resolvedTheme } = useTheme();
   const t = dict.dash;
   const [query, setQuery] = useState("");
   const [selectedCode, setSelectedCode] = useState<string | null>(
@@ -64,11 +84,17 @@ export default function NetworkMapWorkspace({
       </div>
 
       <div className="grid min-h-[660px] xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="flex min-w-0 items-center bg-[var(--map-panel-bg)] p-3 sm:p-6">
-          <NetworkSchematic
+        {/* Настоящая карта (MapLibre), как на публичном портале: подложка из
+            env, при отсутствии сети — локальный плоский фон. */}
+        <div className="min-h-[420px] min-w-0 bg-[var(--map-panel-bg)]">
+          <NetworkMapCanvas
             data={network}
+            theme={resolvedTheme}
             selectedCode={selected?.code ?? null}
             onStationSelect={setSelectedCode}
+            regionLabel={dict.geo.regionNetwork}
+            zoomInLabel={dict.geo.zoomIn}
+            zoomOutLabel={dict.geo.zoomOut}
           />
         </div>
 

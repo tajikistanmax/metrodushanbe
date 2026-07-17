@@ -7,7 +7,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Station } from "@/lib/types";
+import type { NetworkGeoJson, Station } from "@/lib/types";
 import type { ActionError } from "@/lib/admin-forms";
 import { deleteStation } from "@/lib/admin-actions";
 import { useI18n } from "../I18nProvider";
@@ -23,11 +23,18 @@ type Props = {
   data: Station[] | null;
   error: string | null;
   lineColors?: Record<string, string>;
+  /** Геометрия сети — подложка карты в форме станции. */
+  network: NetworkGeoJson | null;
 };
 
 type FormState = Station | null | undefined;
 
-export default function StationsManager({ data, error, lineColors }: Props) {
+export default function StationsManager({
+  data,
+  error,
+  lineColors,
+  network,
+}: Props) {
   const { dict } = useI18n();
   const router = useRouter();
   const toast = useToast();
@@ -85,6 +92,7 @@ export default function StationsManager({ data, error, lineColors }: Props) {
         {formOpen ? (
           <StationForm
             row={form ?? null}
+            network={network}
             onSuccess={handleSuccess}
             onCancel={() => setForm(undefined)}
           />

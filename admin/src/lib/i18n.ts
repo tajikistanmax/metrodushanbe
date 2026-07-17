@@ -537,6 +537,47 @@ export type Dict = {
     openStationAdmin: string;
   };
 
+  /**
+   * Карта и редактор геометрии по карте (общие строки для /map и форм
+   * линии/станции).
+   */
+  geo: {
+    /** Доступные имена регионов карты и состояние загрузки. */
+    regionNetwork: string;
+    regionLineEditor: string;
+    regionStationEditor: string;
+    mapLoading: string;
+    zoomIn: string;
+    zoomOut: string;
+    /** Редактор трассы линии. */
+    drawPathTitle: string;
+    drawPathHint: string;
+    undoPoint: string;
+    clearPath: string;
+    deletePoint: string;
+    pointsCount: string;
+    noPointSelected: string;
+    selectedPoint: string;
+    /** Редактор точки станции. */
+    pickPointTitle: string;
+    pickPointHint: string;
+    clearPoint: string;
+    /** Сообщения aria-live о результате правки. */
+    livePointAdded: string;
+    livePointMoved: string;
+    livePointRemoved: string;
+    livePointInserted: string;
+    livePathCleared: string;
+    livePointSet: string;
+    /** Ручной ввод как запасной/клавиатурный путь. */
+    manualTitle: string;
+    manualHint: string;
+    /** Многосегментная трасса: правка по карте запрещена. */
+    multiSegmentTitle: string;
+    multiSegmentText: string;
+    multiSegmentSegments: string;
+  };
+
   /** Страница аналитики. */
   analytics: {
     title: string;
@@ -1356,6 +1397,39 @@ const tg: Dict = {
       coordinates: "Координатаҳо",
       openStationAdmin: "Кушодани идоракунии истгоҳҳо",
     },
+  geo: {
+    regionNetwork: "Харитаи шабакаи метро",
+    regionLineEditor: "Харита барои кашидани трассаи хат",
+    regionStationEditor: "Харита барои гузоштани нуқтаи истгоҳ",
+    mapLoading: "Харита бор мешавад…",
+    zoomIn: "Наздик кардан",
+    zoomOut: "Дур кардан",
+    drawPathTitle: "Кашидан аз рӯи харита",
+    drawPathHint:
+      "Клик — нуқтаи нав. Нуқтаро кашола кунед, то ҷойивазаш кунед; нуқтаи хокистарӣ дар байн — нуқтаи нав дар мобайн.",
+    undoPoint: "Бекор кардани нуқтаи охирин",
+    clearPath: "Тоза кардани трасса",
+    deletePoint: "Нест кардани нуқтаи интихобшуда",
+    pointsCount: "Нуқтаҳо",
+    noPointSelected: "Нуқта интихоб нашудааст",
+    selectedPoint: "Нуқтаи интихобшуда",
+    pickPointTitle: "Гузоштан аз рӯи харита",
+    pickPointHint: "Клик — нуқтаи истгоҳ. Нуқтаро кашола кунед, то дақиқ кунед.",
+    clearPoint: "Тоза кардани нуқта",
+    livePointAdded: "Нуқта илова шуд",
+    livePointMoved: "Нуқта ҷойиваз шуд",
+    livePointRemoved: "Нуқта нест шуд",
+    livePointInserted: "Нуқта дар мобайн илова шуд",
+    livePathCleared: "Трасса тоза шуд",
+    livePointSet: "Координатаҳо гузошта шуданд",
+    manualTitle: "Ворид кардани дастӣ",
+    manualHint:
+      "Роҳи клавиатурӣ ва эҳтиётӣ: харита бе шабака ё муш дастрас нест.",
+    multiSegmentTitle: "Трассаи бисёрқисма — таҳрир аз рӯи харита баста аст",
+    multiSegmentText:
+      "Дар пойгоҳ ин хат аз якчанд қисм (шоха) иборат аст, вале формат «path» танҳо як хатро мефиристад — нигоҳ доштан қисмҳоро ба як хат мепечонад. Геометрия бетағйир мемонад; барои тағйир импорти GeoJSON-ро истифода баред.",
+    multiSegmentSegments: "Қисмҳо",
+  },
   analytics: {
     title: "Таҳлил",
     lead: "Нишондиҳандаҳо аз маълумоти ҷории платформа ҳисоб карда мешаванд — хатҳо, истгоҳҳо, огоҳиҳо ва хабарҳо.",
@@ -2202,6 +2276,39 @@ const ru: Dict = {
       coordinates: "Координаты",
       openStationAdmin: "Открыть управление станциями",
     },
+  geo: {
+    regionNetwork: "Карта сети метро",
+    regionLineEditor: "Карта для рисования трассы линии",
+    regionStationEditor: "Карта для установки точки станции",
+    mapLoading: "Карта загружается…",
+    zoomIn: "Приблизить",
+    zoomOut: "Отдалить",
+    drawPathTitle: "Рисовать по карте",
+    drawPathHint:
+      "Клик — новая точка. Точку можно перетащить; серая точка между вершинами вставляет точку в середину.",
+    undoPoint: "Отменить последнюю точку",
+    clearPath: "Очистить трассу",
+    deletePoint: "Удалить выбранную точку",
+    pointsCount: "Точек",
+    noPointSelected: "Точка не выбрана",
+    selectedPoint: "Выбранная точка",
+    pickPointTitle: "Поставить по карте",
+    pickPointHint: "Клик — точка станции. Перетащите точку, чтобы уточнить.",
+    clearPoint: "Очистить точку",
+    livePointAdded: "Точка добавлена",
+    livePointMoved: "Точка перемещена",
+    livePointRemoved: "Точка удалена",
+    livePointInserted: "Точка вставлена в середину",
+    livePathCleared: "Трасса очищена",
+    livePointSet: "Координаты установлены",
+    manualTitle: "Ручной ввод",
+    manualHint:
+      "Клавиатурный и запасной путь: карта недоступна без сети или мыши.",
+    multiSegmentTitle: "Многосегментная трасса — правка по карте заблокирована",
+    multiSegmentText:
+      "В базе у этой линии несколько сегментов (ветки), а формат «path» передаёт только одну линию — сохранение схлопнуло бы сегменты в один. Геометрия останется без изменений; для правки используйте импорт GeoJSON.",
+    multiSegmentSegments: "Сегментов",
+  },
   analytics: {
     title: "Аналитика",
     lead: "Показатели считаются из текущих данных платформы — линий, станций, уведомлений и новостей.",
@@ -3048,6 +3155,39 @@ const en: Dict = {
       coordinates: "Coordinates",
       openStationAdmin: "Open station management",
     },
+  geo: {
+    regionNetwork: "Metro network map",
+    regionLineEditor: "Map for drawing the line path",
+    regionStationEditor: "Map for placing the station point",
+    mapLoading: "Loading the map…",
+    zoomIn: "Zoom in",
+    zoomOut: "Zoom out",
+    drawPathTitle: "Draw on the map",
+    drawPathHint:
+      "Click to add a point. Drag a point to move it; the grey point between vertices inserts a point in the middle.",
+    undoPoint: "Undo last point",
+    clearPath: "Clear path",
+    deletePoint: "Delete selected point",
+    pointsCount: "Points",
+    noPointSelected: "No point selected",
+    selectedPoint: "Selected point",
+    pickPointTitle: "Place on the map",
+    pickPointHint: "Click to place the station point. Drag it to fine-tune.",
+    clearPoint: "Clear point",
+    livePointAdded: "Point added",
+    livePointMoved: "Point moved",
+    livePointRemoved: "Point removed",
+    livePointInserted: "Point inserted in the middle",
+    livePathCleared: "Path cleared",
+    livePointSet: "Coordinates set",
+    manualTitle: "Manual entry",
+    manualHint:
+      "Keyboard and fallback path: the map is unavailable without network or a mouse.",
+    multiSegmentTitle: "Multi-segment path — map editing is locked",
+    multiSegmentText:
+      "This line has several segments (branches) in the database, but the \"path\" format carries a single line — saving would collapse the segments into one. The geometry stays unchanged; use the GeoJSON import to edit it.",
+    multiSegmentSegments: "Segments",
+  },
   analytics: {
     title: "Analytics",
     lead: "Metrics are computed from current platform data — lines, stations, alerts and news.",
