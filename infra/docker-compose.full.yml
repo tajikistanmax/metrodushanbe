@@ -110,7 +110,7 @@ services:
       # Секрет admin-контура (app.admin.dev-key) — через SPRING_APPLICATION_JSON,
       # чтобы обойти неоднозначность relaxed binding для ключа с дефисом (dev-key).
       # Значение согласовано с ADMIN_API_KEY у сервиса admin.
-      SPRING_APPLICATION_JSON: '{"app":{"admin":{"dev-key":"${ADMIN_API_KEY:-dev-admin-key-change-me}"}}}'
+      SPRING_APPLICATION_JSON: '{"app":{"admin":{"dev-key":"${ADMIN_API_KEY:?ADMIN_API_KEY is required}"}}}'
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: metro
       MINIO_SECRET_KEY: metro-dev-key-change
@@ -147,16 +147,15 @@ services:
     build:
       context: ../admin
       dockerfile: Dockerfile
-      args:
-        # Админка ходит в API СЕРВЕРНО (внутри сети), поэтому имя сервиса backend.
-        NEXT_PUBLIC_API_BASE: ${ADMIN_API_BASE:-http://backend:8080/api/v1}
     image: metro-admin:local
     container_name: metro-admin-full
     depends_on:
       - backend
     environment:
-      # Серверный секрет X-Admin-Key (НЕ NEXT_PUBLIC_): читается в рантайме.
-      ADMIN_API_KEY: ${ADMIN_API_KEY:-dev-admin-key-change-me}
+      ADMIN_API_BASE: http://backend:8080/api/v1
+      # Fail-closed: эти значения обязательны даже для локального full-контура.
+      ADMIN_API_KEY: ${ADMIN_API_KEY:?ADMIN_API_KEY is required}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:?ADMIN_SESSION_SECRET is required}
     ports:
       - "3001:3001"
     restart: unless-stopped
