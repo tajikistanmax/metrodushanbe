@@ -180,6 +180,18 @@ export function IconUser(props: IconProps) {
   );
 }
 
+/** Группа пользователей (раздел управления операторами). */
+export function IconUsers(props: IconProps) {
+  return (
+    <Base {...props}>
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3 19a6 6 0 0 1 12 0" />
+      <path d="M16 5.4a3.2 3.2 0 0 1 0 5.2" />
+      <path d="M17.5 13.6A6 6 0 0 1 21 19" />
+    </Base>
+  );
+}
+
 /** Замок (пароль). */
 export function IconLock(props: IconProps) {
   return (

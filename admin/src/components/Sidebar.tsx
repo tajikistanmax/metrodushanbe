@@ -10,6 +10,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
+import { roleAtLeast, type AdminRole } from "@/lib/auth";
 import { LANG_LABELS, LANG_SHORT_LABELS, LANGS } from "@/lib/i18n";
 import {
   IconAudit,
@@ -26,6 +27,7 @@ import {
   IconSpark,
   IconStation,
   IconTicket,
+  IconUsers,
 } from "@/lib/icons";
 import BrandMark from "./BrandMark";
 import ThemeToggle from "./ThemeToggle";
@@ -45,12 +47,15 @@ type NavKey =
   | "calendar"
   | "features"
   | "agents"
+  | "users"
   | "audit";
 
 type NavItem = {
   key: NavKey;
   href: string;
   icon: ComponentType<SVGProps<SVGSVGElement>>;
+  /** Минимальная роль для показа пункта; не задана — виден всем операторам. */
+  minRole?: AdminRole;
 };
 
 type NavGroup = {
@@ -91,6 +96,7 @@ const GROUPS: NavGroup[] = [
     items: [
       { key: "agents", href: "/agents", icon: IconSpark },
       { key: "features", href: "/features", icon: IconBolt },
+      { key: "users", href: "/users", icon: IconUsers, minRole: "superadmin" },
       { key: "audit", href: "/audit", icon: IconAudit },
     ],
   },
@@ -103,9 +109,18 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export default function Sidebar() {
+export default function Sidebar({ role }: { role: AdminRole }) {
   const { lang, setLang, dict } = useI18n();
   const pathname = usePathname();
+
+  // Скрытие пункта — только удобство: недоступный раздел всё равно закрыт
+  // серверным guard'ом (requireAdminRole), прямой переход по URL не поможет.
+  const groups = GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter(
+      (item) => !item.minRole || roleAtLeast(role, item.minRole),
+    ),
+  })).filter((group) => group.items.length > 0);
 
   return (
     <aside className="sidebar flex shrink-0 flex-col gap-5 bg-brand-navy p-4 text-surface-light lg:sticky lg:top-0 lg:h-dvh lg:w-[264px] lg:overflow-y-auto">
@@ -125,7 +140,7 @@ export default function Sidebar() {
       {/* Навигация */}
       <nav aria-label={dict.appTitle} className="flex-1">
         <div className="flex gap-4 overflow-x-auto lg:flex-col lg:gap-5 lg:overflow-visible">
-          {GROUPS.map((group, gi) => (
+          {groups.map((group, gi) => (
             <div key={gi} className="shrink-0">
               {group.labelKey && (
                 <p className="mb-1.5 hidden px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-surface-light/45 lg:block">

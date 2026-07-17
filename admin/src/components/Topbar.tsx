@@ -9,6 +9,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { AdminRole } from "@/lib/auth";
 import { logout } from "@/lib/auth-actions";
 import { formatConsoleDate } from "@/lib/i18n";
 import { IconLogout, IconSearch, IconUser } from "@/lib/icons";
@@ -28,6 +29,7 @@ type NavKey =
   | "calendar"
   | "features"
   | "agents"
+  | "users"
   | "audit";
 
 const ROUTES: { key: NavKey; href: string }[] = [
@@ -44,6 +46,7 @@ const ROUTES: { key: NavKey; href: string }[] = [
   { key: "calendar", href: "/calendar" },
   { key: "features", href: "/features" },
   { key: "agents", href: "/agents" },
+  { key: "users", href: "/users" },
   { key: "audit", href: "/audit" },
 ];
 
@@ -54,7 +57,13 @@ function currentKey(pathname: string): NavKey {
   return found?.key ?? "overview";
 }
 
-export default function Topbar() {
+type TopbarProps = {
+  /** Отображаемое имя оператора из claims сессии. */
+  displayName: string;
+  role: AdminRole;
+};
+
+export default function Topbar({ displayName, role }: TopbarProps) {
   const { lang, dict } = useI18n();
   const pathname = usePathname();
   const router = useRouter();
@@ -190,10 +199,10 @@ export default function Topbar() {
             </span>
             <span className="hidden text-left sm:block">
               <span className="block text-xs font-bold leading-tight">
-                {dict.topbar.userName}
+                {displayName}
               </span>
               <span className="block text-[10px] leading-tight text-text-secondary">
-                {dict.topbar.userRole}
+                {dict.roles[role]}
               </span>
             </span>
           </button>

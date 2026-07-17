@@ -2,46 +2,99 @@
 
 /**
  * Server Actions входа/выхода операционной консоли (см. lib/auth.ts).
- * Пароль сверяется только здесь, на сервере; в браузер уходит лишь
- * httpOnly-cookie с HMAC-токеном — ни пароль, ни секрет в бандл не попадают.
+ *
+ * Пароль здесь не сверяется локально: его проверяет backend
+ * (`POST /v1/admin/auth/login`), закрытый заголовком X-Admin-Key. Ключ читается
+ * из серверного env и в клиентский бандл не попадает, поэтому эндпоинт входа
+ * недоступен из браузера напрямую. В ответ backend отдаёт профиль с ролью, из
+ * которого Next выпускает подписанную httpOnly-cookie — ни пароль, ни секрет
+ * подписи браузер не видит.
  */
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import {
-  SESSION_COOKIE,
-  computeSessionToken,
-  expectedPassword,
-  expectedUser,
-  tokensEqual,
-} from "./auth";
+import { API_BASE } from "./api";
+import { SESSION_COOKIE, createSessionToken, isAdminRole } from "./auth";
 
 export type LoginState = {
   /** Код ошибки для локализации на клиенте; null — без ошибки. */
-  error: "invalid" | "required" | null;
+  error: "invalid" | "required" | "unavailable" | null;
 };
 
 /** Сутки/месяц в секундах — срок cookie без и с «запомнить меня». */
 const DAY_S = 60 * 60 * 24;
 const MONTH_S = DAY_S * 30;
 
+/** Dev-ключ по умолчанию (совпадает с app.admin.dev-key backend). */
+const DEFAULT_ADMIN_KEY = "dev-admin-key-change-me";
+
+type LoginResponse = {
+  user?: {
+    username?: string;
+    displayName?: string;
+    role?: string;
+    sessionVersion?: number;
+  };
+};
+
 export async function login(
   _prev: LoginState,
   formData: FormData,
 ): Promise<LoginState> {
-  const user = String(formData.get("username") ?? "").trim();
+  const username = String(formData.get("username") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const remember = formData.get("remember") === "on";
 
-  if (!user || !password) {
+  if (!username || !password) {
     return { error: "required" };
   }
-  // tokensEqual: сравнение фиксированного времени, без ранних выходов
-  if (user !== expectedUser() || !tokensEqual(password, expectedPassword())) {
-    return { error: "invalid" };
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/admin/auth/login`, {
+      method: "POST",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "X-Admin-Key": process.env.ADMIN_API_KEY ?? DEFAULT_ADMIN_KEY,
+      },
+      body: JSON.stringify({ username, password }),
+    });
+  } catch {
+    // Backend недоступен — это не «неверный пароль», и путать их нельзя:
+    // иначе оператор будет искать ошибку в своих учётных данных.
+    return { error: "unavailable" };
   }
 
-  const token = await computeSessionToken();
+  if (response.status === 401) {
+    return { error: "invalid" };
+  }
+  if (!response.ok) {
+    return { error: "unavailable" };
+  }
+
+  const payload = (await response.json()) as LoginResponse;
+  const user = payload.user;
+  if (
+    !user?.username ||
+    !user.role ||
+    !isAdminRole(user.role) ||
+    typeof user.sessionVersion !== "number"
+  ) {
+    return { error: "unavailable" };
+  }
+
+  const token = await createSessionToken(
+    {
+      username: user.username,
+      displayName: user.displayName ?? user.username,
+      role: user.role,
+      accountVersion: user.sessionVersion,
+    },
+    remember ? MONTH_S : DAY_S,
+  );
+
   const store = await cookies();
   store.set(SESSION_COOKIE, token, {
     httpOnly: true,

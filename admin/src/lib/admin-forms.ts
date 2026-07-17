@@ -139,6 +139,30 @@ export type FareCreateBody = {
 };
 export type FareUpdateBody = Omit<FareCreateBody, "code">;
 
+// --- Операторы консоли ------------------------------------------------------
+
+export const ADMIN_USER_ROLES = ["viewer", "operator", "editor", "superadmin"] as const;
+export type AdminUserRole = (typeof ADMIN_USER_ROLES)[number];
+
+/** Минимальная длина пароля; совпадает с @Size(min = 12) на backend. */
+export const ADMIN_PASSWORD_MIN_LENGTH = 12;
+
+export type AdminUserCreateBody = {
+  username: string;
+  displayName: string;
+  password: string;
+  role: AdminUserRole;
+  active: boolean;
+};
+
+/** При изменении пароль необязателен: пустое значение оставляет текущий. */
+export type AdminUserUpdateBody = {
+  displayName: string;
+  password?: string;
+  role: AdminUserRole;
+  active: boolean;
+};
+
 // --- Результат серверного действия -----------------------------------------
 
 /** Ошибка из единого envelope backend {error:{code,message,details?},requestId}. */

@@ -20,6 +20,7 @@ export type Section =
   | "imports"
   | "calendar"
   | "features"
+  | "users"
   | "audit";
 
 export default function SectionHeader({ section }: { section: Section }) {
@@ -36,6 +37,7 @@ export default function SectionHeader({ section }: { section: Section }) {
     imports: dict.operations.importsTitle,
     calendar: dict.operations.calendarTitle,
     features: dict.operations.featuresTitle,
+    users: dict.users.title,
     audit: dict.auditTitle,
   };
   const leads: Partial<Record<Section, string>> = {
@@ -45,6 +47,7 @@ export default function SectionHeader({ section }: { section: Section }) {
     features: dict.operations.featuresLead,
     requests: dict.operations.requestsLead,
     fares: dict.operations.faresLead,
+    users: dict.users.lead,
   };
 
   return <PageHeader title={titles[section]} lead={leads[section]} />;

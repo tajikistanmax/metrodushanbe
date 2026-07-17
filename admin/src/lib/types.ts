@@ -222,6 +222,17 @@ export type CitizenRequestAdmin = {
   resolvedAt: string | null;
 };
 
+/** Оператор консоли (GET /admin/users). Хеш пароля backend не отдаёт. */
+export type AdminUserAccount = {
+  username: string;
+  displayName: string;
+  role: "viewer" | "operator" | "editor" | "superadmin";
+  active: boolean;
+  sessionVersion: number;
+  lastLoginAt: string | null;
+  updatedAt: string | null;
+};
+
 export type FareRiderCategory = "all" | "adult" | "child" | "student" | "senior";
 
 export type FareProduct = {

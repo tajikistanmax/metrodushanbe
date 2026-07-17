@@ -19,11 +19,64 @@ public class AdminAuthProperties {
     /** Dev-ключ, ожидаемый в заголовке {@code X-Admin-Key}. */
     private String devKey;
 
+    /** Первичный суперадмин, создаваемый на старте (см. AdminUserBootstrap). */
+    private Bootstrap bootstrap = new Bootstrap();
+
     public String getDevKey() {
         return devKey;
     }
 
     public void setDevKey(String devKey) {
         this.devKey = devKey;
+    }
+
+    public Bootstrap getBootstrap() {
+        return bootstrap;
+    }
+
+    public void setBootstrap(Bootstrap bootstrap) {
+        this.bootstrap = bootstrap;
+    }
+
+    /**
+     * Учётные данные первичного суперадмина ({@code app.admin.bootstrap.*}).
+     *
+     * <p>Задаются только через env. В репозитории и в миграциях пароля нет: сид
+     * BCrypt-хеша в SQL означал бы общеизвестный пароль в истории git.
+     */
+    public static class Bootstrap {
+
+        /** Логин первичного суперадмина. */
+        private String username;
+
+        /** Пароль первичного суперадмина в открытом виде; хешируется на старте. */
+        private String password;
+
+        /** Отображаемое имя в консоли. */
+        private String displayName = "Суперадминистратор";
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public void setDisplayName(String displayName) {
+            this.displayName = displayName;
+        }
     }
 }

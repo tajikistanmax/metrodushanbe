@@ -93,7 +93,9 @@ export default function LoginClient() {
       ? t.errInvalid
       : state.error === "required"
         ? t.errRequired
-        : null;
+        : state.error === "unavailable"
+          ? t.errUnavailable
+          : null;
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-[#0b1622]">

@@ -70,6 +70,7 @@ export type Dict = {
     calendar: string;
     features: string;
     agents: string;
+    users: string;
     audit: string;
   };
 
@@ -89,9 +90,44 @@ export type Dict = {
     searchPlaceholder: string;
     demoBadge: string;
     demoHint: string;
-    userName: string;
-    userRole: string;
     logout: string;
+  };
+
+  /** Названия ролей операторов (RBAC). Ключи совпадают с кодами backend. */
+  roles: {
+    viewer: string;
+    operator: string;
+    editor: string;
+    superadmin: string;
+  };
+
+  /** Раздел управления операторами консоли (только для суперадмина). */
+  users: {
+    title: string;
+    lead: string;
+    colUsername: string;
+    colDisplayName: string;
+    colRole: string;
+    colStatus: string;
+    colLastLogin: string;
+    statusActive: string;
+    statusInactive: string;
+    neverLoggedIn: string;
+    youBadge: string;
+    createTitle: string;
+    editTitle: string;
+    fieldUsername: string;
+    fieldUsernameHint: string;
+    fieldDisplayName: string;
+    fieldPassword: string;
+    fieldPasswordHintCreate: string;
+    fieldPasswordHintEdit: string;
+    fieldRole: string;
+    fieldActive: string;
+    roleHintViewer: string;
+    roleHintOperator: string;
+    roleHintEditor: string;
+    roleHintSuperadmin: string;
   };
 
   /** Страница входа (макет photo/ChatGPT Image … 13_07_19). */
@@ -125,6 +161,7 @@ export type Dict = {
     footerSupport: string;
     errInvalid: string;
     errRequired: string;
+    errUnavailable: string;
     showPassword: string;
     hidePassword: string;
   };
@@ -464,6 +501,7 @@ const tg: Dict = {
     calendar: "Тақвим",
     features: "Функсияҳо",
     agents: "AI-агентҳо",
+    users: "Операторон",
     audit: "Аудит",
   },
   navGroups: {
@@ -477,9 +515,40 @@ const tg: Dict = {
     searchPlaceholder: "Бахши консол…",
     demoBadge: "Контури демо",
     demoHint: "Маълумоти шабака намунавӣ аст; воридот тавассути конвейери импорт (ТЗ, боби 13)",
-    userName: "Маъмур",
-    userRole: "Оператори платформа",
     logout: "Баромадан",
+  },
+  roles: {
+    viewer: "Нозир",
+    operator: "Оператор",
+    editor: "Муҳаррир",
+    superadmin: "Супермаъмур",
+  },
+  users: {
+    title: "Операторони консол",
+    lead: "Ҳисобҳо ва нақшҳои дастрасӣ ба консоли идоракунӣ.",
+    colUsername: "Логин",
+    colDisplayName: "Ном",
+    colRole: "Нақш",
+    colStatus: "Ҳолат",
+    colLastLogin: "Вуруди охирин",
+    statusActive: "Фаъол",
+    statusInactive: "Ғайрифаъол",
+    neverLoggedIn: "Ҳеҷ гоҳ",
+    youBadge: "шумо",
+    createTitle: "Оператори нав",
+    editTitle: "Тағйири оператор",
+    fieldUsername: "Логин",
+    fieldUsernameHint: "Ҳарфҳои лотинӣ, рақамҳо, . _ - ; баъдан тағйир намеёбад.",
+    fieldDisplayName: "Номи намоишӣ",
+    fieldPassword: "Рамз",
+    fieldPasswordHintCreate: "На камтар аз 12 аломат.",
+    fieldPasswordHintEdit: "Холӣ монед — рамзи ҷорӣ нигоҳ дошта мешавад.",
+    fieldRole: "Нақш",
+    fieldActive: "Ҳисоб фаъол аст",
+    roleHintViewer: "Танҳо хониш: кортҳо, таҳлил, аудит.",
+    roleHintOperator: "Муроҷиатҳо, ҳодисаҳо, огоҳиномаҳои хидматӣ.",
+    roleHintEditor: "Мундариҷа ва маълумотномаҳо: хабарҳо, тарофаҳо, истгоҳҳо, хатҳо.",
+    roleHintSuperadmin: "Дастрасии пурра, аз ҷумла идоракунии операторон.",
   },
   login: {
     welcome1: "Хуш омадед",
@@ -514,6 +583,7 @@ const tg: Dict = {
     footerSupport: "Дастгирӣ",
     errInvalid: "Логин ё рамз нодуруст аст",
     errRequired: "Логин ва рамзро ворид кунед",
+    errUnavailable: "Сервер дастрас нест. Каме баъдтар кӯшиш кунед.",
     showPassword: "Нишон додани рамз",
     hidePassword: "Пинҳон кардани рамз",
   },
@@ -859,6 +929,7 @@ const ru: Dict = {
     calendar: "Календарь",
     features: "Функции",
     agents: "AI-агенты",
+    users: "Операторы",
     audit: "Аудит",
   },
   navGroups: {
@@ -872,9 +943,40 @@ const ru: Dict = {
     searchPlaceholder: "Раздел консоли…",
     demoBadge: "Демо-контур",
     demoHint: "Данные сети демонстрационные; реальные загружаются конвейером импорта (ТЗ, раздел 13)",
-    userName: "Администратор",
-    userRole: "Оператор платформы",
     logout: "Выйти",
+  },
+  roles: {
+    viewer: "Наблюдатель",
+    operator: "Оператор",
+    editor: "Редактор",
+    superadmin: "Суперадминистратор",
+  },
+  users: {
+    title: "Операторы консоли",
+    lead: "Учётные записи и роли доступа к операционной консоли.",
+    colUsername: "Логин",
+    colDisplayName: "Имя",
+    colRole: "Роль",
+    colStatus: "Состояние",
+    colLastLogin: "Последний вход",
+    statusActive: "Активен",
+    statusInactive: "Отключён",
+    neverLoggedIn: "Ни разу",
+    youBadge: "вы",
+    createTitle: "Новый оператор",
+    editTitle: "Изменение оператора",
+    fieldUsername: "Логин",
+    fieldUsernameHint: "Латиница, цифры, . _ - ; после создания не меняется.",
+    fieldDisplayName: "Отображаемое имя",
+    fieldPassword: "Пароль",
+    fieldPasswordHintCreate: "Не менее 12 символов.",
+    fieldPasswordHintEdit: "Оставьте пустым — текущий пароль сохранится.",
+    fieldRole: "Роль",
+    fieldActive: "Учётная запись активна",
+    roleHintViewer: "Только чтение: карточки, аналитика, аудит.",
+    roleHintOperator: "Обращения, инциденты, сервисные уведомления.",
+    roleHintEditor: "Контент и справочники: новости, тарифы, станции, линии.",
+    roleHintSuperadmin: "Полный доступ, включая управление операторами.",
   },
   login: {
     welcome1: "Добро пожаловать",
@@ -909,6 +1011,7 @@ const ru: Dict = {
     footerSupport: "Поддержка",
     errInvalid: "Неверный логин или пароль",
     errRequired: "Введите логин и пароль",
+    errUnavailable: "Сервер недоступен. Попробуйте позже.",
     showPassword: "Показать пароль",
     hidePassword: "Скрыть пароль",
   },
@@ -1254,6 +1357,7 @@ const en: Dict = {
     calendar: "Calendar",
     features: "Features",
     agents: "AI agents",
+    users: "Operators",
     audit: "Audit",
   },
   navGroups: {
@@ -1267,9 +1371,40 @@ const en: Dict = {
     searchPlaceholder: "Console section…",
     demoBadge: "Demo mode",
     demoHint: "Network data is illustrative; real data arrives via the import pipeline (ToR, section 13)",
-    userName: "Administrator",
-    userRole: "Platform operator",
     logout: "Sign out",
+  },
+  roles: {
+    viewer: "Viewer",
+    operator: "Operator",
+    editor: "Editor",
+    superadmin: "Superadmin",
+  },
+  users: {
+    title: "Console operators",
+    lead: "Accounts and access roles for the operations console.",
+    colUsername: "Username",
+    colDisplayName: "Name",
+    colRole: "Role",
+    colStatus: "Status",
+    colLastLogin: "Last sign-in",
+    statusActive: "Active",
+    statusInactive: "Disabled",
+    neverLoggedIn: "Never",
+    youBadge: "you",
+    createTitle: "New operator",
+    editTitle: "Edit operator",
+    fieldUsername: "Username",
+    fieldUsernameHint: "Latin letters, digits, . _ - ; cannot be changed later.",
+    fieldDisplayName: "Display name",
+    fieldPassword: "Password",
+    fieldPasswordHintCreate: "At least 12 characters.",
+    fieldPasswordHintEdit: "Leave empty to keep the current password.",
+    fieldRole: "Role",
+    fieldActive: "Account is active",
+    roleHintViewer: "Read-only: records, analytics, audit.",
+    roleHintOperator: "Requests, incidents, service alerts.",
+    roleHintEditor: "Content and reference data: news, fares, stations, lines.",
+    roleHintSuperadmin: "Full access, including operator management.",
   },
   login: {
     welcome1: "Welcome",
@@ -1304,6 +1439,7 @@ const en: Dict = {
     footerSupport: "Support",
     errInvalid: "Invalid username or password",
     errRequired: "Enter username and password",
+    errUnavailable: "Server unavailable. Please try again later.",
     showPassword: "Show password",
     hidePassword: "Hide password",
   },

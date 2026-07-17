@@ -74,7 +74,14 @@ export function TextField({
   disabled,
   placeholder,
   mono,
-}: BaseProps & { mono?: boolean }) {
+  type = "text",
+  autoComplete,
+}: BaseProps & {
+  mono?: boolean;
+  /** "password" маскирует ввод — для полей учётных данных. */
+  type?: "text" | "password";
+  autoComplete?: string;
+}) {
   const id = useId();
   const errId = `${id}-err`;
   return (
@@ -82,7 +89,8 @@ export function TextField({
       <LabelRow htmlFor={id} label={label} required={required} hint={hint} />
       <input
         id={id}
-        type="text"
+        type={type}
+        autoComplete={autoComplete}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}

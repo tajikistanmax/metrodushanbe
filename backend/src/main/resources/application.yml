@@ -46,7 +46,14 @@ app:
   cors:
     allowed-origins: http://localhost:3000,http://localhost:3001,http://localhost:3002
   admin:
-    dev-key: dev-admin-key-change-me
+    dev-key: ${ADMIN_DEV_KEY:dev-admin-key-change-me}
+    # Первичный суперадмин создаётся на старте, только если активного ещё нет
+    # (см. AdminUserBootstrap). Значения ниже — dev-defaults; в проде задаются
+    # через env и пароль обязан быть заменён при первом входе.
+    bootstrap:
+      username: ${ADMIN_BOOTSTRAP_USER:admin}
+      password: ${ADMIN_BOOTSTRAP_PASSWORD:metro2026-dev-only}
+      display-name: ${ADMIN_BOOTSTRAP_DISPLAY_NAME:Суперадминистратор (dev)}
   rate-limit:
     enabled: true
     capacity: 100

@@ -1,0 +1,16 @@
+package tj.metro.dushanbe.common.error;
+
+/** Операция аутентифицирована, но роль оператора не даёт требуемого права. */
+public class ForbiddenException extends RuntimeException {
+
+    private final String code;
+
+    public ForbiddenException(String code, String message) {
+        super(message);
+        this.code = code;
+    }
+
+    public String getCode() {
+        return code;
+    }
+}

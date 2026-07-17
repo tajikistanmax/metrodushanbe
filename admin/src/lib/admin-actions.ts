@@ -15,9 +15,11 @@
 
 import { revalidatePath } from "next/cache";
 import { API_BASE } from "./api";
-import { requireAdminSession } from "./server-auth";
+import { requireAdminRole, requireAdminSession } from "./server-auth";
 import type {
   ActionResult,
+  AdminUserCreateBody,
+  AdminUserUpdateBody,
   AlertCreateBody,
   AlertUpdateBody,
   LineCreateBody,
@@ -32,6 +34,7 @@ import type {
   StationUpdateBody,
 } from "./admin-forms";
 import type {
+  AdminUserAccount,
   AiChatRequest,
   AiChatResponse,
   Alert,
@@ -54,9 +57,6 @@ type ReadResult<T> = { data: T | null; error: string | null };
 /** Dev-ключ по умолчанию (совпадает с app.admin.dev-key backend). */
 const DEFAULT_ADMIN_KEY = "dev-admin-key-change-me";
 
-/** Актор аудита (BR-ADM-1); в проде извлекается из JWT (ТЗ §6.1.7). */
-const ADMIN_ACTOR = "admin-console";
-
 type Method = "POST" | "PUT" | "DELETE";
 
 /**
@@ -70,7 +70,7 @@ async function adminFetch<T>(
   body?: unknown,
   extraHeaders?: Record<string, string>,
 ): Promise<ActionResult<T>> {
-  await requireAdminSession();
+  const session = await requireAdminSession();
   const adminKey = process.env.ADMIN_API_KEY ?? DEFAULT_ADMIN_KEY;
   try {
     const res = await fetch(`${API_BASE}/admin${path}`, {
@@ -80,7 +80,9 @@ async function adminFetch<T>(
         "Content-Type": "application/json",
         Accept: "application/json",
         "X-Admin-Key": adminKey,
-        "X-Admin-Actor": ADMIN_ACTOR,
+        // Актор аудита (BR-ADM-1) — логин из подписанной сессии, а не константа:
+        // в журнале должно быть видно, кто именно выполнил операцию.
+        "X-Admin-Actor": session.username,
         ...extraHeaders,
       },
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -118,7 +120,7 @@ async function adminFetch<T>(
 
 /** Защищённое серверное чтение /admin/** с единым ключом и envelope ошибки. */
 async function adminRead<T>(path: string): Promise<ReadResult<T>> {
-  await requireAdminSession();
+  const session = await requireAdminSession();
   const adminKey = process.env.ADMIN_API_KEY ?? DEFAULT_ADMIN_KEY;
   try {
     const res = await fetch(`${API_BASE}/admin${path}`, {
@@ -126,7 +128,7 @@ async function adminRead<T>(path: string): Promise<ReadResult<T>> {
       headers: {
         Accept: "application/json",
         "X-Admin-Key": adminKey,
-        "X-Admin-Actor": ADMIN_ACTOR,
+        "X-Admin-Actor": session.username,
       },
     });
     if (!res.ok) {
@@ -415,6 +417,53 @@ export async function deleteFareProduct(code: string): Promise<ActionResult<null
   return result;
 }
 
+// --- Операторы консоли ------------------------------------------------------
+
+/**
+ * Управление операторами доступно только суперадмину. Backend пропускает любой
+ * вызов с корректным X-Admin-Key, поэтому роль обязана проверяться здесь —
+ * requireAdminRole не пускает дальше и обычный adminFetch не вызывается.
+ */
+export async function getAdminUsers(): Promise<ReadResult<AdminUserAccount[]>> {
+  await requireAdminRole("superadmin");
+  return adminRead<AdminUserAccount[]>("/users");
+}
+
+export async function createAdminUser(
+  body: AdminUserCreateBody,
+): Promise<ActionResult<AdminUserAccount>> {
+  await requireAdminRole("superadmin");
+  const result = await adminFetch<AdminUserAccount>("/users", "POST", body);
+  if (result.ok) revalidatePath("/users");
+  return result;
+}
+
+export async function updateAdminUser(
+  username: string,
+  body: AdminUserUpdateBody,
+): Promise<ActionResult<AdminUserAccount>> {
+  await requireAdminRole("superadmin");
+  const result = await adminFetch<AdminUserAccount>(
+    `/users/${encodeURIComponent(username)}`,
+    "PUT",
+    body,
+  );
+  if (result.ok) revalidatePath("/users");
+  return result;
+}
+
+export async function deleteAdminUser(
+  username: string,
+): Promise<ActionResult<null>> {
+  await requireAdminRole("superadmin");
+  const result = await adminFetch<null>(
+    `/users/${encodeURIComponent(username)}`,
+    "DELETE",
+  );
+  if (result.ok) revalidatePath("/users");
+  return result;
+}
+
 // --- Аудит (чтение) ---------------------------------------------------------
 
 /**
@@ -423,7 +472,7 @@ export async function deleteFareProduct(code: string): Promise<ActionResult<null
  * Возвращает форму { data, error } для таблицы (не ActionResult).
  */
 export async function getAuditEvents(): Promise<ReadResult<AuditEvent[]>> {
-  await requireAdminSession();
+  const session = await requireAdminSession();
   const adminKey = process.env.ADMIN_API_KEY ?? DEFAULT_ADMIN_KEY;
   try {
     const res = await fetch(`${API_BASE}/admin/audit`, {
@@ -431,7 +480,7 @@ export async function getAuditEvents(): Promise<ReadResult<AuditEvent[]>> {
       headers: {
         Accept: "application/json",
         "X-Admin-Key": adminKey,
-        "X-Admin-Actor": ADMIN_ACTOR,
+        "X-Admin-Actor": session.username,
       },
     });
     if (!res.ok) {

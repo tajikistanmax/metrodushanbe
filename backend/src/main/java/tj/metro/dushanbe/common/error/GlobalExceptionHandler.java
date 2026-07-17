@@ -36,6 +36,20 @@ public class GlobalExceptionHandler {
                 .body(ApiError.of(requestId(request), ex.getCode(), ex.getMessage(), null));
     }
 
+    /** 401: неверные учётные данные оператора. Детали не раскрываем — только код. */
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiError> handleUnauthorized(UnauthorizedException ex, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiError.of(requestId(request), ex.getCode(), ex.getMessage(), null));
+    }
+
+    /** 403: учётная запись действительна, но её роль не покрывает операцию. */
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiError> handleForbidden(ForbiddenException ex, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiError.of(requestId(request), ex.getCode(), ex.getMessage(), null));
+    }
+
     /** 400: доменная валидация параметров запроса (код из исключения, например alert.severity_invalid). */
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ApiError> handleBadRequest(BadRequestException ex, HttpServletRequest request) {

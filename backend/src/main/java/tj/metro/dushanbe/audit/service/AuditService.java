@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import tj.metro.dushanbe.audit.domain.AuditEvent;
 import tj.metro.dushanbe.audit.repository.AuditEventRepository;
@@ -45,6 +46,29 @@ public class AuditService {
     @Transactional
     public AuditEvent record(String actor, String action, String entityType, String entityId,
                              Map<String, Object> before, Map<String, Object> after) {
+        return persist(actor, action, entityType, entityId, before, after);
+    }
+
+    /**
+     * Фиксирует событие в СОБСТВЕННОЙ транзакции ({@code REQUIRES_NEW}).
+     *
+     * <p>Нужен там, где вызывающий метод завершается исключением, но событие обязано
+     * сохраниться: например, неудачная попытка входа. При обычном {@link #record}
+     * такая запись присоединилась бы к транзакции вызывающего и откатилась вместе
+     * с ней — то есть журнал терял бы ровно те события, ради которых ведётся.
+     *
+     * <p>Для успешных операций используйте {@link #record}: там атомарность с
+     * изменением сущности важнее.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public AuditEvent recordIndependently(String actor, String action, String entityType,
+                                          String entityId, Map<String, Object> before,
+                                          Map<String, Object> after) {
+        return persist(actor, action, entityType, entityId, before, after);
+    }
+
+    private AuditEvent persist(String actor, String action, String entityType, String entityId,
+                               Map<String, Object> before, Map<String, Object> after) {
         AuditEvent event = new AuditEvent(
                 UUID.randomUUID(), actor, action, entityType, entityId,
                 before, after, OffsetDateTime.now(clock));
