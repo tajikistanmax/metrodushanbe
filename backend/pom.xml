@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   Backend платформы «Метро Душанбе» — модульный монолит (Spring Boot).
-  Java 25, без Lombok (records и явные конструкторы) — см. docs/dev-conventions.md §7.
+  Java 21 LTS, без Lombok (records и явные конструкторы) — см. docs/dev-conventions.md §7.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

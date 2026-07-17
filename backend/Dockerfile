@@ -1,5 +1,5 @@
 # Backend «Метро Душанбе» — multi-stage образ.
-# Сборка через Maven Wrapper на Temurin JDK 25 → рантайм на Temurin JRE 25.
+# Сборка через Maven Wrapper на Temurin JDK 21 → рантайм на Temurin JRE 21.
 # Контекст сборки — каталог backend/ (см. backend/.dockerignore):
 #   docker build -f backend/Dockerfile -t metro-backend backend
 

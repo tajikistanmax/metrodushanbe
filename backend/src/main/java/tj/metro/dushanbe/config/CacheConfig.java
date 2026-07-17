@@ -1,5 +1,6 @@
 package tj.metro.dushanbe.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -34,10 +35,16 @@ public class CacheConfig implements CachingConfigurer {
     private static final Logger LOG = LoggerFactory.getLogger(CacheConfig.class);
 
     @Bean
-    public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
+    public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory,
+                                     ObjectMapper objectMapper) {
+        GenericJackson2JsonRedisSerializer serializer =
+                GenericJackson2JsonRedisSerializer.builder()
+                        .objectMapper(objectMapper.copy())
+                        .defaultTyping(true)
+                        .build();
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
-                        new GenericJackson2JsonRedisSerializer()))
+                        serializer))
                 .disableCachingNullValues();
 
         Map<String, RedisCacheConfiguration> cacheConfigurations = Map.of(
@@ -48,7 +55,8 @@ public class CacheConfig implements CachingConfigurer {
                 "news", defaultConfig.entryTtl(Duration.ofMinutes(30)),
                 "schedules", defaultConfig.entryTtl(Duration.ofMinutes(30)),
                 "routes", defaultConfig.entryTtl(Duration.ofMinutes(15)),
-                "feature.flags", defaultConfig.entryTtl(Duration.ofMinutes(1)));
+                "feature.flags", defaultConfig.entryTtl(Duration.ofMinutes(1)),
+                "fares", defaultConfig.entryTtl(Duration.ofMinutes(30)));
 
         return RedisCacheManager.builder(redisConnectionFactory)
                 .cacheDefaults(defaultConfig)
