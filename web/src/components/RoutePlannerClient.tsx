@@ -8,8 +8,14 @@
  *  - валидный ответ found:false — «пути нет»;
  *  - found:true — участки по линиям, пересадки и ОЦЕНОЧНОЕ время.
  * Время явно помечено как оценочное (до реального расписания).
+ *
+ * Страница принимает `?from=&to=` — тем же адресом маршрут, выбранный двумя
+ * нажатиями по карте на главной, открывается списками, и этой же ссылкой можно
+ * поделиться. Параметры работают и при прямом заходе: коды сверяются с данными
+ * сети, маршрут строится сам, неизвестный код просто отбрасывается.
  */
 
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MAIN_CONTENT_ID } from "@/lib/dom-ids";
 import { lineBadgeLabel, pickName } from "@/lib/i18n";
@@ -161,14 +167,32 @@ function SummaryTile({ value, label }: { value: string; label: string }) {
 
 export default function RoutePlannerClient() {
   const { lang, dict } = useI18n();
+  const searchParams = useSearchParams();
   const [network, setNetwork] = useState<NetworkDataResult | null>(null);
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [route, setRoute] = useState<Route | null>(null);
-  const [status, setStatus] = useState<Status>("idle");
-  // Монотонный счётчик запросов — результат устаревшего построения не должен
-  // перезаписать актуальный (гонки при повторных нажатиях).
-  const reqRef = useRef(0);
+  // Начальные значения из адреса: ссылка с карты должна открываться готовой
+  const [rawFrom, setRawFrom] = useState(() => searchParams.get("from") ?? "");
+  const [rawTo, setRawTo] = useState(() => searchParams.get("to") ?? "");
+  /**
+   * Пара, построение которой запрошено: нажатием кнопки или адресом при заходе.
+   * Прямой заход по ссылке строит маршрут САМ — иначе поделиться результатом
+   * нельзя, получатель ссылки увидел бы просто заполненную форму.
+   */
+  const [submitted, setSubmitted] = useState<{ from: string; to: string } | null>(
+    () => {
+      const f = searchParams.get("from") ?? "";
+      const t = searchParams.get("to") ?? "";
+      return f && t && f !== t ? { from: f, to: t } : null;
+    },
+  );
+  // Результат хранится вместе с парой, к которой относится: «строим» и «ничего
+  // не выбрано» выводятся из него, а не выставляются setState прямо в эффекте.
+  const [routeState, setRouteState] = useState<{
+    key: string;
+    route: Route | null;
+    status: "done" | "error";
+  } | null>(null);
+  // Ключ последнего запрошенного построения — устаревшие ответы отбрасываются
+  const requestKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -191,57 +215,118 @@ export default function RoutePlannerClient() {
     [network],
   );
 
+  /** Коды станций сети — ими сверяются параметры адреса. */
+  const stationCodes = useMemo(
+    () =>
+      new Set(
+        (network?.data.features ?? [])
+          .filter(isStationFeature)
+          .map((station) => station.properties.code),
+      ),
+    [network],
+  );
+
+  /**
+   * Неизвестный код из адреса (опечатка, устаревшая ссылка) отбрасывается:
+   * селект показывает плейсхолдер, а не «станцию-призрак». Пока данные сети не
+   * приехали, сверять не с чем — код считаем годным.
+   */
+  const isKnown = (code: string) => stationCodes.size === 0 || stationCodes.has(code);
+  const from = rawFrom && !isKnown(rawFrom) ? "" : rawFrom;
+  const to = rawTo && !isKnown(rawTo) ? "" : rawTo;
+
   const sameStation = from !== "" && from === to;
   const canSubmit = from !== "" && to !== "" && !sameStation;
+
+  /** Пара, которую действительно строим: запрошена и состоит из живых станций. */
+  const request = useMemo(
+    () =>
+      submitted && canSubmit && submitted.from === from && submitted.to === to
+        ? submitted
+        : null,
+    [canSubmit, from, submitted, to],
+  );
+  const requestKey = request ? `${request.from} ${request.to}` : null;
+
+  // Производные состояния: запроса нет — «ничего не построено»; результат чужой
+  // пары — «строим»; результат своей пары — исход построения.
+  const status: Status =
+    requestKey === null
+      ? "idle"
+      : routeState?.key === requestKey
+        ? routeState.status
+        : "loading";
+  const route =
+    requestKey !== null && routeState?.key === requestKey
+      ? routeState.route
+      : null;
+
+  useEffect(() => {
+    if (!request || !requestKey) {
+      requestKeyRef.current = null;
+      return;
+    }
+    requestKeyRef.current = requestKey;
+    const { from: origin, to: destination } = request;
+    loadRoute(origin, destination).then((res) => {
+      if (requestKeyRef.current !== requestKey) {
+        return; // устаревший ответ — игнорируем
+      }
+      if (res === null) {
+        const offlineRoute = network
+          ? buildOfflineRoute(network.data, origin, destination)
+          : null;
+        setRouteState(
+          offlineRoute === null
+            ? { key: requestKey, route: null, status: "error" }
+            : { key: requestKey, route: offlineRoute, status: "done" },
+        );
+        return;
+      }
+      setRouteState({ key: requestKey, route: res, status: "done" });
+    });
+  }, [network, request, requestKey]);
 
   const handleSubmit = useCallback(() => {
     if (!canSubmit) {
       return;
     }
-    const id = ++reqRef.current;
-    setStatus("loading");
-    setRoute(null);
-    loadRoute(from, to).then((res) => {
-      if (id !== reqRef.current) {
-        return; // устаревший ответ — игнорируем
-      }
-      if (res === null) {
-        const offlineRoute = network
-          ? buildOfflineRoute(network.data, from, to)
-          : null;
-        if (offlineRoute === null) {
-          setStatus("error");
-          return;
-        }
-        setRoute(offlineRoute);
-        setStatus("done");
-        return;
-      }
-      setRoute(res);
-      setStatus("done");
-    });
-  }, [canSubmit, from, network, to]);
+    setSubmitted({ from, to });
+  }, [canSubmit, from, to]);
 
+  // Адрес всегда отражает выбор — ссылкой можно поделиться. replaceState, а не
+  // router.replace: перерисовывать дерево ради строки адреса незачем.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (from) {
+      params.set("from", from);
+    }
+    if (to) {
+      params.set("to", to);
+    }
+    const query = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      query ? `${window.location.pathname}?${query}` : window.location.pathname,
+    );
+  }, [from, to]);
+
+  // Смена станции снимает запрос: показанный результат относился к другой паре
   const changeFrom = useCallback((value: string) => {
-    reqRef.current += 1;
-    setFrom(value);
-    setRoute(null);
-    setStatus("idle");
+    setRawFrom(value);
+    setSubmitted(null);
   }, []);
 
   const changeTo = useCallback((value: string) => {
-    reqRef.current += 1;
-    setTo(value);
-    setRoute(null);
-    setStatus("idle");
+    setRawTo(value);
+    setSubmitted(null);
   }, []);
 
   const handleSwap = useCallback(() => {
-    reqRef.current += 1;
-    setFrom(to);
-    setTo(from);
-    setRoute(null);
-    setStatus("idle");
+    setRawFrom(to);
+    setRawTo(from);
+    setSubmitted(null);
   }, [from, to]);
 
   useReportDataSource(network?.source ?? null);

@@ -26,6 +26,10 @@ import { useI18n } from "./I18nProvider";
 type MobilityDockProps = {
   data: NetworkGeoJson | null;
   alertsCount: number;
+  /** Включён ли режим построения маршрута нажатиями по карте. */
+  routeMode: boolean;
+  /** Переключение режима маршрута (главное действие дока). */
+  onToggleRouteMode: () => void;
 };
 
 function RouteIcon() {
@@ -90,7 +94,12 @@ function DockAction({
   );
 }
 
-export default function MobilityDock({ data, alertsCount }: MobilityDockProps) {
+export default function MobilityDock({
+  data,
+  alertsCount,
+  routeMode,
+  onToggleRouteMode,
+}: MobilityDockProps) {
   const { dict } = useI18n();
   const lineCount = data?.features.filter(isLineFeature).length ?? 0;
   const stationCount = data?.features.filter(isStationFeature).length ?? 0;
@@ -98,7 +107,7 @@ export default function MobilityDock({ data, alertsCount }: MobilityDockProps) {
   return (
     <section
       aria-label={dict.mobility.title}
-      className="absolute left-3 right-14 top-3 z-10 rounded-panel border border-[var(--border-subtle)] bg-[var(--surface-glass)] p-3 text-[var(--text-primary)] backdrop-blur-xl sm:left-auto sm:right-14 sm:top-4 sm:w-[330px] sm:p-4"
+      className="pointer-events-auto rounded-panel border border-[var(--border-subtle)] bg-[var(--surface-glass)] p-3 text-[var(--text-primary)] backdrop-blur-xl sm:p-4"
     >
       <div className="hidden items-center justify-between gap-3 sm:flex">
         <p className="flex min-w-0 items-center gap-2 text-caption font-semibold uppercase tracking-[0.08em] text-text-secondary">
@@ -125,15 +134,22 @@ export default function MobilityDock({ data, alertsCount }: MobilityDockProps) {
       </dl>
 
       <div className="mt-2 flex gap-2 sm:mt-3">
-        {/* Главное действие дока — ссылка, а не кнопка: это переход на /route.
+        {/* Главное действие дока — включение режима маршрута ПРЯМО НА КАРТЕ:
+            это действие на текущей странице, а не переход, поэтому кнопка, а не
+            ссылка. Планировщик со списками никуда не делся: он в шапке портала
+            и в панели режима («Открыть в планировщике» c ?from=&to=).
             Вид совпадает с Button variant="primary" (navy, 4px, без тени). */}
-        <Link
-          href="/route"
+        <button
+          type="button"
+          onClick={onToggleRouteMode}
+          aria-pressed={routeMode}
           className="flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-control bg-brand-navy px-3 text-small font-bold text-surface-light transition-colors duration-150 ease-out hover:bg-brand-navy/90 focus-visible:outline-[var(--focus-ring-on-dark)]"
         >
           <RouteIcon />
-          <span className="truncate">{dict.route.submit}</span>
-        </Link>
+          <span className="truncate">
+            {routeMode ? dict.route.map.toggleOff : dict.route.map.toggleOn}
+          </span>
+        </button>
         <DockAction href="/fares" label={dict.fares.nav}>
           <TicketIcon />
         </DockAction>

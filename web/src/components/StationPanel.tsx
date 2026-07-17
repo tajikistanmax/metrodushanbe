@@ -31,6 +31,19 @@ type StationPanelProps = {
   onSelect: (code: string) => void;
   /** Код выбранной станции — для aria-current и подсветки ряда. */
   selectedCode: string | null;
+  /**
+   * Точки маршрута, выбранные на карте. Панель — list-mode карты (A11Y-06):
+   * если карта что-то выбрала, список обязан это показывать.
+   */
+  routeFrom?: string | null;
+  routeTo?: string | null;
+  /**
+   * Клавиатурный путь к режиму маршрута: клик по карте мышью с клавиатуры
+   * недоступен, поэтому «откуда»/«куда» назначаются кнопками в карточке
+   * станции. Не переданы — кнопок нет (панель используется вне главной).
+   */
+  onSetFrom?: (code: string) => void;
+  onSetTo?: (code: string) => void;
 };
 
 type LineGroup = {
@@ -113,17 +126,36 @@ function StationDot({
   );
 }
 
+/**
+ * Метка точки маршрута в списке («А»/«Б»). Буква + скрытая подпись: выбор
+ * на карте читается в списке и без цвета (SC 1.4.1).
+ */
+function RouteMark({ letter, label }: { letter: string; label: string }) {
+  return (
+    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-[var(--text-primary)] text-caption font-extrabold leading-none">
+      <span aria-hidden="true">{letter}</span>
+      <span className="sr-only">{label}</span>
+    </span>
+  );
+}
+
 function LineDiagram({
   group,
   lang,
   selectedCode,
   transferLabel,
+  routeFrom,
+  routeTo,
+  routeMarks,
   onSelect,
 }: {
   group: LineGroup;
   lang: Lang;
   selectedCode: string | null;
   transferLabel: string;
+  routeFrom: string | null;
+  routeTo: string | null;
+  routeMarks: { fromShort: string; toShort: string; fromLabel: string; toLabel: string };
   onSelect: (code: string) => void;
 }) {
   const { line, stations } = group;
@@ -168,6 +200,18 @@ function LineDiagram({
                   <span className="min-w-0 flex-1 truncate">
                     {pickName(station.properties.name, lang)}
                   </span>
+                  {code === routeFrom && (
+                    <RouteMark
+                      letter={routeMarks.fromShort}
+                      label={routeMarks.fromLabel}
+                    />
+                  )}
+                  {code === routeTo && (
+                    <RouteMark
+                      letter={routeMarks.toShort}
+                      label={routeMarks.toLabel}
+                    />
+                  )}
                   {station.properties.is_transfer && (
                     <span className="shrink-0 rounded-chip border border-[var(--border-subtle)] px-2 py-0.5 text-caption font-semibold text-text-secondary">
                       {transferLabel}
@@ -249,6 +293,11 @@ function StationDetailCard({
   arrivalsLoading,
   lang,
   dict,
+  code,
+  routeFrom,
+  routeTo,
+  onSetFrom,
+  onSetTo,
 }: {
   station: StationFeature | null;
   detail: StationDetail | null;
@@ -257,6 +306,11 @@ function StationDetailCard({
   arrivalsLoading: boolean;
   lang: Lang;
   dict: Dict;
+  code: string;
+  routeFrom: string | null;
+  routeTo: string | null;
+  onSetFrom?: (code: string) => void;
+  onSetTo?: (code: string) => void;
 }) {
   const name = detail
     ? pickName(detail.name, lang)
@@ -282,6 +336,41 @@ function StationDetailCard({
           </span>
         ))}
       </div>
+
+      {/* Клавиатурный путь к маршруту: то же, что два нажатия по карте, но
+          доступное с клавиатуры. aria-pressed — станция уже назначена точкой. */}
+      {(onSetFrom || onSetTo) && (
+        <div className="mt-2.5 flex gap-1.5">
+          {onSetFrom && (
+            <button
+              type="button"
+              onClick={() => onSetFrom(code)}
+              aria-pressed={routeFrom === code}
+              className={`flex-1 rounded-control border px-2 py-1.5 text-caption font-semibold transition-colors duration-150 ease-out hover:bg-[var(--surface-hover)] ${
+                routeFrom === code
+                  ? "border-[var(--text-primary)] bg-[var(--surface-hover)]"
+                  : "border-[var(--border-strong)]"
+              }`}
+            >
+              {dict.route.map.fromShort} · {dict.route.map.setFrom}
+            </button>
+          )}
+          {onSetTo && (
+            <button
+              type="button"
+              onClick={() => onSetTo(code)}
+              aria-pressed={routeTo === code}
+              className={`flex-1 rounded-control border px-2 py-1.5 text-caption font-semibold transition-colors duration-150 ease-out hover:bg-[var(--surface-hover)] ${
+                routeTo === code
+                  ? "border-[var(--text-primary)] bg-[var(--surface-hover)]"
+                  : "border-[var(--border-strong)]"
+              }`}
+            >
+              {dict.route.map.toShort} · {dict.route.map.setTo}
+            </button>
+          )}
+        </div>
+      )}
 
       <StationArrivals
         results={arrivals}
@@ -400,6 +489,10 @@ export default function StationPanel({
   data,
   onSelect,
   selectedCode,
+  routeFrom = null,
+  routeTo = null,
+  onSetFrom,
+  onSetTo,
 }: StationPanelProps) {
   const { lang, dict } = useI18n();
   const [query, setQuery] = useState("");
@@ -566,6 +659,11 @@ export default function StationPanel({
                 arrivalsLoading={arrivalsLoading}
                 lang={lang}
                 dict={dict}
+                code={selectedCode}
+                routeFrom={routeFrom}
+                routeTo={routeTo}
+                onSetFrom={onSetFrom}
+                onSetTo={onSetTo}
               />
             )}
             {groups.length === 0 ? (
@@ -584,6 +682,14 @@ export default function StationPanel({
                   lang={lang}
                   selectedCode={selectedCode}
                   transferLabel={dict.transferBadge}
+                  routeFrom={routeFrom}
+                  routeTo={routeTo}
+                  routeMarks={{
+                    fromShort: dict.route.map.fromShort,
+                    toShort: dict.route.map.toShort,
+                    fromLabel: dict.route.fromLabel,
+                    toLabel: dict.route.toLabel,
+                  }}
                   onSelect={onSelect}
                 />
               ))

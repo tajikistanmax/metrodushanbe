@@ -8,6 +8,11 @@
  * - станции: белые кружки с navy-обводкой; пересадка — двойное кольцо;
  * - hover: курсор pointer + радиус +1.5 (feature-state);
  * - выбранная станция: пульсирующее кольцо (не при prefers-reduced-motion);
+ * - режим маршрута (routeMode): клик по станции не открывает popup, а выбирает
+ *   «откуда»/«куда»; построенный маршрут подсвечивается отдельным источником
+ *   (обводка контрастная теме + цвет линии участка), сеть под ним приглушается,
+ *   концы и пересадки помечаются маркерами с буквой/иконкой — смысл читается
+ *   не только цветом;
  * - подписи станций — через Popup по клику (symbol/text-слои не используются,
  *   т.к. требуют glyphs-сервер);
  * - тёмная тема: перекраска слоёв при смене data-theme.
@@ -30,8 +35,16 @@ import {
   type AccessibilityFeature,
   type LineFeature,
   type NetworkGeoJson,
+  type Route,
   type StationFeature,
 } from "@/lib/types";
+import {
+  buildRouteGeoJson,
+  routeBounds,
+  routeTransferPoints,
+  stationCoords,
+  EMPTY_COLLECTION,
+} from "@/lib/route-geometry";
 import type { ResolvedTheme } from "./ThemeProvider";
 
 /** Центр Душанбе и стартовый зум (ТЗ, публичная карта). */
@@ -48,6 +61,9 @@ const LINES_CASING_LAYER_ID = "metro-lines-casing";
 const LINES_LAYER_ID = "metro-lines";
 const STATIONS_LAYER_ID = "metro-stations";
 const STATIONS_TRANSFER_LAYER_ID = "metro-stations-transfer";
+const ROUTE_SOURCE_ID = "metro-route";
+const ROUTE_HALO_LAYER_ID = "metro-route-halo";
+const ROUTE_LINE_LAYER_ID = "metro-route-line";
 
 /** Палитра карты по теме (арт-директива §5/§7). */
 const MAP_THEME: Record<
@@ -58,6 +74,8 @@ const MAP_THEME: Record<
     casingOpacity: number;
     stationFill: string;
     stationStroke: string;
+    /** Обводка подсветки маршрута: контрастна теме, а не цвету линии. */
+    routeHalo: string;
   }
 > = {
   light: {
@@ -66,6 +84,7 @@ const MAP_THEME: Record<
     casingOpacity: 1,
     stationFill: "#FFFFFF",
     stationStroke: "#082742",
+    routeHalo: "#082742",
   },
   dark: {
     // Белая подложка-glow сохраняется: брендовый красный на #0B1622 даёт
@@ -75,8 +94,13 @@ const MAP_THEME: Record<
     casingOpacity: 0.85,
     stationFill: "#0F1D2E",
     stationStroke: "#F2F5F8",
+    routeHalo: "#F2F5F8",
   },
 };
+
+/** Приглушение сети под подсветкой маршрута (маршрут — фигура, сеть — фон). */
+const DIM_LINE_OPACITY = 0.28;
+const DIM_STATION_OPACITY = 0.35;
 
 const OFFLINE_STYLE: StyleSpecification = {
   version: 8,
@@ -111,6 +135,17 @@ type NetworkMapProps = {
   selection: MapSelection | null;
   /** Клик по станции на карте (синхронизация с панелью). */
   onSelect: (code: string) => void;
+  /**
+   * Режим маршрута: клик по станции выбирает точки маршрута, а не открывает
+   * карточку станции. Вне режима поведение карты прежнее.
+   */
+  routeMode: boolean;
+  /** Код станции «откуда» (маркер «А»), null — ещё не выбрана. */
+  routeFrom: string | null;
+  /** Код станции «куда» (маркер «Б»), null — ещё не выбрана. */
+  routeTo: string | null;
+  /** Построенный маршрут для подсветки; null/found:false — подсветки нет. */
+  route: Route | null;
 };
 
 /** Пользователь просит уменьшить анимацию? */
@@ -296,17 +331,65 @@ function buildPopupContent(
   return root;
 }
 
+/**
+ * Маркер конца маршрута: кружок с буквой («А»/«Б»). Буква и подпись —
+ * носители смысла помимо цвета (SC 1.4.1); цвета маркера токенные, поэтому
+ * он одинаково читается в светлой и тёмной теме.
+ */
+function buildEndpointMarker(letter: string, label: string): HTMLElement {
+  const el = document.createElement("div");
+  el.className = "route-endpoint";
+  el.textContent = letter;
+  el.setAttribute("role", "img");
+  el.setAttribute("aria-label", label);
+  el.title = label;
+  return el;
+}
+
+/** Маркер пересадки на маршруте: кольцо + иконка встречных стрелок. */
+function buildTransferMarker(label: string): HTMLElement {
+  const el = document.createElement("div");
+  el.className = "route-transfer";
+  el.setAttribute("role", "img");
+  el.setAttribute("aria-label", label);
+  el.title = label;
+
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("width", "12");
+  svg.setAttribute("height", "12");
+  svg.setAttribute("viewBox", "0 0 16 16");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+  for (const d of ["M4 5h8M4 5l2.2-2.2M4 5l2.2 2.2", "M12 11H4M12 11l-2.2-2.2M12 11l-2.2 2.2"]) {
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", d);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", "currentColor");
+    path.setAttribute("stroke-width", "1.8");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(path);
+  }
+  el.appendChild(svg);
+  return el;
+}
+
 export default function NetworkMap({
   data,
   lang,
   theme,
   selection,
   onSelect,
+  routeMode,
+  routeFrom,
+  routeTo,
+  route,
 }: NetworkMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const pulseMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const routeMarkersRef = useRef<maplibregl.Marker[]>([]);
   const hoveredIdRef = useRef<string | number | null>(null);
   const remoteBasemapRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
@@ -472,6 +555,8 @@ export default function NetworkMap({
       pulseMarkerRef.current?.remove();
       pulseMarkerRef.current = null;
       hoveredIdRef.current = null;
+      routeMarkersRef.current.forEach((marker) => marker.remove());
+      routeMarkersRef.current = [];
       mapRef.current?.remove();
       mapRef.current = null;
       remoteBasemapRef.current = false;
@@ -529,6 +614,26 @@ export default function NetworkMap({
       },
     });
 
+    // Подсветка маршрута ПОД станциями, но НАД линиями сети: кружки станций
+    // остаются видимыми, а участок маршрута перекрывает свою линию.
+    // Обводка контрастна теме (navy на светлой, светлая на тёмной) — маршрут
+    // читается как утолщённая трасса, а не только «другим цветом».
+    map.addSource(ROUTE_SOURCE_ID, { type: "geojson", data: EMPTY_COLLECTION });
+    map.addLayer({
+      id: ROUTE_HALO_LAYER_ID,
+      type: "line",
+      source: ROUTE_SOURCE_ID,
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": colors.routeHalo, "line-width": 13 },
+    });
+    map.addLayer({
+      id: ROUTE_LINE_LAYER_ID,
+      type: "line",
+      source: ROUTE_SOURCE_ID,
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": ["get", "color_hex"], "line-width": 6 },
+    });
+
     // Станции: кружок с обводкой; пересадочные крупнее; hover +1.5
     map.addLayer({
       id: STATIONS_LAYER_ID,
@@ -563,7 +668,12 @@ export default function NetworkMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, mapReady]);
 
-  // Смена темы: перекраска фонового слоя и слоёв сети
+  /** Маршрут подсвечен — только тогда сеть под ним приглушается. */
+  const routeVisible = routeMode && route !== null && route.found;
+
+  // Смена темы и приглушение сети под маршрутом: перекраска фонового слоя,
+  // слоёв сети и обводки маршрута. Один эффект, потому что и цвет, и прозрачность
+  // задаются одним и тем же слоям: раздельные эффекты затирали бы друг друга.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) {
@@ -578,39 +688,130 @@ export default function NetworkMap({
       map.setPaintProperty(
         LINES_CASING_LAYER_ID,
         "line-opacity",
-        colors.casingOpacity,
+        routeVisible
+          ? colors.casingOpacity * DIM_LINE_OPACITY
+          : colors.casingOpacity,
       );
     }
-    if (map.getLayer(STATIONS_LAYER_ID)) {
+    if (map.getLayer(LINES_LAYER_ID)) {
       map.setPaintProperty(
-        STATIONS_LAYER_ID,
-        "circle-color",
-        colors.stationFill,
-      );
-      map.setPaintProperty(
-        STATIONS_LAYER_ID,
-        "circle-stroke-color",
-        colors.stationStroke,
+        LINES_LAYER_ID,
+        "line-opacity",
+        routeVisible ? DIM_LINE_OPACITY : 1,
       );
     }
-    if (map.getLayer(STATIONS_TRANSFER_LAYER_ID)) {
+    if (map.getLayer(ROUTE_HALO_LAYER_ID)) {
+      map.setPaintProperty(ROUTE_HALO_LAYER_ID, "line-color", colors.routeHalo);
+    }
+    for (const layerId of [STATIONS_LAYER_ID, STATIONS_TRANSFER_LAYER_ID]) {
+      if (!map.getLayer(layerId)) {
+        continue;
+      }
+      map.setPaintProperty(layerId, "circle-color", colors.stationFill);
+      map.setPaintProperty(layerId, "circle-stroke-color", colors.stationStroke);
       map.setPaintProperty(
-        STATIONS_TRANSFER_LAYER_ID,
-        "circle-color",
-        colors.stationFill,
+        layerId,
+        "circle-opacity",
+        routeVisible ? DIM_STATION_OPACITY : 1,
       );
       map.setPaintProperty(
-        STATIONS_TRANSFER_LAYER_ID,
-        "circle-stroke-color",
-        colors.stationStroke,
+        layerId,
+        "circle-stroke-opacity",
+        routeVisible ? DIM_STATION_OPACITY : 1,
       );
     }
-  }, [theme, mapReady]);
+  }, [theme, mapReady, routeVisible]);
+
+  // Подсветка построенного маршрута: участки по трассам линий + подгон вида.
+  // Источник данных маршрута безразличен (API или buildOfflineRoute) — контракт
+  // Route один, поэтому подсветка работает и без сети (§8).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) {
+      return;
+    }
+    const source = map.getSource(ROUTE_SOURCE_ID) as GeoJSONSource | undefined;
+    if (!source) {
+      return;
+    }
+    if (!data || !routeMode || !route || !route.found) {
+      source.setData(EMPTY_COLLECTION);
+      return;
+    }
+    const collection = buildRouteGeoJson(data, route);
+    source.setData(collection);
+
+    const bounds = routeBounds(collection);
+    if (bounds) {
+      map.fitBounds(bounds, {
+        padding: 70,
+        maxZoom: 14,
+        animate: !prefersReducedMotion(),
+      });
+    }
+  }, [data, route, routeMode, mapReady]);
+
+  // Маркеры маршрута: концы («А»/«Б») и пересадки. Маркер «А» появляется сразу
+  // после первого клика — до того, как маршрут вообще построен: пассажир должен
+  // видеть на карте, что станция принята.
+  useEffect(() => {
+    const map = mapRef.current;
+    routeMarkersRef.current.forEach((marker) => marker.remove());
+    routeMarkersRef.current = [];
+    if (!map || !mapReady || !data || !routeMode) {
+      return;
+    }
+    const dict = getDict(lang);
+    const markers: maplibregl.Marker[] = [];
+
+    const addEndpoint = (code: string | null, letter: string, label: string) => {
+      if (!code) {
+        return;
+      }
+      const coords = stationCoords(data, code);
+      if (!coords) {
+        return;
+      }
+      markers.push(
+        new maplibregl.Marker({ element: buildEndpointMarker(letter, label) })
+          .setLngLat(coords)
+          .addTo(map),
+      );
+    };
+
+    addEndpoint(routeFrom, dict.route.map.fromShort, dict.route.fromLabel);
+    addEndpoint(routeTo, dict.route.map.toShort, dict.route.toLabel);
+
+    if (route?.found) {
+      for (const point of routeTransferPoints(data, route)) {
+        markers.push(
+          new maplibregl.Marker({
+            element: buildTransferMarker(dict.transferBadge),
+          })
+            .setLngLat(point.coords)
+            .addTo(map),
+        );
+      }
+    }
+
+    routeMarkersRef.current = markers;
+  }, [data, lang, mapReady, route, routeFrom, routeTo, routeMode]);
+
+  // Вход в режим маршрута гасит карточку станции: два разных смысла клика не
+  // должны наслаиваться друг на друга на одном холсте.
+  useEffect(() => {
+    if (routeMode) {
+      popupRef.current?.remove();
+      popupRef.current = null;
+      clearPulse();
+    }
+  }, [routeMode]);
 
   // Выбор станции (панель или клик по карте): flyTo + popup + пульс
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady || !data || !selection) {
+    // В режиме маршрута карточка станции не открывается — клик выбирает точки
+    if (!map || !mapReady || !data || !selection || routeMode) {
       return;
     }
     const station = data.features
@@ -629,7 +830,7 @@ export default function NetworkMap({
     openStationPopup(map, station);
     showPulse(map, station);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selection, mapReady]);
+  }, [selection, mapReady, routeMode]);
 
   // Смена языка: закрываем popup, чтобы не показывать устаревший язык
   // (его закрытие гасит и пульс — см. обработчик close).

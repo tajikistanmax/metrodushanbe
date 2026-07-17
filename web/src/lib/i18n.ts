@@ -230,6 +230,43 @@ export type Dict = {
     stopsHeading: string;
     /** Префикс метки пересадки между участками (+ название станции). */
     transferAt: string;
+    /**
+     * Построение маршрута двумя нажатиями прямо по карте главной страницы.
+     * Отдельный подсловарь: это не планировщик со списками, а режим карты,
+     * и состояния у него свои («выбрана только первая станция»).
+     */
+    map: {
+      /** Кнопка включения режима маршрута на карте. */
+      toggleOn: string;
+      /** Кнопка выхода из режима маршрута. */
+      toggleOff: string;
+      /** Заголовок панели режима маршрута. */
+      title: string;
+      /** Ничего не выбрано. */
+      hintIdle: string;
+      /** Выбрана только первая станция — обязательное состояние. */
+      hintFrom: string;
+      /** Повторное нажатие по той же станции: маршрут из А в А не строится. */
+      hintSame: string;
+      /** Что сделает третье нажатие при готовом маршруте. */
+      hintReplace: string;
+      /** Буква точки отправления на карте и в списке. */
+      fromShort: string;
+      /** Буква точки назначения на карте и в списке. */
+      toShort: string;
+      /** Значение поля, пока станция не выбрана. */
+      notPicked: string;
+      /** Сброс выбора. */
+      reset: string;
+      /** Переход в планировщик со списками (?from=&to=). */
+      openPlanner: string;
+      /** Клик по карте недоступен с клавиатуры — где клавиатурный путь. */
+      keyboardNote: string;
+      /** Кнопка «сделать эту станцию точкой отправления» в панели станции. */
+      setFrom: string;
+      /** Кнопка «сделать эту станцию точкой назначения» в панели станции. */
+      setTo: string;
+    };
   };
   fares: {
     nav: string;
@@ -627,6 +664,25 @@ const tg: Dict = {
     legsHeading: "Қитъаҳо аз рӯи хатҳо",
     stopsHeading: "Истгоҳҳои масир",
     transferAt: "Гузариш дар",
+    map: {
+      toggleOn: "Масир аз рӯи харита",
+      toggleOff: "Баромадан аз реҷаи масир",
+      title: "Масир аз рӯи харита",
+      hintIdle: "Дар харита истгоҳро пахш кунед — он истгоҳи ибтидо мешавад.",
+      hintFrom: "Акнун истгоҳи дуюмро пахш кунед — масир худаш сохта мешавад.",
+      hintSame:
+        "Ин ҳамон истгоҳ аст. Истгоҳи дигарро интихоб кунед: масир аз истгоҳ ба худи он вуҷуд надорад.",
+      hintReplace: "Пахши навбатӣ дар харита истгоҳи ниҳоиро иваз мекунад.",
+      fromShort: "А",
+      toShort: "Б",
+      notPicked: "интихоб нашудааст",
+      reset: "Тоза кардан",
+      openPlanner: "Кушодан дар ҷустуҷӯи масир",
+      keyboardNote:
+        "Пахши харита бо клавиатура дастрас нест. Ҳамон истгоҳҳоро дар рӯйхати истгоҳҳо ё дар ҷустуҷӯи масир интихоб кардан мумкин аст.",
+      setFrom: "Аз ин ҷо",
+      setTo: "Ба ин ҷо",
+    },
   },
   fares: {
     nav: "Тарофаҳо",
@@ -1029,6 +1085,25 @@ const ru: Dict = {
     legsHeading: "Участки по линиям",
     stopsHeading: "Остановки маршрута",
     transferAt: "Пересадка на",
+    map: {
+      toggleOn: "Маршрут по карте",
+      toggleOff: "Выйти из режима маршрута",
+      title: "Маршрут по карте",
+      hintIdle: "Нажмите станцию на карте — она станет точкой отправления.",
+      hintFrom: "Теперь нажмите вторую станцию — маршрут построится сам.",
+      hintSame:
+        "Это та же станция. Выберите другую: маршрута из станции в неё же не бывает.",
+      hintReplace: "Следующее нажатие по карте заменит станцию назначения.",
+      fromShort: "А",
+      toShort: "Б",
+      notPicked: "не выбрана",
+      reset: "Сбросить",
+      openPlanner: "Открыть в планировщике",
+      keyboardNote:
+        "Нажатие по карте недоступно с клавиатуры. Те же станции можно выбрать в списке станций или в планировщике маршрута.",
+      setFrom: "Отсюда",
+      setTo: "Сюда",
+    },
   },
   fares: {
     nav: "Тарифы",
@@ -1430,6 +1505,25 @@ const en: Dict = {
     legsHeading: "Legs by line",
     stopsHeading: "Route stops",
     transferAt: "Transfer at",
+    map: {
+      toggleOn: "Route on the map",
+      toggleOff: "Exit route mode",
+      title: "Route on the map",
+      hintIdle: "Tap a station on the map — it becomes your origin.",
+      hintFrom: "Now tap a second station — the route is built automatically.",
+      hintSame:
+        "That is the same station. Pick a different one: there is no route from a station to itself.",
+      hintReplace: "The next tap on the map replaces the destination.",
+      fromShort: "A",
+      toShort: "B",
+      notPicked: "not selected",
+      reset: "Reset",
+      openPlanner: "Open in the route planner",
+      keyboardNote:
+        "Tapping the map is not available from the keyboard. The same stations can be picked in the station list or in the route planner.",
+      setFrom: "From here",
+      setTo: "To here",
+    },
   },
   fares: {
     nav: "Fares",

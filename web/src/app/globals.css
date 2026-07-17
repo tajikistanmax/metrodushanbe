@@ -405,6 +405,38 @@ footer :focus-visible {
   pointer-events: none;
 }
 
+/* --- Маркеры маршрута поверх карты (NetworkMap, режим маршрута) ---
+   Концы маршрута несут БУКВУ («А»/«Б»), пересадка — иконку встречных стрелок:
+   смысл читается без цвета (SC 1.4.1). Цвета — токенные, поэтому маркеры
+   одинаково контрастны в светлой и тёмной теме (--text-primary на
+   --surface-overlay ≈13:1). */
+.route-endpoint,
+.route-transfer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--corner-pill);
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+  border: 2.5px solid var(--text-primary);
+  pointer-events: none;
+}
+
+.route-endpoint {
+  width: 24px;
+  height: 24px;
+  font-family: var(--font-brand);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.route-transfer {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+}
+
 /*
  * Здесь были .mobility-dock (свечение 180px + въезд 420ms) и .mobility-primary
  * (градиент 115°). Сняты при институциональном редизайне: панель дока держится
