@@ -9,6 +9,7 @@ MetroDushanbe/
 ├─ backend/     # Java 21 LTS + Spring Boot (модульный монолит, Maven)
 ├─ web/         # Next.js + TypeScript — публичный портал
 ├─ admin/       # Next.js + TypeScript — реализованная operational console
+├─ packages/    # design — единый источник токенов и UI-примитивов (см. §5)
 ├─ mobile/      # Flutter — отдельная продуктовая фаза
 ├─ infra/       # docker-compose, конфиги окружений
 ├─ data/        # канонические демо/импорт-данные (GeoJSON)
@@ -40,6 +41,11 @@ MetroDushanbe/
   - `GET /api/v1/alerts` — активные сервисные уведомления (фильтры `?lineCode=`, `?stationCode=`, `?severity=info|warning|critical`; пустой массив `targets` = вся сеть; невалидный `severity` → 400 `alert.severity_invalid`). Семантика таргет-фильтров: network-wide уведомления (без таргетов) попадают в выдачу всегда; `lineCode` — уведомления, таргетированные этой линией (станционные таргеты линию не расширяют); `stationCode` — таргетированные этой станцией ИЛИ любой линией, которой станция принадлежит (по связи станция-линия); оба фильтра сразу — объединение: уведомление попадает, если проходит хотя бы один фильтр («не потерять уведомление» важнее строгости)
   - `GET /api/v1/fares` — активные тарифные продукты; demo-цены обязаны быть явно маркированы.
   - `POST /api/v1/requests`, `POST /api/v1/requests/{code}/track` — создание и безопасное отслеживание обращения.
+  - `GET /api/v1/notifications` — лента in-app рассылок (NTF-01); фильтры `?lineCode=`, `?stationCode=` с ТОЙ ЖЕ семантикой, что у `/alerts` (см. выше): пустой набор таргетов = вся сеть.
+  - `POST /api/v1/tickets/purchase|{code}/topup|validate|{code}/refund`, `GET /api/v1/tickets/{code}` — билеты (U-CIT-08). Токен билета отдаётся **один раз** при покупке, в БД только SHA-256 hash. Отказ платежа — `402` со штатным телом (`ticket: null`), а не ошибка.
+  - `POST /api/v1/telemetry/positions`, `GET /api/v1/telemetry/positions?lineCode=` — realtime-позиции поездов (U-INT-04). Публикация закрыта машинным ключом (временно `X-Admin-Key`; прод обязан перейти на OAuth2 client credentials).
+- Коды ошибок — литеральные строки вида `<домен>.<snake_case>` в месте броска (`fare.not_found`, `notification.frozen`, `ticket.not_refundable`, `webhook_delivery.retry_not_allowed`…). Отдельного реестра нет; новый код документируется в `@Operation.description`.
+- Карта переходов состояния отдаётся клиенту вычисленной (`allowedTransitions` у `IncidentDto`, `NotificationDto`, `WebhookDeliveryDto`). Дублировать её в UI **нельзя**: две копии одного правила разъезжаются, и консоль начнёт предлагать действие, которое backend отклонит.
 - OpenAPI UI: `http://localhost:8080/api/swagger-ui.html` (springdoc).
 - CORS (dev): разрешён `http://localhost:3000`.
 
@@ -54,25 +60,51 @@ MetroDushanbe/
 - Геометрии — PostGIS `geometry(...,4326)` + GiST-индексы.
 - Статусы линий: `planned|under_construction|testing|active|suspended|decommissioned`;
   станций: `planned|under_construction|testing|active|temporarily_closed|decommissioned`.
-- Миграции — только Flyway (`backend/src/main/resources/db/migration`), нумерация `V001__`, `V002__`…
+- Миграции — только Flyway (`backend/src/main/resources/db/migration`), нумерация `V001__`, `V002__`… Занято по `V025` включительно. **Номер обязан быть уникальным**: две миграции с одной версией роняют старт приложения (`Found more than one migration with version N`) — так уже случалось с задвоенной `V020`.
+- Enum'ы — `varchar` + именованный `CONSTRAINT chk_<table>_<field> CHECK (...)`; значения обязаны совпадать с `code()` соответствующего Java-enum (см. вложенный `Persistence`-конвертер).
+- Инварианты состояния выражаются CHECK-констрейнтом, а не только кодом (`chk_incident_resolution`, `chk_notification_delivery_error`): «провал без причины» и «resolved без разбора» не должны существовать в БД физически.
+- Одноразовые секреты (tracking token обращения, токен билета, секрет вебхука) хранятся **только** как SHA-256 hash; сравнение — constant-time (`MessageDigest.isEqual`).
 - `data/demo-network.geojson` — канонический контракт демо-данных: web использует его как офлайн-fallback, backend — как источник seed-миграции. Схемы должны совпадать.
 
-## 5. Дизайн-токены бренда (из `photo/dushanbe_metro_logo.svg`)
+## 5. Дизайн: токены и примитивы
 
-| Токен | Значение |
-|---|---|
-| `--brand-navy` (primary) | `#082742` |
-| `--brand-red` (accent/L1) | `#E21B2D` |
-| `--brand-green` (secondary/L2) | `#138A3D` |
-| `--surface-light` | `#FFFFFF` |
-| `--surface-muted` | `#F2F5F8` |
-| `--surface-dark` | `#0B1622` |
-| `--text-secondary` | `#3A4A5A` |
-| `--warning` | `#E08600` |
-| `--info` | `#0E5A8A` |
-| Шрифт бренда | Montserrat (self-host, без внешних CDN в проде) |
+**Единый источник — `packages/design/`.** Токены (`tokens.mjs`) и примитивы (`shared/`)
+раскладываются генератором по обоим приложениям:
 
-Правила: контраст WCAG 2.2 AA; цвет не единственный носитель смысла; у карты всегда есть list-mode.
+```
+node packages/design/sync.mjs          # записать
+node packages/design/sync.mjs --check  # проверить синхронность (джоба CI Design)
+```
+
+**Почему генерация, а не npm-workspace.** `web/Dockerfile` и `admin/Dockerfile` собираются
+с контекстами `../web` и `../admin` (`infra/docker-compose.full.yml`). Из контекста `web/`
+каталог `packages/` не виден: `COPY . .` его не заберёт, symlink наружу Docker не
+разыменует, workspace-пакет `npm ci` в контейнере не найдёт. Поэтому общий слой не
+подключается, а раскладывается и коммитится обычными файлами внутри приложений.
+
+**Правки в `web/src/shared/**`, `admin/src/shared/**` и в блоке между маркерами
+`>>> НАЧАЛО СГЕНЕРИРОВАННОГО БЛОКА` в `globals.css` затираются.** Меняешь токен или
+примитив — правь `packages/design/`, запусти `sync.mjs`, убедись, что `--check` проходит.
+Остальная часть `globals.css` правится свободно. Полные таблицы токенов и миграции старых
+имён — в `packages/design/MIGRATION.md`.
+
+Фирменные цвета (из `photo/dushanbe_metro_logo.svg`): `--brand-navy` `#082742` (primary),
+`--brand-red` `#e21b2d` (accent/L1), `--brand-green` `#138a3d` (secondary/L2).
+Шрифт — Montserrat, self-host через `@fontsource` (без внешних CDN в проде), загружены
+веса **400/600/700/800**: `font-medium` (500) использовать нельзя — браузер синтезирует
+начертание.
+
+Стиль — строгий институциональный (ориентир GOV.UK): сдержанная палитра, крупная
+типографика, воздух, чёткая сетка. Градиенты, свечения, blur и «подпрыгивания» из системы
+удалены осознанно — плоскости разделяются границей и цветом. Радиусы — шкала `0/2/4/8`.
+Лента флага РТ (`.ribbon-flag`) — государственная сигнатура, а не декор: сохраняется.
+
+Правила: контраст WCAG 2.2 AA; **цвет не единственный носитель смысла**; у карты всегда
+есть list-mode. Цветной текст на цветной подложке запрещён — `Badge`/`Alert` кладут
+`--text-primary` на тинт, а тон несут подложка, точка и слова (в тёмной теме
+`text-brand-green` на `--tint-success` давал ≈1.6:1 — это уже ловили).
+Зелёной кнопки в системе нет намеренно: белый на `#138a3d` даёт ≈4.4:1 и не проходит AA.
+Красный означает **опасное действие** (`Button variant="danger"`), а не «главное».
 
 ## 6. i18n
 
@@ -82,7 +114,10 @@ MetroDushanbe/
 ## 7. Качество
 
 - Backend: JDK 21 LTS, без Lombok (records/конструкторы), Testcontainers для интеграционных тестов, ошибки — через `@ControllerAdvice` в единый envelope.
-- Web: TypeScript strict, ESLint; `npm run build` обязан проходить.
+- Тесты backend — четыре уровня: доменные (`<module>/domain/`), сервисные на Mockito, web-срезы (`@WebMvcTest` + `@MockitoBean`, не `@MockBean`) и интеграционные на Testcontainers (`<Domain>ApiIntegrationTest` **плоско в корне** пакета `tj.metro.dushanbe`, пути без `/api`).
+- Интеграционным тестам нужен рабочий Docker (`postgis/postgis:16-3.4`). Прогонять отдельно: `./mvnw -B test -Dtest='*IntegrationTest'`. Актор admin-запросов в них обязан существовать в `admin_user` — берите бутстрап-суперадмина `admin`, иначе 401 `auth.session_revoked` (на этом уже спотыкались).
+- Web/admin: TypeScript strict, ESLint; `npm run lint`, `npx tsc --noEmit` и `npm run build` обязаны проходить.
+- Общий слой дизайна: `node packages/design/sync.mjs --check` обязан проходить (джоба CI Design).
 - Секреты — только через env; в репозитории только dev-значения compose.
 - Git: ветка `main`, коммиты по Conventional Commits (`feat:`, `fix:`, `docs:`…).
 

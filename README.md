@@ -55,6 +55,9 @@ Backend:
 Требуется Docker Desktop. Из корня репозитория:
 
 ```bash
+# Задайте два разных случайных секрета длиной не менее 32 символов.
+export ADMIN_API_KEY='replace-with-random-admin-api-key'
+export ADMIN_SESSION_SECRET='replace-with-random-session-secret'
 docker compose -f infra/docker-compose.full.yml up -d --build
 docker compose -f infra/docker-compose.full.yml ps
 ```
@@ -116,10 +119,10 @@ npm run dev
 | `WEB_API_BASE` | `http://localhost:8080/api/v1` | API из браузера публичного портала |
 | `NEXT_PUBLIC_MAP_STYLE_URL` | `https://tiles.openfreemap.org/styles/liberty` | стиль реальной базовой карты; при недоступности включается локальный fallback |
 | `ADMIN_API_BASE` | `http://backend:8080/api/v1` | серверные вызовы админки в compose |
-| `ADMIN_API_KEY` | `dev-admin-key-change-me` | секрет admin API |
-| `ADMIN_UI_USER` | `admin` | локальный оператор |
-| `ADMIN_UI_PASSWORD` | `metro2026` | локальный пароль |
-| `ADMIN_SESSION_SECRET` | dev-заглушка | подпись сессионной cookie |
+| `ADMIN_API_KEY` | обязательное значение ≥32 символов | серверный секрет admin API |
+| `ADMIN_BOOTSTRAP_USER` | `admin` только в dev | первичный локальный superadmin |
+| `ADMIN_BOOTSTRAP_PASSWORD` | `metro2026-dev-only` только в dev | первичный локальный пароль |
+| `ADMIN_SESSION_SECRET` | обязательное значение ≥32 символов | подпись сессионной cookie |
 
 Все dev-секреты обязательно заменяются в production.
 
