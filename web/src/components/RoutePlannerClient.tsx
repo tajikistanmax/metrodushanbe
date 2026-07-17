@@ -4,7 +4,7 @@
  * Маршрутный поиск «откуда/куда» (GET /routes). Станции для выбора берём из
  * данных сети (loadNetworkData, API → офлайн-демо), маршрут строим через
  * loadRoute с офлайн-деградацией. Различаем три исхода построения:
- *  - ошибка сети/недоступный backend (loadRoute → null) — сообщение об ошибке;
+ *  - недоступный backend (loadRoute → null) — локальный расчёт по данным сети;
  *  - валидный ответ found:false — «пути нет»;
  *  - found:true — участки по линиям, пересадки и ОЦЕНОЧНОЕ время.
  * Время явно помечено как оценочное (до реального расписания).
@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { lineBadgeLabel, pickName } from "@/lib/i18n";
 import { loadNetworkData, type NetworkDataResult } from "@/lib/network-data";
+import { buildOfflineRoute } from "@/lib/offline-route";
 import { loadRoute } from "@/lib/route-data";
 import {
   isLineFeature,
@@ -214,13 +215,21 @@ export default function RoutePlannerClient() {
         return; // устаревший ответ — игнорируем
       }
       if (res === null) {
-        setStatus("error");
+        const offlineRoute = network
+          ? buildOfflineRoute(network.data, from, to)
+          : null;
+        if (offlineRoute === null) {
+          setStatus("error");
+          return;
+        }
+        setRoute(offlineRoute);
+        setStatus("done");
         return;
       }
       setRoute(res);
       setStatus("done");
     });
-  }, [canSubmit, from, to]);
+  }, [canSubmit, from, network, to]);
 
   const handleSwap = useCallback(() => {
     setFrom(to);

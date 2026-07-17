@@ -138,6 +138,7 @@ export default function AlertsBanner({ alerts, data }: AlertsBannerProps) {
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
+  const [expanded, setExpanded] = useState(false);
 
   // Кнопки закрытия по коду уведомления — цели переноса фокуса после dismiss.
   // При размонтировании кнопки callback-ref вызывается с null — запись
@@ -198,8 +199,52 @@ export default function AlertsBanner({ alerts, data }: AlertsBannerProps) {
     setDismissed((prev) => new Set(prev).add(code));
   };
 
+  const leadAlert = visible[0];
+  const leadStyle = SEVERITY_STYLE[leadAlert.severity];
+  const detailsId = "service-alert-details";
+
   return (
     <section aria-label={dict.alertsRegionLabel} className="shrink-0">
+      <div
+        role={leadAlert.severity === "critical" ? "alert" : "status"}
+        className={`flex min-h-10 items-center gap-2 px-3 py-1.5 sm:px-4 ${leadStyle.className}`}
+        style={{ background: leadStyle.bg, color: leadStyle.fg }}
+      >
+        <SeverityIcon severity={leadAlert.severity} />
+        <p className="min-w-0 flex-1 truncate text-[13px] font-bold">
+          {pickName(leadAlert.title, lang)}
+        </p>
+        <span
+          className="rounded-full border border-current/40 px-2 py-0.5 text-[10px] font-extrabold tabular-nums"
+          aria-label={`${visible.length} ${dict.alertCountLabel}`}
+        >
+          {visible.length}
+        </span>
+        <button
+          type="button"
+          aria-label={expanded ? dict.alertHideAll : dict.alertShowAll}
+          aria-expanded={expanded}
+          aria-controls={detailsId}
+          onClick={() => setExpanded((value) => !value)}
+          className="flex h-7 items-center gap-1 rounded-lg px-2 text-[11px] font-extrabold transition-colors hover:bg-current/15"
+        >
+          <span className="hidden sm:inline">{expanded ? dict.alertHideAll : dict.alertShowAll}</span>
+          <svg
+            viewBox="0 0 16 16"
+            className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m4 6 4 4 4-4" />
+          </svg>
+        </button>
+      </div>
+
+      <div id={detailsId} hidden={!expanded}>
       {visible.map((alert) => {
         const style = SEVERITY_STYLE[alert.severity];
         // Уникальное имя кнопки закрытия: у баннеров одинаковый крестик,
@@ -291,6 +336,7 @@ export default function AlertsBanner({ alerts, data }: AlertsBannerProps) {
           </div>
         );
       })}
+      </div>
     </section>
   );
 }

@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * Карта сети метро на MapLibre GL — полностью офлайн:
- * - стиль без внешних тайлов/глифов: один background-слой + GeoJSON-источник;
+ * Карта сети метро на MapLibre GL:
+ * - городская подложка OpenFreeMap/OpenStreetMap загружается как MapLibre-style;
+ * - если сеть недоступна, карта автоматически деградирует к локальному фону;
  * - линии: белая подложка (width 9) + цветная линия (width 5);
  * - станции: белые кружки с navy-обводкой; пересадка — двойное кольцо;
  * - hover: курсор pointer + радиус +1.5 (feature-state);
@@ -18,6 +19,7 @@ import type {
   ExpressionSpecification,
   GeoJSONSource,
   MapLayerMouseEvent,
+  StyleSpecification,
 } from "maplibre-gl";
 import type { FeatureCollection } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -35,6 +37,10 @@ import type { ResolvedTheme } from "./ThemeProvider";
 /** Центр Душанбе и стартовый зум (ТЗ, публичная карта). */
 const MAP_CENTER: [number, number] = [68.787, 38.574];
 const MAP_ZOOM = 11.5;
+
+const MAP_STYLE_URL =
+  process.env.NEXT_PUBLIC_MAP_STYLE_URL ??
+  "https://tiles.openfreemap.org/styles/liberty";
 
 const SOURCE_ID = "metro-network";
 const BACKGROUND_LAYER_ID = "background";
@@ -70,6 +76,18 @@ const MAP_THEME: Record<
     stationFill: "#0F1D2E",
     stationStroke: "#F2F5F8",
   },
+};
+
+const OFFLINE_STYLE: StyleSpecification = {
+  version: 8,
+  sources: {},
+  layers: [
+    {
+      id: BACKGROUND_LAYER_ID,
+      type: "background",
+      paint: { "background-color": MAP_THEME.light.bg },
+    },
+  ],
 };
 
 /** Радиус кружка: 6.5 / пересадка 10, на hover +1.5 (feature-state). */
@@ -290,6 +308,7 @@ export default function NetworkMap({
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const pulseMarkerRef = useRef<maplibregl.Marker | null>(null);
   const hoveredIdRef = useRef<string | number | null>(null);
+  const remoteBasemapRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
 
   // Актуальные значения для обработчиков, привязанных один раз
@@ -359,81 +378,103 @@ export default function NetworkMap({
     popupRef.current = popup;
   };
 
-  // Инициализация карты — один раз
+  // Инициализация карты — один раз. Сначала проверяем доступность style JSON,
+  // чтобы не оставлять пользователя с пустым холстом при отсутствии интернета.
   useEffect(() => {
     if (!containerRef.current || mapRef.current) {
       return;
     }
 
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      // Офлайн-стиль: только фон, без внешних tiles/glyphs/sprites
-      style: {
-        version: 8,
-        sources: {},
-        layers: [
-          {
-            id: BACKGROUND_LAYER_ID,
-            type: "background",
-            paint: { "background-color": MAP_THEME.light.bg },
-          },
-        ],
-      },
-      center: MAP_CENTER,
-      zoom: MAP_ZOOM,
-      attributionControl: false,
-    });
-    map.addControl(
-      new maplibregl.NavigationControl({ showCompass: false }),
-      "top-right",
-    );
+    let disposed = false;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 4_500);
 
-    map.on("load", () => setMapReady(true));
-
-    // Клик по станции: единый путь через onSelect (панель + карта в синхроне)
-    map.on("click", STATIONS_LAYER_ID, (e: MapLayerMouseEvent) => {
-      const code = e.features?.[0]?.properties?.code as string | undefined;
-      if (code) {
-        onSelectRef.current(code);
+    async function initialiseMap() {
+      let style = OFFLINE_STYLE;
+      let remoteBasemap = false;
+      try {
+        const response = await fetch(MAP_STYLE_URL, {
+          signal: controller.signal,
+          headers: { Accept: "application/json" },
+        });
+        if (!response.ok) throw new Error(`Map style HTTP ${response.status}`);
+        style = (await response.json()) as StyleSpecification;
+        remoteBasemap = true;
+      } catch {
+        style = OFFLINE_STYLE;
+      } finally {
+        window.clearTimeout(timeoutId);
       }
-    });
 
-    // Hover: курсор pointer + увеличение радиуса через feature-state
-    const setHover = (id: string | number | null) => {
-      if (hoveredIdRef.current === id) {
-        return;
-      }
-      if (hoveredIdRef.current !== null) {
-        map.setFeatureState(
-          { source: SOURCE_ID, id: hoveredIdRef.current },
-          { hover: false },
-        );
-      }
-      hoveredIdRef.current = id;
-      if (id !== null) {
-        map.setFeatureState({ source: SOURCE_ID, id }, { hover: true });
-      }
-    };
+      if (disposed || !containerRef.current) return;
+      remoteBasemapRef.current = remoteBasemap;
 
-    map.on("mousemove", STATIONS_LAYER_ID, (e: MapLayerMouseEvent) => {
-      map.getCanvas().style.cursor = "pointer";
-      setHover(e.features?.[0]?.id ?? null);
-    });
-    map.on("mouseleave", STATIONS_LAYER_ID, () => {
-      map.getCanvas().style.cursor = "";
-      setHover(null);
-    });
+      const map = new maplibregl.Map({
+        container: containerRef.current,
+        style,
+        center: MAP_CENTER,
+        zoom: MAP_ZOOM,
+        attributionControl: remoteBasemap
+          ? {
+              compact: true,
+              customAttribution:
+                '<a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank">© OpenStreetMap</a>',
+            }
+          : false,
+      });
+      map.addControl(
+        new maplibregl.NavigationControl({ showCompass: false }),
+        "top-right",
+      );
 
-    mapRef.current = map;
+      map.on("load", () => setMapReady(true));
+
+      // Клик по станции: единый путь через onSelect (панель + карта в синхроне)
+      map.on("click", STATIONS_LAYER_ID, (e: MapLayerMouseEvent) => {
+        const code = e.features?.[0]?.properties?.code as string | undefined;
+        if (code) onSelectRef.current(code);
+      });
+
+      const setHover = (id: string | number | null) => {
+        if (hoveredIdRef.current === id) return;
+        if (hoveredIdRef.current !== null) {
+          map.setFeatureState(
+            { source: SOURCE_ID, id: hoveredIdRef.current },
+            { hover: false },
+          );
+        }
+        hoveredIdRef.current = id;
+        if (id !== null) {
+          map.setFeatureState({ source: SOURCE_ID, id }, { hover: true });
+        }
+      };
+
+      map.on("mousemove", STATIONS_LAYER_ID, (e: MapLayerMouseEvent) => {
+        map.getCanvas().style.cursor = "pointer";
+        setHover(e.features?.[0]?.id ?? null);
+      });
+      map.on("mouseleave", STATIONS_LAYER_ID, () => {
+        map.getCanvas().style.cursor = "";
+        setHover(null);
+      });
+
+      mapRef.current = map;
+    }
+
+    void initialiseMap();
 
     return () => {
+      disposed = true;
+      controller.abort();
+      window.clearTimeout(timeoutId);
       popupRef.current?.remove();
       popupRef.current = null;
       pulseMarkerRef.current?.remove();
       pulseMarkerRef.current = null;
       hoveredIdRef.current = null;
-      map.remove();
+      mapRef.current?.remove();
       mapRef.current = null;
+      remoteBasemapRef.current = false;
       setMapReady(false);
     };
   }, []);
@@ -529,7 +570,9 @@ export default function NetworkMap({
       return;
     }
     const colors = MAP_THEME[theme];
-    map.setPaintProperty(BACKGROUND_LAYER_ID, "background-color", colors.bg);
+    if (!remoteBasemapRef.current && map.getLayer(BACKGROUND_LAYER_ID)) {
+      map.setPaintProperty(BACKGROUND_LAYER_ID, "background-color", colors.bg);
+    }
     if (map.getLayer(LINES_CASING_LAYER_ID)) {
       map.setPaintProperty(LINES_CASING_LAYER_ID, "line-color", colors.casing);
       map.setPaintProperty(

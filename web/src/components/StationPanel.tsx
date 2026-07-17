@@ -10,16 +10,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { lineBadgeLabel, pickName, type Dict, type Lang } from "@/lib/i18n";
+import { loadStationArrivals } from "@/lib/schedule-data";
 import { loadStationDetail } from "@/lib/station-detail-data";
 import {
   isLineFeature,
   isStationFeature,
   type LineFeature,
   type NetworkGeoJson,
+  type StationArrivalsResult,
   type StationDetail,
   type StationFeature,
 } from "@/lib/types";
 import SearchBox from "./SearchBox";
+import StationArrivals from "./StationArrivals";
 import { useI18n } from "./I18nProvider";
 
 type StationPanelProps = {
@@ -241,12 +244,16 @@ function StationDetailCard({
   station,
   detail,
   loading,
+  arrivals,
+  arrivalsLoading,
   lang,
   dict,
 }: {
   station: StationFeature | null;
   detail: StationDetail | null;
   loading: boolean;
+  arrivals: StationArrivalsResult[];
+  arrivalsLoading: boolean;
   lang: Lang;
   dict: Dict;
 }) {
@@ -274,6 +281,13 @@ function StationDetailCard({
           </span>
         ))}
       </div>
+
+      <StationArrivals
+        results={arrivals}
+        loading={arrivalsLoading}
+        lang={lang}
+        dict={dict}
+      />
 
       {loading && (
         <p role="status" className="mt-2.5 text-xs text-text-secondary">
@@ -395,6 +409,10 @@ export default function StationPanel({
     code: string;
     detail: StationDetail | null;
   } | null>(null);
+  const [arrivalsState, setArrivalsState] = useState<{
+    key: string;
+    results: StationArrivalsResult[];
+  } | null>(null);
 
   const groups = useMemo(() => (data ? groupByLine(data) : []), [data]);
 
@@ -416,6 +434,22 @@ export default function StationPanel({
     );
   }, [data, selectedCode]);
 
+  /** Линии выбранной станции: API-деталь при наличии, иначе GeoJSON сети. */
+  const selectedLineCodes = useMemo(
+    () =>
+      Array.from(
+        new Set(detail?.lines ?? selectedStation?.properties.lines ?? []),
+      ).sort(),
+    [detail, selectedStation],
+  );
+  const arrivalsKey = selectedCode
+    ? `${selectedCode}:${selectedLineCodes.join(",")}`
+    : "";
+  const arrivalsReady = arrivalsState?.key === arrivalsKey;
+  const arrivals = arrivalsReady ? arrivalsState.results : [];
+  const arrivalsLoading =
+    Boolean(selectedCode) && selectedLineCodes.length > 0 && !arrivalsReady;
+
   // Загрузка деталей при смене выбранной станции. Гонки гасим флагом cancelled.
   // setState вызываем только в async-колбэке (не синхронно в теле эффекта).
   useEffect(() => {
@@ -432,6 +466,23 @@ export default function StationPanel({
       cancelled = true;
     };
   }, [selectedCode]);
+
+  // Расписание линий станции загружаем параллельно. Функция сама выполняет
+  // демо-fallback, поэтому UI получает результат даже без запущенного backend.
+  useEffect(() => {
+    if (!selectedCode || selectedLineCodes.length === 0) {
+      return;
+    }
+    let cancelled = false;
+    loadStationArrivals(selectedCode, selectedLineCodes).then((results) => {
+      if (!cancelled) {
+        setArrivalsState({ key: arrivalsKey, results });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [arrivalsKey, selectedCode, selectedLineCodes]);
 
   const normalizedQuery = query.trim().toLowerCase();
   const visibleGroups = useMemo(() => {
@@ -509,6 +560,8 @@ export default function StationPanel({
                 station={selectedStation}
                 detail={detail}
                 loading={detailLoading}
+                arrivals={arrivals}
+                arrivalsLoading={arrivalsLoading}
                 lang={lang}
                 dict={dict}
               />

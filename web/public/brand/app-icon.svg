@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="150 -20 900 900" role="img" aria-label="Metro Dushanbe">
+  <rect x="150" y="-20" width="900" height="900" rx="190" fill="#082742"/>
+  <g transform="translate(0,50)">
+    <path fill="#FFFFFF" fill-rule="evenodd" d="M260 555 L260 345 C260 169 404 70 600 70 C796 70 940 169 940 345 L940 555 L875 555 L875 345 C875 210 766 135 600 135 C434 135 325 210 325 345 L325 555 Z"/>
+    <path fill="#E21B2D" d="M418 505 L448 250 L600 405 L752 250 L782 505 L690 505 L675 355 L600 435 L525 355 L510 505 Z"/>
+    <path fill="#FFFFFF" d="M460 565 L560 565 L390 745 L230 745 Z"/>
+    <path fill="#FFFFFF" d="M640 565 L740 565 L970 745 L810 745 Z"/>
+    <path fill="#FFFFFF" d="M545 565 L655 565 L730 745 L470 745 Z" opacity="0.98"/>
+    <path fill="#082742" d="M570 565 L630 565 L675 745 L525 745 Z"/>
+    <g fill="#FFFFFF">
+      <rect x="550" y="590" width="100" height="10" rx="2"/>
+      <rect x="535" y="620" width="130" height="12" rx="2"/>
+      <rect x="515" y="655" width="170" height="14" rx="2"/>
+      <rect x="490" y="700" width="220" height="17" rx="2"/>
+    </g>
+  </g>
+</svg>

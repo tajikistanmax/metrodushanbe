@@ -1,42 +1,64 @@
 # web — публичный портал «Метро Душанбе»
 
-Next.js (App Router) + TypeScript + Tailwind + MapLibre GL. Порт dev-сервера: **3000** (см. `docs/dev-conventions.md`, §2).
+Next.js App Router + TypeScript + Tailwind + MapLibre GL. Порт разработки: `3000`.
 
-## Запуск (dev)
+## Маршруты
+
+| URL | Назначение |
+|---|---|
+| `/` | карта и list-mode сети |
+| `/route` | построение маршрута |
+| `/news` | новости |
+| `/requests` | создание и отслеживание обращения |
+| `/fares` | тарифы и проездные |
+| `/offline` | offline shell PWA |
+
+Карточка станции на карте показывает линии, доступность и ближайшие отправления.
+
+## Запуск и проверка
 
 ```bash
-npm install
-npm run dev       # http://localhost:3000
+npm ci
+npm run dev
+
+npm run lint
+npm run build
 ```
 
-Проверки качества:
+`NEXT_PUBLIC_API_BASE` по умолчанию равен `http://localhost:8080/api/v1`.
 
-```bash
-npm run build     # прод-сборка, обязана проходить
-npm run lint      # ESLint
-```
+## Offline/PWA
 
-## Переменные окружения
+Портал регистрирует service worker и кэширует app shell и успешные публичные GET JSON.
+Если API или сеть недоступны:
 
-Скопируйте `.env.example` в `.env.local` при необходимости:
+- карта использует `public/data/demo-network.geojson`;
+- тарифы и расписание используют явно обозначенные fallback-данные;
+- offline shell остаётся доступным;
+- формы не имитируют успешную отправку без backend.
 
-| Переменная | Значение по умолчанию | Назначение |
-|---|---|---|
-| `NEXT_PUBLIC_API_BASE` | `http://localhost:8080/api/v1` | База API бэкенда |
+Demo GeoJSON синхронизирован с `data/demo-network.geojson` в корне монорепозитория.
 
-## Офлайн-принцип (dev-conventions.md, §8)
+## i18n и время
 
-Портал деградирует без сети и без бэкенда:
+Языки: `tg` по умолчанию, `ru`, `en`. Выбор хранится в `localStorage`, а `<html lang>`
+обновляется. Даты и время форматируются в `Asia/Dushanbe` детерминированно, чтобы SSR и
+браузер не расходились из-за разных ICU locale fallback.
 
-- при старте запрашивается `GET {NEXT_PUBLIC_API_BASE}/network/geojson` с таймаутом 2 с;
-- при любой ошибке используется бандл-копия демо-данных `public/data/demo-network.geojson` (канонический источник — `data/demo-network.geojson` в корне монорепозитория, копируется без изменений);
-- индикатор под картой показывает фактический источник: «API» или «демо (офлайн)»;
-- карта не использует внешние тайлы, глифы и CDN: стиль — background-слой + GeoJSON-слои; подписи станций — Popup по клику; шрифты — системные (Montserrat будет добавлен self-host позже).
+## Дизайн и доступность
 
-## i18n
+- Montserrat подключён self-host через `@fontsource`, внешние font/CDN не нужны;
+- светлая, тёмная и системная темы;
+- skip links, keyboard focus, list-mode карты и `prefers-reduced-motion`;
+- адаптивная горизонтальная навигация без видимой системной полосы прокрутки;
+- TG/RU/EN тексты и `aria`-подписи для основных сценариев.
 
-Языки: `tg` (по умолчанию), `ru`, `en` — словари в `src/lib/i18n.ts`, без сторонних библиотек. Выбор языка сохраняется в `localStorage`, `<html lang>` обновляется. Названия станций/линий берутся из `name[lang]` с фолбэком tg → ru → en.
+## Проверенный пользовательский поток
 
-## Доступность
+Production-сборка проверена в desktop и mobile viewport:
 
-Skip-link к списку станций, list-mode для карты (A11Y-06), фокус-стили `:focus-visible`, `prefers-reduced-motion` отключает анимацию flyTo, контраст по брендовой палитре.
+1. открыть тарифы и получить данные API;
+2. создать обращение с согласием;
+3. сохранить выданные номер и tracking token;
+4. открыть вкладку отслеживания и получить статус;
+5. убедиться в отсутствии hydration mismatch и console errors.

@@ -6,7 +6,6 @@
  * Загрузка данных сети — API → офлайн-демо (dev-conventions.md, §8).
  */
 
-import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { loadActiveAlerts } from "@/lib/alerts-data";
@@ -17,6 +16,7 @@ import AlertsBanner, { MAIN_CONTENT_ID } from "./AlertsBanner";
 import DemoBanner from "./DemoBanner";
 import Header from "./Header";
 import Legend from "./Legend";
+import MobilityDock from "./MobilityDock";
 import StationPanel from "./StationPanel";
 import { useI18n } from "./I18nProvider";
 import { useTheme } from "./ThemeProvider";
@@ -121,27 +121,7 @@ export default function HomeClient() {
           selectedCode={selection?.code ?? null}
         />
         <Legend data={result?.data ?? null} />
-
-        {/* CTA маршрутного поиска — главное пассажирское действие портала */}
-        <Link
-          href="/route"
-          className="absolute bottom-4 right-4 z-10 flex items-center gap-2.5 rounded-full bg-brand-navy py-3 pl-5 pr-4 text-sm font-bold text-surface-light shadow-[var(--shadow-card)] transition-transform hover:-translate-y-0.5"
-        >
-          {dict.route.submit}
-          <svg
-            viewBox="0 0 24 24"
-            className="h-[18px] w-[18px]"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M4 12h16" />
-            <path d="m14 6 6 6-6 6" />
-          </svg>
-        </Link>
+        <MobilityDock data={result?.data ?? null} alertsCount={alerts.length} />
       </main>
     </div>
   );

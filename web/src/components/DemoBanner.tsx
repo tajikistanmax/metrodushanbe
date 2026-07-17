@@ -73,7 +73,7 @@ export default function DemoBanner() {
   return (
     <div
       role="status"
-      className="demo-banner flex h-9 shrink-0 items-center gap-2 bg-warning px-3 text-brand-navy sm:px-4"
+      className="demo-banner flex h-8 shrink-0 items-center gap-2 border-b border-[var(--demo-border)] bg-[var(--demo-bg)] px-3 text-[var(--demo-text)] sm:px-4"
     >
       <svg
         aria-hidden="true"

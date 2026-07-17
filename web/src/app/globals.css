@@ -31,6 +31,9 @@
   --diagram-ring: var(--brand-navy);
   --pulse-color: var(--brand-red);
   --shadow-card: 0 8px 32px rgba(8, 39, 66, 0.18);
+  --demo-bg: #fff6dc;
+  --demo-text: #634500;
+  --demo-border: rgba(224, 134, 0, 0.28);
 
   /* Montserrat self-host; таджикские буквы (ӣ ӯ қ ғ ҳ ҷ) — субсет
      cyrillic-ext, fallback — Segoe UI (dev-conventions.md, §5) */
@@ -52,6 +55,9 @@
   --diagram-ring: #f2f5f8;
   --pulse-color: #ff6b7a;
   --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.55);
+  --demo-bg: #382b0c;
+  --demo-text: #ffe6a2;
+  --demo-border: rgba(255, 210, 92, 0.24);
 }
 
 /*
@@ -87,6 +93,16 @@ body {
   background: var(--page-bg);
   color: var(--text-primary);
   font-family: var(--font-brand);
+}
+
+/* Горизонтальная навигация остаётся доступной для прокрутки на телефоне,
+   но системная полоса не отнимает высоту у компактной шапки. */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }
 
 /* Видимый фокус для клавиатурной навигации (WCAG 2.2 AA) */
@@ -207,6 +223,45 @@ header :focus-visible,
   border: 3px solid var(--pulse-color);
   animation: metro-pulse 1.8s ease-out infinite;
   pointer-events: none;
+}
+
+@keyframes mobility-dock-rise {
+  from {
+    transform: translateY(-8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.mobility-dock {
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--panel-bg);
+  animation: mobility-dock-rise 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.mobility-dock::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 180px;
+  height: 180px;
+  right: -70px;
+  top: -105px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(19, 138, 61, 0.18), transparent 70%);
+  pointer-events: none;
+}
+
+.mobility-primary {
+  background: linear-gradient(115deg, #082742 0%, #0e4f70 100%);
+}
+
+[data-theme="dark"] .mobility-primary {
+  background: linear-gradient(115deg, #123a59 0%, #0e5a78 100%);
 }
 
 /* --- MapLibre: карточка popup в стиле бренда (без дефолтного вида) --- */

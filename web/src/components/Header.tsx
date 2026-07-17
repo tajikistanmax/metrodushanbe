@@ -36,14 +36,16 @@ export default function Header({ source }: HeaderProps) {
   // Раздел новостей охватывает и /news, и /news/{slug}
   const onNews = pathname === "/news" || pathname.startsWith("/news/");
   const onRoute = pathname === "/route";
+  const onRequests = pathname === "/requests";
+  const onFares = pathname === "/fares";
   // Карта (главная) активна, когда не открыт другой раздел
-  const onMap = !onNews && !onRoute;
+  const onMap = !onNews && !onRoute && !onRequests && !onFares;
 
   // Общие классы ссылок навигации: активная — белая пилюля, прочие — приглушены
   const navActive =
-    "rounded-full bg-surface-light/15 px-2.5 py-1 text-xs font-bold text-surface-light sm:text-sm";
+    "rounded-full bg-surface-light px-3 py-1.5 text-xs font-extrabold text-brand-navy shadow-[0_5px_16px_rgba(0,0,0,0.14)] sm:text-sm";
   const navIdle =
-    "rounded-full px-2.5 py-1 text-xs font-semibold text-surface-light/80 transition-colors duration-150 ease-out hover:bg-surface-light/15 sm:text-sm";
+    "rounded-full px-3 py-1.5 text-xs font-semibold text-surface-light/80 transition-colors duration-150 ease-out hover:bg-surface-light/15 hover:text-surface-light sm:text-sm";
 
   const sourceKey = source ?? "loading";
   const sourceShort =
@@ -60,23 +62,23 @@ export default function Header({ source }: HeaderProps) {
         : dict.loading;
 
   return (
-    <header className="z-20 shrink-0">
+    <header className="z-30 shrink-0 shadow-[0_10px_30px_rgba(4,24,42,0.16)]">
       {/* Лента флага РТ — государственная сигнатура портала */}
       <div className="ribbon-flag" aria-hidden="true" />
-      <div className="flex h-[60px] items-center gap-2 bg-brand-navy px-3 text-surface-light sm:gap-3 sm:px-4">
+      <div className="flex h-16 items-center gap-2 bg-[linear-gradient(110deg,#061c31_0%,#082742_50%,#0e405c_100%)] px-3 text-surface-light sm:gap-3 sm:px-4">
       <div className="flex min-w-0 items-center gap-2.5">
         <BrandMark
-          className="h-9 w-[39px] shrink-0"
+          className="h-9 w-[39px] shrink-0 drop-shadow-[0_5px_14px_rgba(0,0,0,0.2)]"
           holeColor="var(--brand-navy)"
         />
-        <h1 className="truncate text-[15px] font-bold tracking-wide sm:text-base">
+        <h1 className="hidden truncate text-[15px] font-extrabold tracking-wide xl:block">
           {dict.appTitle}
         </h1>
       </div>
 
       {/* Первичная навигация портала: карта (главная) и раздел новостей */}
-      <nav aria-label={dict.appTitle} className="ml-1 shrink-0 sm:ml-2">
-        <ul className="flex items-center gap-0.5 sm:gap-1">
+      <nav aria-label={dict.appTitle} className="scrollbar-none min-w-0 flex-1 overflow-x-auto md:ml-1">
+        <ul className="flex w-max items-center gap-0.5 sm:gap-1">
           <li>
             <Link
               href="/"
@@ -104,6 +106,24 @@ export default function Header({ source }: HeaderProps) {
               {dict.news.nav}
             </Link>
           </li>
+          <li>
+            <Link
+              href="/requests"
+              aria-current={onRequests ? "page" : undefined}
+              className={onRequests ? navActive : navIdle}
+            >
+              {dict.requests.nav}
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/fares"
+              aria-current={onFares ? "page" : undefined}
+              className={onFares ? navActive : navIdle}
+            >
+              {dict.fares.nav}
+            </Link>
+          </li>
         </ul>
       </nav>
 
@@ -121,7 +141,7 @@ export default function Header({ source }: HeaderProps) {
               className="h-2 w-2 shrink-0 rounded-full"
               style={{ background: SOURCE_DOT[sourceKey] }}
             />
-            <span className="hidden sm:inline">{sourceShort}</span>
+            <span className="hidden md:inline">{sourceShort}</span>
             <span className="sr-only">
               {dict.dataSourceLabel}: {sourceLong}
             </span>

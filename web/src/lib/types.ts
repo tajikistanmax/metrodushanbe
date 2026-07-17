@@ -208,6 +208,98 @@ export type StationDetail = {
 };
 
 // ---------------------------------------------------------------------------
+// Оценочные прибытия: GET /api/v1/stations/{code}/arrivals?lineCode={code}
+// До подключения realtime backend рассчитывает их из статического headway.
+// ---------------------------------------------------------------------------
+
+/** Одно ближайшее оценочное прибытие. */
+export type Arrival = {
+  /** Местное время Душанбе в формате HH:mm. */
+  time: string;
+  /** Число минут до прибытия; 0 означает «сейчас». */
+  etaMinutes: number;
+};
+
+/** Прибытия одной линии на выбранной станции. */
+export type StationArrivals = {
+  stationCode: string;
+  lineCode: string;
+  dayType: "weekday" | "weekend" | "holiday";
+  serviceActive: boolean;
+  headwayMinutes: number | null;
+  /** В текущем статическом контуре всегда true. */
+  estimated: boolean;
+  generatedAt: string;
+  arrivals: Arrival[];
+};
+
+/** Данные линии вместе с фактическим источником (API или демо-fallback). */
+export type StationArrivalsResult = {
+  data: StationArrivals;
+  source: DataSource;
+};
+
+// ---------------------------------------------------------------------------
+// Обращения граждан: POST /requests и POST /requests/track.
+// ---------------------------------------------------------------------------
+
+export type CitizenRequestType =
+  | "complaint"
+  | "suggestion"
+  | "incident"
+  | "question"
+  | "lost_item";
+
+export type CitizenRequestStatus =
+  | "new"
+  | "in_progress"
+  | "awaiting_info"
+  | "resolved"
+  | "closed"
+  | "reopened";
+
+export type CitizenRequestPublic = {
+  code: string;
+  type: CitizenRequestType;
+  status: CitizenRequestStatus;
+  subject: string;
+  response: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CitizenRequestCreateBody = {
+  type: CitizenRequestType;
+  subject: string;
+  message: string;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  lineCode?: string;
+  stationCode?: string;
+  consent: boolean;
+};
+
+export type CitizenRequestCreateResult = {
+  request: CitizenRequestPublic;
+  trackingToken: string;
+};
+
+export type FareRiderCategory = "all" | "adult" | "child" | "student" | "senior";
+
+export type FareProduct = {
+  code: string;
+  name: I18nName;
+  description: I18nName;
+  amount: number;
+  currency: string;
+  riderCategory: FareRiderCategory;
+  validityMinutes: number | null;
+  active: boolean;
+  updatedAt: string | null;
+};
+
+// ---------------------------------------------------------------------------
 // Маршрутный поиск «откуда/куда»: GET /api/v1/routes?from={code}&to={code}
 // Время в пути — ОЦЕНОЧНОЕ (до реального расписания). Несуществующий код
 // станции → 404 route.station_not_found; отсутствие пути → found:false с

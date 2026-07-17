@@ -8,6 +8,7 @@
  */
 
 import { fetchApiJson } from "./api";
+import { formatDushanbeNewsDate } from "./date-time";
 import type { I18nName, NewsArticle } from "./types";
 import type { Lang } from "./i18n";
 
@@ -87,25 +88,11 @@ export async function loadNewsArticle(
 }
 
 /** Соответствие языка UI и локали Intl для форматирования дат. */
-const DATE_LOCALES: Record<Lang, string> = {
-  tg: "tg-TJ",
-  ru: "ru-RU",
-  en: "en-GB",
-};
-
 /**
  * Дата публикации в формате текущего языка (день, месяц прописью, год).
  * Intl сам деградирует на неподдерживаемой локали (tg); при невалидной дате
  * возвращает исходную строку, чтобы ничего не потерять на экране.
  */
 export function formatNewsDate(iso: string, lang: Lang): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) {
-    return iso;
-  }
-  return new Intl.DateTimeFormat(DATE_LOCALES[lang], {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(date);
+  return formatDushanbeNewsDate(iso, lang);
 }

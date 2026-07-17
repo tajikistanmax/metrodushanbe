@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 
 // Montserrat self-host через @fontsource: файлы бандлятся локально,
 // внешних запросов нет (dev-conventions.md, §5 и §8). Каждый импорт
@@ -12,11 +12,23 @@ import "@fontsource/montserrat/800.css";
 import "./globals.css";
 import { I18nProvider } from "@/components/I18nProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import PwaRuntime from "@/components/PwaRuntime";
 
 export const metadata: Metadata = {
   title: "Метрои Душанбе — Dushanbe Metro",
+  applicationName: "Метрои Душанбе",
   description:
     "Публичный портал метро Душанбе: демонстрационная схема сети, станции и линии.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Метро Душанбе",
+    statusBarStyle: "black-translucent",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#082742",
 };
 
 /**
@@ -39,7 +51,10 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col">
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <ThemeProvider>
-          <I18nProvider>{children}</I18nProvider>
+          <I18nProvider>
+            <PwaRuntime />
+            {children}
+          </I18nProvider>
         </ThemeProvider>
       </body>
     </html>
