@@ -52,7 +52,9 @@ public class CacheConfig implements CachingConfigurer {
                 Map.entry("lines", defaultConfig.entryTtl(Duration.ofHours(1))),
                 Map.entry("stations", defaultConfig.entryTtl(Duration.ofHours(1))),
                 Map.entry("network.geojson", defaultConfig.entryTtl(Duration.ofHours(6))),
-                Map.entry("alerts", defaultConfig.entryTtl(Duration.ofMinutes(10))),
+                // Кэша alerts здесь нет намеренно: активность уведомления зависит
+                // от текущего времени (startsAt/endsAt) и меняется без изменения
+                // данных, поэтому инвалидировать его нечем — см. AlertService.activeAlerts.
                 Map.entry("news", defaultConfig.entryTtl(Duration.ofMinutes(30))),
                 Map.entry("schedules", defaultConfig.entryTtl(Duration.ofMinutes(30))),
                 Map.entry("routes", defaultConfig.entryTtl(Duration.ofMinutes(15))),

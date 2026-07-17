@@ -6,7 +6,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tj.metro.dushanbe.alert.domain.AlertTarget;
@@ -70,8 +69,15 @@ public class AlertService {
      *   <li>оба фильтра сразу — ОБЪЕДИНЕНИЕ: уведомление попадает, если проходит
      *       хотя бы один из фильтров («не потерять уведомление» важнее строгости).</li>
      * </ul>
+     *
+     * <p><b>Кэша здесь нет намеренно.</b> Активность уведомления — функция от
+     * ТЕКУЩЕГО времени: она меняется сама, когда наступает {@code startsAt} или
+     * проходит {@code endsAt}, без всякого изменения данных. Инвалидировать такой
+     * кэш нечем — событие происходит в БД молча, по часам. Кэш с TTL 10 минут
+     * означал бы, что авария появляется на карте с опозданием до десяти минут и
+     * висит до десяти минут после снятия. Для сервисных уведомлений метро это
+     * недопустимо: цена запроса к БД ниже цены устаревшего предупреждения.
      */
-    @Cacheable(value = "alerts", unless = "#result.isEmpty()")
     public List<AlertDto> activeAlerts(String lineCode, String stationCode, String severity) {
         if (!isBlank(severity)) {
             requireValidSeverity(severity);
