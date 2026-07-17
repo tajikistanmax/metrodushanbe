@@ -50,7 +50,17 @@ export function roleAtLeast(role: AdminRole, required: AdminRole): boolean {
 }
 
 function sessionSecret(): string {
-  return process.env.ADMIN_SESSION_SECRET ?? DEV_SECRET;
+  const configured = process.env.ADMIN_SESSION_SECRET;
+  if (configured) {
+    if (process.env.NODE_ENV === "production" && configured.length < 32) {
+      throw new Error("ADMIN_SESSION_SECRET must contain at least 32 characters");
+    }
+    return configured;
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("ADMIN_SESSION_SECRET is required in production");
+  }
+  return DEV_SECRET;
 }
 
 /** base64url без паддинга; UTF-8-безопасно (btoa сам по себе — только latin1). */

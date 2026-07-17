@@ -45,7 +45,7 @@ export default function Modal({
     <dialog
       ref={ref}
       aria-labelledby={titleId}
-      className="m-auto w-[min(40rem,92vw)] rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] p-0 text-[var(--text-primary)] shadow-[var(--shadow-card)] backdrop:bg-black/50"
+      className="m-auto w-[min(40rem,92vw)] rounded-panel border border-[var(--border-subtle)] bg-[var(--surface-overlay)] p-0 text-[var(--text-primary)] shadow-overlay backdrop:bg-black/50"
       onCancel={(e) => {
         e.preventDefault();
         if (!busy) onClose();
@@ -55,8 +55,8 @@ export default function Modal({
         if (e.target === ref.current && !busy) onClose();
       }}
     >
-      <div className="flex items-center justify-between gap-3 border-b border-[var(--card-border)] px-5 py-4">
-        <h2 id={titleId} className="text-lg font-extrabold tracking-tight">
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--border-subtle)] px-5 py-4">
+        <h2 id={titleId} className="text-title-s font-bold">
           {title}
         </h2>
         <button
@@ -64,7 +64,7 @@ export default function Modal({
           onClick={onClose}
           disabled={busy}
           aria-label={dict.actions.close}
-          className="rounded-lg px-2 py-1 text-xl leading-none text-text-secondary transition-colors hover:bg-[var(--table-row-hover)] disabled:opacity-50"
+          className="rounded-control px-2 py-1 text-title-s leading-none text-text-secondary transition-colors hover:bg-[var(--surface-hover)] disabled:opacity-50"
         >
           <span aria-hidden="true">×</span>
         </button>

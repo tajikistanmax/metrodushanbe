@@ -29,7 +29,7 @@ const SEVERITY_COLOR: Record<AlertSeverity, string> = {
 function SeverityBadge({ severity }: { severity: AlertSeverity }) {
   const { dict } = useI18n();
   return (
-    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--chip-bg)] px-2.5 py-1 text-xs font-semibold">
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--surface-chip)] px-2.5 py-1 text-xs font-semibold">
       <span
         aria-hidden="true"
         className="h-2 w-2 shrink-0 rounded-full"
@@ -81,7 +81,7 @@ export default function AlertsTable({ data, error, actions }: AlertsTableProps) 
               <span
                 key={`${t.type}:${t.code}`}
                 title={t.type}
-                className="rounded-full bg-[var(--chip-bg)] px-2 py-0.5 font-mono text-xs"
+                className="rounded-full bg-[var(--surface-chip)] px-2 py-0.5 font-mono text-xs"
               >
                 {t.code}
               </span>

@@ -64,10 +64,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={t.id}
             role={t.kind === "error" ? "alert" : "status"}
             aria-live={t.kind === "error" ? "assertive" : "polite"}
-            className={`pointer-events-auto flex w-full max-w-md items-start justify-between gap-3 rounded-xl border px-4 py-3 text-sm shadow-[var(--shadow-card)] ${
+            // Тост реально висит над контентом — законная тень (overlay).
+            // Тинт-токены вместо brand-*/10: у них посчитан тёмный вариант.
+            // Тон дублируется полосой слева, а не только цветом фона (SC 1.4.1).
+            className={`pointer-events-auto flex w-full max-w-md items-start justify-between gap-3 rounded-panel border border-l-4 border-[var(--border-subtle)] px-4 py-3 text-small text-[var(--text-primary)] shadow-overlay ${
               t.kind === "error"
-                ? "border-brand-red/40 bg-brand-red/10"
-                : "border-brand-green/40 bg-brand-green/10"
+                ? "border-l-brand-red bg-[var(--tint-critical)]"
+                : "border-l-brand-green bg-[var(--tint-success)]"
             }`}
           >
             <span className="min-w-0 break-words">{t.message}</span>
@@ -75,7 +78,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               type="button"
               onClick={() => remove(t.id)}
               aria-label={dict.actions.close}
-              className="shrink-0 text-lg leading-none text-text-secondary hover:opacity-70"
+              className="shrink-0 rounded-chip text-title-s leading-none text-text-secondary transition-colors hover:bg-[var(--surface-hover)]"
             >
               <span aria-hidden="true">×</span>
             </button>

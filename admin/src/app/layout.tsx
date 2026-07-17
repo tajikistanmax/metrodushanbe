@@ -9,8 +9,9 @@ import "@fontsource/montserrat/700.css";
 import "@fontsource/montserrat/800.css";
 
 import "./globals.css";
-import { I18nProvider } from "@/components/I18nProvider";
-import { ThemeProvider } from "@/components/ThemeProvider";
+import { I18nProvider } from "@/shared/I18nProvider";
+import { ThemeProvider } from "@/shared/ThemeProvider";
+import { THEME_INIT_SCRIPT } from "@/shared/theme-init";
 import { ToastProvider } from "@/components/admin/ToastProvider";
 
 export const metadata: Metadata = {
@@ -25,8 +26,6 @@ export const metadata: Metadata = {
  * рендерится без каркаса.
  */
 
-const themeInitScript = `(function(){try{var m=localStorage.getItem("metro-dushanbe.theme");var d=m==="dark"||(m!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.dataset.theme=d?"dark":"light";}catch(e){document.documentElement.dataset.theme="light";}})();`;
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -38,7 +37,7 @@ export default function RootLayout({
   return (
     <html lang="tg" className="h-full antialiased" suppressHydrationWarning>
       <body className="min-h-full">
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <ThemeProvider>
           <I18nProvider>
             <ToastProvider>{children}</ToastProvider>

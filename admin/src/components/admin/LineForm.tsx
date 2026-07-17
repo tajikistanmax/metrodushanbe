@@ -113,7 +113,9 @@ export default function LineForm({ row, onSuccess, onCancel }: Props) {
           error={errors.colorHex}
           required
           mono
-          placeholder="#E21B2D"
+          // Регистр hex — всегда нижний (docs/dev-conventions.md §5):
+          // подсказка не должна учить противоположному.
+          placeholder="#e21b2d"
         />
         <SelectField
           label={dict.colStatus}

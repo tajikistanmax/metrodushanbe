@@ -5,6 +5,7 @@
  * Держит единый ритм с PageHeader (отступ снизу), не мешает read-контенту.
  */
 
+import { Button } from "@/shared/ui";
 import { useI18n } from "../I18nProvider";
 
 export default function Toolbar({
@@ -17,16 +18,19 @@ export default function Toolbar({
   const { dict } = useI18n();
   return (
     <div className="mb-3 flex justify-end">
-      <button
-        type="button"
+      {/* Было: сырой <button> с rounded-lg(8) и bg-brand-navy — копия primary
+          из примитива, но со своим радиусом и hover:opacity вместо цвета. */}
+      <Button
+        variant="primary"
         onClick={onCreate}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-brand-navy px-4 py-2 text-sm font-bold text-surface-light transition-opacity hover:opacity-90"
+        iconLeft={
+          <span aria-hidden="true" className="text-body leading-none">
+            +
+          </span>
+        }
       >
-        <span aria-hidden="true" className="text-base leading-none">
-          +
-        </span>
         {createLabel ?? dict.actions.create}
-      </button>
+      </Button>
     </div>
   );
 }

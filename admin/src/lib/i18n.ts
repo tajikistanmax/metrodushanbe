@@ -10,16 +10,32 @@
 import type {
   AccessibilityFeature,
   AlertSeverity,
+  BlocklistSubjectType,
   CitizenRequestPriority,
   CitizenRequestStatus,
   CitizenRequestType,
   FareRiderCategory,
   I18nName,
+  ImportErrorSeverity,
+  ImportFormat,
+  ImportJobType,
+  ImportKind,
   IncidentCategory,
   IncidentSeverity,
   IncidentStatus,
   LineStatus,
+  NotificationChannel,
+  NotificationDeliveryStatus,
+  NotificationStatus,
+  NotificationTargetType,
+  NotificationType,
+  PaymentKind,
+  PaymentStatus,
   StationStatus,
+  TicketKind,
+  TicketStatus,
+  WebhookDeliveryStatus,
+  WebhookEventType,
 } from "./types";
 
 export type Lang = "tg" | "ru" | "en";
@@ -70,6 +86,9 @@ export type Dict = {
     requests: string;
     incidents: string;
     fares: string;
+    notifications: string;
+    tickets: string;
+    webhooks: string;
     imports: string;
     calendar: string;
     features: string;
@@ -139,6 +158,240 @@ export type Dict = {
     categories: Record<IncidentCategory, string>;
     severities: Record<IncidentSeverity, string>;
     statuses: Record<IncidentStatus, string>;
+  };
+
+  /** Раздел рассылок и шаблонов (NTF-01…06). */
+  notifications: {
+    title: string;
+    lead: string;
+    tabMessages: string;
+    tabProblems: string;
+    tabTemplates: string;
+    /** Пометка про имитацию внешних каналов — обязана быть видна. */
+    simulatedNotice: string;
+    simulatedBadge: string;
+    simulatedHint: string;
+    colCode: string;
+    colTitle: string;
+    colType: string;
+    colChannels: string;
+    colStatus: string;
+    colTargets: string;
+    colScheduled: string;
+    colSent: string;
+    filterAll: string;
+    createTitle: string;
+    editTitle: string;
+    fieldCode: string;
+    fieldCodeHint: string;
+    fieldTemplate: string;
+    fieldTemplateHint: string;
+    templateNone: string;
+    fieldType: string;
+    fieldTitleText: string;
+    fieldBody: string;
+    fieldChannels: string;
+    fieldChannelsHint: string;
+    fieldTargets: string;
+    fieldTargetsHint: string;
+    fieldTargetType: string;
+    fieldTargetCode: string;
+    addTarget: string;
+    removeTarget: string;
+    networkWide: string;
+    fieldScheduledAt: string;
+    fieldScheduledAtHint: string;
+    send: string;
+    sendTitle: string;
+    sendWarning: string;
+    sendDone: string;
+    statusTitle: string;
+    changeStatus: string;
+    frozenTitle: string;
+    frozenText: string;
+    deliveriesTitle: string;
+    showDeliveries: string;
+    hideDeliveries: string;
+    problemsTitle: string;
+    problemsLead: string;
+    problemsEmpty: string;
+    colChannel: string;
+    colRecipient: string;
+    colAttempts: string;
+    colError: string;
+    colDeliveredAt: string;
+    retry: string;
+    retryHint: string;
+    retryDone: string;
+    noDeliveries: string;
+    templatesTitle: string;
+    templatesLead: string;
+    templateCreate: string;
+    templateEdit: string;
+    colName: string;
+    fieldName: string;
+    fieldNameHint: string;
+    fieldActive: string;
+    templatesReadOnly: string;
+    types: Record<NotificationType, string>;
+    statuses: Record<NotificationStatus, string>;
+    channels: Record<NotificationChannel, string>;
+    targetTypes: Record<NotificationTargetType, string>;
+    deliveryStatuses: Record<NotificationDeliveryStatus, string>;
+  };
+
+  /** Раздел билетов, платежей и чёрного списка (TKT-01…06). */
+  tickets: {
+    title: string;
+    lead: string;
+    /** Пометка про имитацию платежей — обязана быть видна. */
+    demoNotice: string;
+    demoBadge: string;
+    demoHint: string;
+    tabTickets: string;
+    tabPayments: string;
+    tabBlocklist: string;
+    filterAll: string;
+    colCode: string;
+    colFare: string;
+    colKind: string;
+    colRider: string;
+    colStatus: string;
+    colPrice: string;
+    colValidity: string;
+    colBalance: string;
+    validityOpen: string;
+    noToken: string;
+    refund: string;
+    refundTitle: string;
+    refundLead: string;
+    fieldRefundReason: string;
+    fieldRefundReasonHint: string;
+    refundDone: string;
+    paymentsTitle: string;
+    paymentsLead: string;
+    colPaymentKind: string;
+    colAmount: string;
+    colProvider: string;
+    colTicket: string;
+    colFailure: string;
+    colCreated: string;
+    noTicket: string;
+    blocklistTitle: string;
+    blocklistLead: string;
+    blocklistAdd: string;
+    blocklistRemove: string;
+    blocklistRemoveHint: string;
+    colSubjectType: string;
+    colSubject: string;
+    colReason: string;
+    colBlockedBy: string;
+    fieldSubjectType: string;
+    fieldSubjectValue: string;
+    fieldSubjectValueHint: string;
+    fieldBlockReason: string;
+    fieldBlockReasonHint: string;
+    tokenHashNotice: string;
+    blockDone: string;
+    unblockDone: string;
+    kinds: Record<TicketKind, string>;
+    statuses: Record<TicketStatus, string>;
+    paymentKinds: Record<PaymentKind, string>;
+    paymentStatuses: Record<PaymentStatus, string>;
+    subjectTypes: Record<BlocklistSubjectType, string>;
+  };
+
+  /** Раздел интеграций: подписчики вебхуков и очередь доставок (ADM-06, U-OPS-04). */
+  webhooks: {
+    title: string;
+    lead: string;
+    tabSubscribers: string;
+    tabDeliveries: string;
+    subscribersTitle: string;
+    subscribersLead: string;
+    colName: string;
+    colUrl: string;
+    colEvents: string;
+    colState: string;
+    colRateLimit: string;
+    colFingerprint: string;
+    perMinute: string;
+    createTitle: string;
+    editTitle: string;
+    fieldCode: string;
+    fieldCodeHint: string;
+    fieldName: string;
+    fieldUrl: string;
+    fieldUrlHint: string;
+    fieldEvents: string;
+    fieldEventsHint: string;
+    fieldActive: string;
+    fieldRateLimit: string;
+    fieldRateLimitHint: string;
+    rotate: string;
+    rotateTitle: string;
+    rotateWarning: string;
+    rotateConfirm: string;
+    /** Экран «секрет виден один раз» — ключевое место раздела. */
+    secretTitle: string;
+    secretOnceWarning: string;
+    secretLead: string;
+    secretLabel: string;
+    secretCopy: string;
+    secretCopied: string;
+    secretCopyFailed: string;
+    secretAck: string;
+    fingerprintHint: string;
+    superadminOnly: string;
+    deliveriesTitle: string;
+    deliveriesLead: string;
+    dlqTitle: string;
+    dlqLead: string;
+    dlqEmpty: string;
+    filterAttention: string;
+    colEvent: string;
+    colSubject: string;
+    colSubscriber: string;
+    colAttempts: string;
+    colResponse: string;
+    colError: string;
+    colNextAttempt: string;
+    colTrace: string;
+    retryDue: string;
+    retry: string;
+    retryDone: string;
+    notRetryable: string;
+    eventTypes: Record<WebhookEventType, string>;
+    deliveryStatuses: Record<WebhookDeliveryStatus, string>;
+  };
+
+  /**
+   * Раздел AI-агентов: реестр моделей и сводка готовности контура.
+   *
+   * Локализуется только обвязка UI и коды состояний. Роль, сигналы,
+   * возможности, рекомендации и nextAction приходят из backend готовым
+   * текстом (AiAgentReadinessService) и в словаре не дублируются.
+   */
+  agents: {
+    title: string;
+    lead: string;
+    /** Итоговая готовность контура целиком (AiBriefingDto.posture). */
+    postureTitle: string;
+    fieldProvider: string;
+    fieldModelClass: string;
+    fieldCapabilities: string;
+    errorTitle: string;
+    empty: string;
+    chatOpen: string;
+    chatClose: string;
+    chatPlaceholder: string;
+    chatInputLabel: string;
+    chatSend: string;
+    chatSending: string;
+    chatSources: string;
+    /** Коды из backend; ключ не найден — показываем сырой код. */
+    postures: Record<string, string>;
+    statuses: Record<string, string>;
   };
 
   /** Раздел управления операторами консоли (только для суперадмина). */
@@ -317,6 +570,18 @@ export type Dict = {
   empty: string;
   total: string;
 
+  /** Постраничная навигация — одна на все ленты консоли. */
+  pager: {
+    /** aria-label группы кнопок. */
+    label: string;
+    prev: string;
+    next: string;
+    /** Составляется как «{page} 2 / 5». */
+    page: string;
+    /** Размер страницы: «{pageSize}: 50». */
+    pageSize: string;
+  };
+
   /** Заголовки/подписи таблиц. */
   linesTitle: string;
   stationsTitle: string;
@@ -331,8 +596,35 @@ export type Dict = {
     uploadTitle: string;
     sourceName: string;
     sourceHint: string;
-    file: string;
-    chooseFile: string;
+    fieldFormat: string;
+    fieldFormatHint: string;
+    /** Бейдж формата источника в ленте (ImportFormat). */
+    formats: Record<ImportFormat, string>;
+    /** Пункты выбора в форме — вид импорта, а не формат (ImportKind). */
+    kinds: Record<ImportKind, string>;
+    kindHints: Record<ImportKind, string>;
+    /** Подпись поля файла зависит от вида: GeoJSON, ZIP сети, ZIP тарифов и CSV — разное. */
+    fileByFormat: Record<ImportKind, string>;
+    chooseFileByFormat: Record<ImportKind, string>;
+    /** Что импортировали (ImportJob.TYPE_*): сеть или тарифы. */
+    types: Record<ImportJobType, string>;
+    colType: string;
+    fieldFeedLang: string;
+    fieldFeedLangHint: string;
+    feedLangAuto: string;
+    fieldTargetStatus: string;
+    fieldTargetStatusHint: string;
+    /** Соответствие rider_categories.txt категориям справочника. */
+    fieldRiderCategories: string;
+    fieldRiderCategoriesHint: string;
+    fieldFareActive: string;
+    fieldFareActiveHint: string;
+    fareActiveAuto: string;
+    fareActiveYes: string;
+    fareActiveNo: string;
+    /** Пояснение про поля, которых в GTFS Fares v2 нет. */
+    faresGapsLead: string;
+    colFormat: string;
     runImport: string;
     importing: string;
     jobsTitle: string;
@@ -348,6 +640,13 @@ export type Dict = {
     hideErrors: string;
     errorsTitle: string;
     noErrors: string;
+    /** Предупреждения GTFS — рабочий список «что перевести», а не сбой. */
+    warningsTitle: string;
+    warningsLead: string;
+    noWarnings: string;
+    errorsOnlyTitle: string;
+    noHardErrors: string;
+    severities: Record<ImportErrorSeverity, string>;
     invalidFile: string;
     importDone: string;
     calendarTitle: string;
@@ -538,6 +837,9 @@ const tg: Dict = {
     requests: "Муроҷиатҳо",
     incidents: "Ҳодисаҳо",
     fares: "Тарофаҳо",
+    notifications: "Паёмрасонӣ",
+    tickets: "Билетҳо",
+    webhooks: "Ҳамгироиҳо",
     imports: "Воридот",
     calendar: "Тақвим",
     features: "Функсияҳо",
@@ -613,6 +915,304 @@ const tg: Dict = {
       in_progress: "Дар кор",
       resolved: "Ҳал шуд",
       closed: "Пӯшида",
+    },
+  },
+  notifications: {
+    title: "Паёмрасонӣ",
+    lead: "Паёмҳо ба мусофирон, шаблонҳо ва навбати расонидан.",
+    tabMessages: "Паёмҳо",
+    tabProblems: "Навбати расонидан",
+    tabTemplates: "Шаблонҳо",
+    simulatedNotice:
+      "Дар контури демо танҳо канали «Дар барнома» воқеан кор мекунад. Push, Email ва SMS тақлид карда мешаванд: ҳеҷ чиз ба мусофир намеравад, сабти «фиристода шуд» шартӣ аст.",
+    simulatedBadge: "Тақлид",
+    simulatedHint: "Канал провайдери воқеӣ надорад — расонидан тақлид шудааст.",
+    colCode: "Рамз",
+    colTitle: "Сарлавҳа",
+    colType: "Навъ",
+    colChannels: "Каналҳо",
+    colStatus: "Ҳолат",
+    colTargets: "Ҳадаф",
+    colScheduled: "Ба нақша гирифта",
+    colSent: "Фиристода шуд",
+    filterAll: "Ҳама",
+    createTitle: "Паёми нав",
+    editTitle: "Тағйири паём",
+    fieldCode: "Рамз",
+    fieldCodeHint: "Ҳарфҳои лотинӣ; баъдан тағйир намеёбад.",
+    fieldTemplate: "Шаблон",
+    fieldTemplateHint: "Матнҳо нусхабардорӣ мешаванд ва аз шаблон вобаста намемонанд.",
+    templateNone: "Бе шаблон",
+    fieldType: "Навъи паём",
+    fieldTitleText: "Сарлавҳа",
+    fieldBody: "Матн",
+    fieldChannels: "Каналҳои расонидан",
+    fieldChannelsHint: "Ҳадди ақал як канал.",
+    fieldTargets: "Ҳадафгирӣ",
+    fieldTargetsHint: "Рӯйхати холӣ — тамоми шабака.",
+    fieldTargetType: "Навъ",
+    fieldTargetCode: "Рамз",
+    addTarget: "Илова кардани ҳадаф",
+    removeTarget: "Нест кардан",
+    networkWide: "Тамоми шабака",
+    fieldScheduledAt: "Нашри мӯҳлатдор",
+    fieldScheduledAtHint: "Пур кунед — паём ба ҳолати «Ба нақша гирифта» мегузарад.",
+    send: "Фиристодан",
+    sendTitle: "Фиристодани паём",
+    sendWarning:
+      "Паём фавран ба фиристодан меравад ва пас аз он таҳрир намешавад.",
+    sendDone: "Паём ба фиристодан гузашт",
+    statusTitle: "Тағйири ҳолат",
+    changeStatus: "Ҳолат",
+    frozenTitle: "Таҳрир имконнопазир",
+    frozenText:
+      "Расонидан аллакай оғоз шудааст (фиристода истодааст / фиристода шуд / бекор шуд) — таърихи он чизе, ки ба мусофирон рафт, тағйир намеёбад.",
+    deliveriesTitle: "Расонидани ин паём",
+    showDeliveries: "Нишон додани расонидан",
+    hideDeliveries: "Пинҳон кардан",
+    problemsTitle: "Расониданҳои мушкилдор",
+    problemsLead:
+      "Ҳар чизе, ки нарасидааст: дар навбат ва нокоммуваффақ. Такрор онро ба навбат бармегардонад.",
+    problemsEmpty: "Ҳамаи расониданҳо иҷро шудаанд",
+    colChannel: "Канал",
+    colRecipient: "Гиранда",
+    colAttempts: "Кӯшишҳо",
+    colError: "Сабаби нокомӣ",
+    colDeliveredAt: "Расонида шуд",
+    retry: "Такрор",
+    retryHint: "Такрор танҳо барои расониданҳои нокоммуваффақ дастрас аст.",
+    retryDone: "Расонидан ба навбат баргардонида шуд",
+    noDeliveries: "Барои ин паём расонидан сабт нашудааст",
+    templatesTitle: "Шаблонҳои паём",
+    templatesLead:
+      "Заготовкаҳои матн. Таҳрири шаблон паёмҳои аллакай сохташударо тағйир намедиҳад.",
+    templateCreate: "Шаблони нав",
+    templateEdit: "Тағйири шаблон",
+    colName: "Номи хизматӣ",
+    fieldName: "Номи хизматӣ",
+    fieldNameHint: "Танҳо барои консол; ба мусофир намоиш дода намешавад.",
+    fieldActive: "Шаблон фаъол аст",
+    templatesReadOnly:
+      "Шаблонҳо маълумотномаи таҳририянд: барои тағйир нақши «Муҳаррир» лозим аст.",
+    types: {
+      info: "Маълумот",
+      warning: "Огоҳӣ",
+      incident: "Ҳодиса",
+      maintenance: "Хизматрасонӣ",
+      promo: "Таблиғ",
+    },
+    statuses: {
+      draft: "Лоиҳа",
+      scheduled: "Ба нақша гирифта",
+      sending: "Фиристода истодааст",
+      sent: "Фиристода шуд",
+      cancelled: "Бекор шуд",
+    },
+    channels: {
+      in_app: "Дар барнома",
+      push: "Push",
+      email: "Email",
+      sms: "SMS",
+    },
+    targetTypes: {
+      line: "Хат",
+      station: "Истгоҳ",
+      segment: "Сегмент",
+      role: "Нақш",
+    },
+    deliveryStatuses: {
+      pending: "Дар навбат",
+      sent: "Фиристода шуд",
+      delivered: "Расонида шуд",
+      failed: "Нокоммуваффақ",
+    },
+  },
+  tickets: {
+    title: "Билетҳо ва пардохтҳо",
+    lead: "Билетҳо, пардохтҳо, баргардонидани дастӣ ва рӯйхати сиёҳ.",
+    demoNotice:
+      "Контури демо: пардохтҳоро DemoPaymentGateway тақлид мекунад, пули воқеӣ ҳаракат намекунад. Билетҳои дорои нишонаи «Демо» пардохти воқеӣ надоранд.",
+    demoBadge: "Демо",
+    demoHint: "Дар паси ин сабт пардохти воқеӣ нест.",
+    tabTickets: "Билетҳо",
+    tabPayments: "Пардохтҳо",
+    tabBlocklist: "Рӯйхати сиёҳ",
+    filterAll: "Ҳама",
+    colCode: "Рамзи билет",
+    colFare: "Тарофа",
+    colKind: "Навъ",
+    colRider: "Категория",
+    colStatus: "Ҳолат",
+    colPrice: "Нарх",
+    colValidity: "Мӯҳлат",
+    colBalance: "Бақия",
+    validityOpen: "Бемӯҳлат",
+    noToken: "Токени QR дар система нигоҳ дошта намешавад — танҳо хеши он.",
+    refund: "Баргардонидан",
+    refundTitle: "Баргардонидани дастӣ",
+    refundLead:
+      "Баргардонидани операторӣ ҳатто билети истифодашударо иҷозат медиҳад. Амал номӣ аст ва ба аудит меафтад.",
+    fieldRefundReason: "Асоси баргардонидан",
+    fieldRefundReasonHint: "Ҳатмист: баргардонидани беасос баҳснопазир аст.",
+    refundDone: "Баргардонидан сабт шуд",
+    paymentsTitle: "Лентаи пардохтҳо",
+    paymentsLead:
+      "Харид ва пуркуниҳо. Маълумоти корт на дар ин ҷо ҳаст, на дар модел.",
+    colPaymentKind: "Таъинот",
+    colAmount: "Маблағ",
+    colProvider: "Провайдер",
+    colTicket: "Билет",
+    colFailure: "Сабаби рад",
+    colCreated: "Сана",
+    noTicket: "Билет барорида нашуд",
+    blocklistTitle: "Рӯйхати сиёҳ",
+    blocklistLead:
+      "Баста шудан фавран амал мекунад: билетҳои субъект ба ҳолати «Баста» мегузаранд.",
+    blocklistAdd: "Бастани субъект",
+    blocklistRemove: "Кушодан",
+    blocklistRemoveHint:
+      "Кушодан хариди билетҳои навро иҷозат медиҳад, вале билетҳои аллакай бастаро барқарор намекунад: токенҳои онҳо ошкор шудаанд.",
+    colSubjectType: "Навъи субъект",
+    colSubject: "Субъект",
+    colReason: "Асос",
+    colBlockedBy: "Баст",
+    fieldSubjectType: "Навъи субъект",
+    fieldSubjectValue: "Қимати субъект",
+    fieldSubjectValueHint: "Рамзи билет, токен ё шиносаи харидор.",
+    fieldBlockReason: "Асоси бастан",
+    fieldBlockReasonHint: "Ҳатмист: бастани беасос барҳам дода намешавад.",
+    tokenHashNotice:
+      "Барои навъи «Токен» худи токен ворид карда мешавад — хидмат танҳо SHA-256-и онро нигоҳ медорад; токени кушода на ба БД, на ба аудит намеафтад.",
+    blockDone: "Субъект баста шуд",
+    unblockDone: "Баста шудан бардошта шуд",
+    kinds: { single: "Яквақта", pass: "Абонемент" },
+    statuses: {
+      issued: "Барорида шуд",
+      active: "Фаъол",
+      used: "Истифода шуд",
+      expired: "Мӯҳлат гузашт",
+      refunded: "Баргардонида шуд",
+      blocked: "Баста",
+    },
+    paymentKinds: { purchase: "Харид", topup: "Пуркунӣ" },
+    paymentStatuses: {
+      pending: "Дар интизор",
+      authorized: "Тасдиқ шуд",
+      captured: "Гирифта шуд",
+      failed: "Рад шуд",
+      refunded: "Баргардонида шуд",
+    },
+    subjectTypes: { ticket: "Билет", token: "Токен", rider: "Харидор" },
+  },
+  webhooks: {
+    title: "Ҳамгироиҳо",
+    lead: "Обуначиёни вебхук, секретҳо, лимитҳо ва навбати расонидан.",
+    tabSubscribers: "Обуначиён",
+    tabDeliveries: "Навбати расонидан",
+    subscribersTitle: "Обуначиёни вебхук",
+    subscribersLead:
+      "Суроғаҳои беруна, ки маълумоти шабака ба онҳо меравад. Секрет ҳеҷ гоҳ дар рӯйхат нишон дода намешавад.",
+    colName: "Ном",
+    colUrl: "Суроға",
+    colEvents: "Рӯйдодҳо",
+    colState: "Ҳолат",
+    colRateLimit: "Лимит",
+    colFingerprint: "Изи секрет",
+    perMinute: "дар дақиқа",
+    createTitle: "Обуначии нав",
+    editTitle: "Тағйири обуначӣ",
+    fieldCode: "Рамз",
+    fieldCodeHint: "A-Z, a-z, 0-9, _ ва -; баъдан тағйир намеёбад.",
+    fieldName: "Ном",
+    fieldUrl: "Суроғаи расонидан",
+    fieldUrlHint: "http:// ё https://",
+    fieldEvents: "Навъҳои рӯйдод",
+    fieldEventsHint: "Ҳадди ақал як навъ.",
+    fieldActive: "Обуна фаъол аст",
+    fieldRateLimit: "Лимити дархостҳо (дар дақиқа)",
+    fieldRateLimitHint: "Холӣ — қимати пешфарзи хидмат.",
+    rotate: "Ротатсияи секрет",
+    rotateTitle: "Ротатсияи секрет",
+    rotateWarning:
+      "Секрети кӯҳна фавран аз кор мемонад: обуначӣ расониданҳоро рад мекунад, то калидро дар назди худ нав накунад.",
+    rotateConfirm: "Секрети навро сохтан",
+    secretTitle: "Секрет — фақат ҳозир",
+    secretOnceWarning:
+      "Ҳозир нусхабардорӣ кунед: ин ягона маротибаест, ки секрет нишон дода мешавад. Онро дубора гирифтан мумкин нест — танҳо ротатсия кардан.",
+    secretLead: "Ба интегратор диҳед ва дар назди худ нигоҳ надоред.",
+    secretLabel: "Секрети имзо",
+    secretCopy: "Нусхабардорӣ",
+    secretCopied: "Нусхабардорӣ шуд",
+    secretCopyFailed: "Нусхабардорӣ нашуд — дастӣ интихоб кунед",
+    secretAck: "Секретро нигоҳ доштам",
+    fingerprintHint:
+      "Изи ангушт — 8 аломати аввали хеш: барои санҷиши «оё калиди дуруст аст» баъд аз ротатсия.",
+    superadminOnly:
+      "Идораи обуначиён танҳо ба супермаъмур дастрас аст; навбати расонидан — ба навбатдор.",
+    deliveriesTitle: "Навбати расонидан",
+    deliveriesLead:
+      "Расониданҳои вебхук: сабаб, шумораи кӯшишҳо ва вақти кӯшиши навбатӣ.",
+    dlqTitle: "DLQ — дахолат лозим",
+    dlqLead:
+      "Ҳолати «Мурда»: кӯшишҳои худкор тамом шуданд. Ин расониданҳо худ аз худ намераванд.",
+    dlqEmpty: "Дар DLQ чизе нест",
+    filterAttention: "Диққат талаб мекунанд",
+    colEvent: "Рӯйдод",
+    colSubject: "Объект",
+    colSubscriber: "Обуначӣ",
+    colAttempts: "Кӯшишҳо",
+    colResponse: "Ҷавоб",
+    colError: "Сабаби нокомӣ",
+    colNextAttempt: "Кӯшиши навбатӣ",
+    colTrace: "Trace",
+    retryDue: "ҳозир",
+    retry: "Такрор",
+    retryDone: "Расонидан ба навбат баргардонида шуд",
+    notRetryable: "Такрор дастрас нест",
+    eventTypes: {
+      alert_published: "Огоҳӣ нашр шуд",
+      alert_cleared: "Огоҳӣ бекор шуд",
+      incident_opened: "Ҳодиса кушода шуд",
+      incident_resolved: "Ҳодиса ҳал шуд",
+      station_status_changed: "Ҳолати истгоҳ иваз шуд",
+      schedule_changed: "Ҷадвал иваз шуд",
+      train_delayed: "Дер мондани қатор",
+    },
+    deliveryStatuses: {
+      pending: "Дар навбат",
+      sent: "Расонида шуд",
+      failed: "Нокоммуваффақ",
+      dead: "Мурда (DLQ)",
+    },
+  },
+  agents: {
+    title: "Агентҳои AI",
+    lead: "Феҳристи моделҳо ва хулосаи омодагии контури AI-и платформа.",
+    postureTitle: "Омодагии контур",
+    fieldProvider: "Провайдер",
+    fieldModelClass: "Синфи модел",
+    fieldCapabilities: "Имкониятҳо",
+    errorTitle: "Хулосаи AI дастрас нест",
+    empty: "Маълумоти хулосаи AI нест.",
+    chatOpen: "Чат",
+    chatClose: "Пӯшидани чат",
+    chatPlaceholder: "Аз агент пурсед…",
+    chatInputLabel: "Аз агент пурсед",
+    chatSend: "Фиристодан",
+    chatSending: "Фиристода истодааст…",
+    chatSources: "Манбаъҳо",
+    postures: {
+      ready: "Омода",
+      pilot_ready_with_security_gap: "Барои озмоиш омода, камбудии амният ҳаст",
+    },
+    statuses: {
+      ready: "Омода",
+      watching: "Дар назорат",
+      monitoring: "Мониторинг",
+      needs_data: "Маълумот лозим",
+      needs_schedule: "Ҷадвал лозим",
+      needs_content: "Мундариҷа лозим",
+      needs_hardening: "Ҳифзи иловагӣ лозим",
     },
   },
   users: {
@@ -784,6 +1384,13 @@ const tg: Dict = {
   loadErrorHint: "Санҷед, ки backend дар http://localhost:8080 фаъол аст.",
   empty: "Сабт нест",
   total: "Ҳамагӣ",
+  pager: {
+    label: "Гузариш аз рӯи саҳифаҳо",
+    prev: "Қаблӣ",
+    next: "Навбатӣ",
+    page: "Саҳифа",
+    pageSize: "Дар саҳифа",
+  },
   linesTitle: "Хатҳо",
   stationsTitle: "Истгоҳҳо",
   alertsTitle: "Огоҳиҳои фаъол",
@@ -791,12 +1398,63 @@ const tg: Dict = {
   auditTitle: "Журнали аудит",
   operations: {
     importsTitle: "Воридоти маълумот",
-    importsLead: "Шабакаи GeoJSON-ро бор кунед ва натиҷаи ҳар як воридотро назорат намоед.",
-    uploadTitle: "Боркунии GeoJSON",
+    importsLead:
+      "Шабакаро дар формати GeoJSON, GTFS ё CSV бор кунед ва натиҷаи ҳар як воридотро назорат намоед.",
+    uploadTitle: "Боркунии маълумоти шабака",
     sourceName: "Номи манбаъ",
     sourceHint: "Номи файл ё системаи манбаъ",
-    file: "Файли GeoJSON",
-    chooseFile: "Файли GeoJSON-ро интихоб кунед",
+    fieldFormat: "Навъи воридот",
+    fieldFormatHint: "Навъ роҳи воридот ва он чиро, ки тағйир меёбад, муайян мекунад.",
+    formats: { geojson: "GeoJSON", gtfs: "GTFS", csv: "CSV" },
+    kinds: {
+      geojson: "GeoJSON — шабака",
+      gtfs: "GTFS — шабака",
+      "gtfs-fares": "GTFS Fares v2 — тарофаҳо",
+      csv: "CSV — шабака",
+    },
+    kindHints: {
+      geojson: "FeatureCollection бо хатҳо ва истгоҳҳо.",
+      gtfs: "ZIP-архиви фид; танҳо маршрутҳои метро (route_type=1).",
+      "gtfs-fares":
+        "ZIP-архиви фид бо fare_products.txt; ба маълумотномаи тарофаҳо ворид мешавад, шабака тағйир намеёбад.",
+      csv: "UTF-8: сарлавҳа + сатрҳо; сутуни entity — line ё station.",
+    },
+    fileByFormat: {
+      geojson: "Файли GeoJSON",
+      gtfs: "GTFS-фид (ZIP)",
+      "gtfs-fares": "Фиди GTFS Fares (ZIP)",
+      csv: "Файли CSV",
+    },
+    chooseFileByFormat: {
+      geojson: "Файли GeoJSON-ро интихоб кунед",
+      gtfs: "ZIP-архиви GTFS-ро интихоб кунед",
+      "gtfs-fares": "ZIP-архиви тарофаҳоро интихоб кунед",
+      csv: "Файли CSV-ро интихоб кунед",
+    },
+    types: {
+      network_geojson: "Шабака (GeoJSON)",
+      network_gtfs: "Шабака (GTFS)",
+      network_csv: "Шабака (CSV)",
+      fare_gtfs: "Тарофаҳо (GTFS Fares)",
+    },
+    colType: "Чӣ ворид шуд",
+    fieldFeedLang: "Забони фид",
+    fieldFeedLangHint: "GTFS якзабона аст; забонҳои боқимонда бо огоҳӣ пур мешаванд.",
+    feedLangAuto: "Худкор (agency.txt)",
+    fieldTargetStatus: "Ҳолати объектҳо",
+    fieldTargetStatusHint: "Дар GTFS ҳолати давраи ҳаёт нест — дар ин ҷо дода мешавад.",
+    fieldRiderCategories: "Мутобиқати категорияҳои мусофирон",
+    fieldRiderCategoriesHint:
+      "Формат: RC_ADULT:adult,RC_KID:child. Категорияи номаълум хатои сатр медиҳад, на иваз кардани хомӯшона.",
+    fieldFareActive: "Нашри тарофаҳо",
+    fieldFareActiveHint:
+      "Дар GTFS аломати нашр нест. Холӣ — маҳсулоти нав ғайрифаъол эҷод мешавад, мавҷуда аломати худро нигоҳ медорад.",
+    fareActiveAuto: "Тағйир надодан (пешфарз)",
+    fareActiveYes: "Фаъол кардан",
+    fareActiveNo: "Ғайрифаъол кардан",
+    faresGapsLead:
+      "Мӯҳлати эътибор (validity_minutes) ва интиқолдиҳанда (fare_media) дар GTFS Fares v2 нестанд: онҳо ворид намешаванд ва ҳар як ҳолат дар ҳисобот ҳамчун огоҳӣ нишон дода мешавад.",
+    colFormat: "Формат",
     runImport: "Оғози воридот",
     importing: "Ворид шуда истодааст…",
     jobsTitle: "Таърихи воридот",
@@ -810,8 +1468,15 @@ const tg: Dict = {
     finished: "Анҷом",
     showErrors: "Нишон додани хатоҳо",
     hideErrors: "Пинҳон кардани хатоҳо",
-    errorsTitle: "Хатоҳои воридот",
-    noErrors: "Барои ин воридот хато сабт нашудааст",
+    errorsTitle: "Ҳисоботи воридот",
+    noErrors: "Барои ин воридот сабт нест",
+    warningsTitle: "Тарҷумаҳои намерасида",
+    warningsLead:
+      "Ин сабтҳо сабт нестанд: GTFS якзабона аст, аз ин рӯ забонҳои намерасида бо забони фид пур шудаанд. Рӯйхати он чизе, ки тарҷума талаб мекунад.",
+    noWarnings: "Огоҳӣ нест",
+    errorsOnlyTitle: "Хатоҳо",
+    noHardErrors: "Хато нест",
+    severities: { error: "Хато", warning: "Огоҳӣ" },
     invalidFile: "Файли дурусти JSON/GeoJSON-ро интихоб кунед",
     importDone: "Воридот қабул карда шуд",
     calendarTitle: "Тақвими ҳаракат",
@@ -1018,6 +1683,9 @@ const ru: Dict = {
     requests: "Обращения",
     incidents: "Инциденты",
     fares: "Тарифы",
+    notifications: "Рассылки",
+    tickets: "Билеты",
+    webhooks: "Интеграции",
     imports: "Импорты",
     calendar: "Календарь",
     features: "Функции",
@@ -1093,6 +1761,304 @@ const ru: Dict = {
       in_progress: "В работе",
       resolved: "Устранён",
       closed: "Закрыт",
+    },
+  },
+  notifications: {
+    title: "Рассылки",
+    lead: "Сообщения пассажирам, шаблоны и очередь доставки.",
+    tabMessages: "Рассылки",
+    tabProblems: "Очередь доставки",
+    tabTemplates: "Шаблоны",
+    simulatedNotice:
+      "На демо-контуре реально работает только канал «В приложении». Push, Email и SMS имитируются: пассажиру ничего не уходит, отметка «отправлено» условна.",
+    simulatedBadge: "Имитация",
+    simulatedHint: "У канала нет реального провайдера — доставка имитируется.",
+    colCode: "Код",
+    colTitle: "Заголовок",
+    colType: "Тип",
+    colChannels: "Каналы",
+    colStatus: "Статус",
+    colTargets: "Адресация",
+    colScheduled: "Запланирована",
+    colSent: "Отправлена",
+    filterAll: "Все",
+    createTitle: "Новая рассылка",
+    editTitle: "Изменение рассылки",
+    fieldCode: "Код",
+    fieldCodeHint: "Латиница; после создания не меняется.",
+    fieldTemplate: "Шаблон",
+    fieldTemplateHint: "Тексты копируются и дальше от шаблона не зависят.",
+    templateNone: "Без шаблона",
+    fieldType: "Тип рассылки",
+    fieldTitleText: "Заголовок",
+    fieldBody: "Текст",
+    fieldChannels: "Каналы доставки",
+    fieldChannelsHint: "Минимум один канал.",
+    fieldTargets: "Адресация",
+    fieldTargetsHint: "Пустой список — вся сеть.",
+    fieldTargetType: "Тип",
+    fieldTargetCode: "Код",
+    addTarget: "Добавить цель",
+    removeTarget: "Удалить",
+    networkWide: "Вся сеть",
+    fieldScheduledAt: "Отложенная публикация",
+    fieldScheduledAtHint: "Заполните — рассылка сразу перейдёт в «Запланирована».",
+    send: "Отправить",
+    sendTitle: "Отправка рассылки",
+    sendWarning:
+      "Рассылка немедленно уйдёт в отправку и после этого не редактируется.",
+    sendDone: "Рассылка отправлена",
+    statusTitle: "Смена состояния",
+    changeStatus: "Состояние",
+    frozenTitle: "Редактирование запрещено",
+    frozenText:
+      "Доставка уже начата (отправляется / отправлена / отменена) — история того, что ушло пассажирам, задним числом не меняется.",
+    deliveriesTitle: "Доставки этой рассылки",
+    showDeliveries: "Показать доставки",
+    hideDeliveries: "Скрыть",
+    problemsTitle: "Проблемные доставки",
+    problemsLead:
+      "Всё, что не доставлено: в очереди и с ошибкой. Повтор возвращает доставку в очередь, а не объявляет отправленной.",
+    problemsEmpty: "Все доставки выполнены",
+    colChannel: "Канал",
+    colRecipient: "Получатель",
+    colAttempts: "Попытки",
+    colError: "Причина провала",
+    colDeliveredAt: "Доставлено",
+    retry: "Повторить",
+    retryHint: "Повтор доступен только для проваленных доставок.",
+    retryDone: "Доставка возвращена в очередь",
+    noDeliveries: "Для этой рассылки доставки не зарегистрированы",
+    templatesTitle: "Шаблоны рассылок",
+    templatesLead:
+      "Заготовки текста. Правка шаблона не затрагивает уже созданные из него рассылки.",
+    templateCreate: "Новый шаблон",
+    templateEdit: "Изменение шаблона",
+    colName: "Служебное имя",
+    fieldName: "Служебное имя",
+    fieldNameHint: "Только для консоли; пассажиру не показывается.",
+    fieldActive: "Шаблон активен",
+    templatesReadOnly:
+      "Шаблоны — редакционный справочник: для правки нужна роль «Редактор».",
+    types: {
+      info: "Информация",
+      warning: "Предупреждение",
+      incident: "Инцидент",
+      maintenance: "Обслуживание",
+      promo: "Промо",
+    },
+    statuses: {
+      draft: "Черновик",
+      scheduled: "Запланирована",
+      sending: "Отправляется",
+      sent: "Отправлена",
+      cancelled: "Отменена",
+    },
+    channels: {
+      in_app: "В приложении",
+      push: "Push",
+      email: "Email",
+      sms: "SMS",
+    },
+    targetTypes: {
+      line: "Линия",
+      station: "Станция",
+      segment: "Сегмент",
+      role: "Роль",
+    },
+    deliveryStatuses: {
+      pending: "В очереди",
+      sent: "Отправлена",
+      delivered: "Доставлена",
+      failed: "Провал",
+    },
+  },
+  tickets: {
+    title: "Билеты и платежи",
+    lead: "Билеты, платежи, ручной возврат и чёрный список.",
+    demoNotice:
+      "Демо-контур: платежи имитирует DemoPaymentGateway, реальные деньги не движутся. Билеты с отметкой «Демо» не обеспечены настоящим платежом.",
+    demoBadge: "Демо",
+    demoHint: "За этой записью нет реального платежа.",
+    tabTickets: "Билеты",
+    tabPayments: "Платежи",
+    tabBlocklist: "Чёрный список",
+    filterAll: "Все",
+    colCode: "Код билета",
+    colFare: "Тариф",
+    colKind: "Вид",
+    colRider: "Категория",
+    colStatus: "Статус",
+    colPrice: "Цена",
+    colValidity: "Срок",
+    colBalance: "Баланс",
+    validityOpen: "Бессрочно",
+    noToken: "Токен QR в системе не хранится — только его хеш.",
+    refund: "Возврат",
+    refundTitle: "Ручной возврат",
+    refundLead:
+      "Операторский возврат допускает даже погашенный билет. Операция именная и попадает в аудит.",
+    fieldRefundReason: "Основание возврата",
+    fieldRefundReasonHint: "Обязательно: возврат без причины неоспорим.",
+    refundDone: "Возврат зарегистрирован",
+    paymentsTitle: "Лента платежей",
+    paymentsLead:
+      "Покупки и пополнения. Карточных данных здесь нет — их нет и в модели.",
+    colPaymentKind: "Назначение",
+    colAmount: "Сумма",
+    colProvider: "Провайдер",
+    colTicket: "Билет",
+    colFailure: "Причина отказа",
+    colCreated: "Дата",
+    noTicket: "Билет не выпускался",
+    blocklistTitle: "Чёрный список",
+    blocklistLead:
+      "Блокировка применяется немедленно: билеты субъекта переводятся в «Заблокирован».",
+    blocklistAdd: "Заблокировать субъект",
+    blocklistRemove: "Снять",
+    blocklistRemoveHint:
+      "Снятие открывает покупку новых билетов, но уже заблокированные билеты не восстанавливает: их токены скомпрометированы.",
+    colSubjectType: "Тип субъекта",
+    colSubject: "Субъект",
+    colReason: "Основание",
+    colBlockedBy: "Заблокировал",
+    fieldSubjectType: "Тип субъекта",
+    fieldSubjectValue: "Значение субъекта",
+    fieldSubjectValueHint: "Код билета, токен или идентификатор покупателя.",
+    fieldBlockReason: "Основание блокировки",
+    fieldBlockReasonHint: "Обязательно: блокировка без причины неснимаема по существу.",
+    tokenHashNotice:
+      "Для типа «Токен» вводится сам токен — сервис сохранит только его SHA-256; открытый токен не попадёт ни в БД, ни в аудит.",
+    blockDone: "Субъект заблокирован",
+    unblockDone: "Блокировка снята",
+    kinds: { single: "Разовый", pass: "Проездной" },
+    statuses: {
+      issued: "Выпущен",
+      active: "Активен",
+      used: "Использован",
+      expired: "Истёк",
+      refunded: "Возвращён",
+      blocked: "Заблокирован",
+    },
+    paymentKinds: { purchase: "Покупка", topup: "Пополнение" },
+    paymentStatuses: {
+      pending: "Ожидает",
+      authorized: "Авторизован",
+      captured: "Списан",
+      failed: "Отклонён",
+      refunded: "Возвращён",
+    },
+    subjectTypes: { ticket: "Билет", token: "Токен", rider: "Покупатель" },
+  },
+  webhooks: {
+    title: "Интеграции",
+    lead: "Подписчики вебхуков, секреты, лимиты и очередь доставок.",
+    tabSubscribers: "Подписчики",
+    tabDeliveries: "Очередь доставок",
+    subscribersTitle: "Подписчики вебхуков",
+    subscribersLead:
+      "Внешние адреса, куда уходят данные сети. Секрет в списке не показывается никогда.",
+    colName: "Название",
+    colUrl: "Адрес",
+    colEvents: "События",
+    colState: "Состояние",
+    colRateLimit: "Лимит",
+    colFingerprint: "Отпечаток секрета",
+    perMinute: "в минуту",
+    createTitle: "Новый подписчик",
+    editTitle: "Изменение подписчика",
+    fieldCode: "Код",
+    fieldCodeHint: "A-Z, a-z, 0-9, _ и -; после создания не меняется.",
+    fieldName: "Название",
+    fieldUrl: "Адрес доставки",
+    fieldUrlHint: "http:// или https://",
+    fieldEvents: "Типы событий",
+    fieldEventsHint: "Минимум один тип.",
+    fieldActive: "Подписка активна",
+    fieldRateLimit: "Лимит запросов (в минуту)",
+    fieldRateLimitHint: "Пусто — значение сервиса по умолчанию.",
+    rotate: "Ротировать секрет",
+    rotateTitle: "Ротация секрета",
+    rotateWarning:
+      "Старый секрет перестанет действовать немедленно: подписчик будет отвергать доставки, пока не обновит ключ у себя.",
+    rotateConfirm: "Сгенерировать новый секрет",
+    secretTitle: "Секрет — только сейчас",
+    secretOnceWarning:
+      "Скопируйте сейчас: это единственный показ секрета. Получить его повторно нельзя — только ротировать.",
+    secretLead: "Передайте интегратору и не сохраняйте у себя.",
+    secretLabel: "Секрет подписи",
+    secretCopy: "Скопировать",
+    secretCopied: "Скопировано",
+    secretCopyFailed: "Не удалось скопировать — выделите вручную",
+    secretAck: "Я сохранил секрет",
+    fingerprintHint:
+      "Отпечаток — первые 8 символов хеша: чтобы сверить «тот ли ключ» после ротации, не получая ключа.",
+    superadminOnly:
+      "Управление подписчиками доступно только суперадмину; очередь доставок — дежурному оператору.",
+    deliveriesTitle: "Очередь доставок",
+    deliveriesLead:
+      "Доставки вебхуков: причина, число попыток и время следующей попытки.",
+    dlqTitle: "DLQ — требует вмешательства",
+    dlqLead:
+      "Состояние «Мёртвая»: автоматические попытки исчерпаны. Эти доставки сами не уедут.",
+    dlqEmpty: "В DLQ пусто",
+    filterAttention: "Требуют внимания",
+    colEvent: "Событие",
+    colSubject: "Объект",
+    colSubscriber: "Подписчик",
+    colAttempts: "Попытки",
+    colResponse: "Ответ",
+    colError: "Причина провала",
+    colNextAttempt: "Следующая попытка",
+    colTrace: "Trace",
+    retryDue: "сейчас",
+    retry: "Повторить",
+    retryDone: "Доставка возвращена в очередь",
+    notRetryable: "Повтор недоступен",
+    eventTypes: {
+      alert_published: "Уведомление опубликовано",
+      alert_cleared: "Уведомление снято",
+      incident_opened: "Инцидент открыт",
+      incident_resolved: "Инцидент устранён",
+      station_status_changed: "Статус станции изменён",
+      schedule_changed: "Расписание изменено",
+      train_delayed: "Задержка поезда",
+    },
+    deliveryStatuses: {
+      pending: "В очереди",
+      sent: "Доставлена",
+      failed: "Провал",
+      dead: "Мёртвая (DLQ)",
+    },
+  },
+  agents: {
+    title: "AI-агенты",
+    lead: "Реестр моделей и сводка готовности AI-контура платформы.",
+    postureTitle: "Готовность контура",
+    fieldProvider: "Провайдер",
+    fieldModelClass: "Класс модели",
+    fieldCapabilities: "Возможности",
+    errorTitle: "Сводка AI недоступна",
+    empty: "Нет данных сводки AI.",
+    chatOpen: "Чат",
+    chatClose: "Закрыть чат",
+    chatPlaceholder: "Спросить агента…",
+    chatInputLabel: "Спросить агента",
+    chatSend: "Отправить",
+    chatSending: "Отправка…",
+    chatSources: "Источники",
+    postures: {
+      ready: "Готов",
+      pilot_ready_with_security_gap: "Готов к пилоту, есть пробел в безопасности",
+    },
+    statuses: {
+      ready: "Готов",
+      watching: "Следит",
+      monitoring: "Мониторинг",
+      needs_data: "Нужны данные",
+      needs_schedule: "Нужно расписание",
+      needs_content: "Нужен контент",
+      needs_hardening: "Требует усиления защиты",
     },
   },
   users: {
@@ -1264,6 +2230,13 @@ const ru: Dict = {
   loadErrorHint: "Проверьте, что backend запущен на http://localhost:8080.",
   empty: "Нет записей",
   total: "Всего",
+  pager: {
+    label: "Постраничная навигация",
+    prev: "Назад",
+    next: "Вперёд",
+    page: "Страница",
+    pageSize: "На странице",
+  },
   linesTitle: "Линии",
   stationsTitle: "Станции",
   alertsTitle: "Активные уведомления",
@@ -1271,12 +2244,63 @@ const ru: Dict = {
   auditTitle: "Журнал аудита",
   operations: {
     importsTitle: "Импорт данных",
-    importsLead: "Загрузите GeoJSON сети и контролируйте результат каждого задания импорта.",
-    uploadTitle: "Загрузка GeoJSON",
+    importsLead:
+      "Загрузите сеть в формате GeoJSON, GTFS или CSV и контролируйте результат каждого задания импорта.",
+    uploadTitle: "Загрузка данных сети",
     sourceName: "Название источника",
     sourceHint: "Имя файла или исходной системы",
-    file: "Файл GeoJSON",
-    chooseFile: "Выберите файл GeoJSON",
+    fieldFormat: "Вид импорта",
+    fieldFormatHint: "Вид определяет маршрут импорта и то, что именно поменяется.",
+    formats: { geojson: "GeoJSON", gtfs: "GTFS", csv: "CSV" },
+    kinds: {
+      geojson: "GeoJSON — сеть",
+      gtfs: "GTFS — сеть",
+      "gtfs-fares": "GTFS Fares v2 — тарифы",
+      csv: "CSV — сеть",
+    },
+    kindHints: {
+      geojson: "FeatureCollection с линиями и станциями.",
+      gtfs: "ZIP-архив фида; импортируются только маршруты метро (route_type=1).",
+      "gtfs-fares":
+        "ZIP-архив фида с fare_products.txt; импортируется в справочник тарифов, сеть не затрагивается.",
+      csv: "UTF-8: заголовок + строки; колонка entity — line или station.",
+    },
+    fileByFormat: {
+      geojson: "Файл GeoJSON",
+      gtfs: "GTFS-фид (ZIP)",
+      "gtfs-fares": "Фид GTFS Fares (ZIP)",
+      csv: "Файл CSV",
+    },
+    chooseFileByFormat: {
+      geojson: "Выберите файл GeoJSON",
+      gtfs: "Выберите ZIP-архив GTFS",
+      "gtfs-fares": "Выберите ZIP-архив с тарифами",
+      csv: "Выберите файл CSV",
+    },
+    types: {
+      network_geojson: "Сеть (GeoJSON)",
+      network_gtfs: "Сеть (GTFS)",
+      network_csv: "Сеть (CSV)",
+      fare_gtfs: "Тарифы (GTFS Fares)",
+    },
+    colType: "Что импортировано",
+    fieldFeedLang: "Язык фида",
+    fieldFeedLangHint: "GTFS одноязычен; остальные языки заполнятся с предупреждением.",
+    feedLangAuto: "Автоматически (agency.txt)",
+    fieldTargetStatus: "Статус объектов",
+    fieldTargetStatusHint: "В GTFS статуса жизненного цикла нет — он задаётся здесь.",
+    fieldRiderCategories: "Соответствие категорий пассажиров",
+    fieldRiderCategoriesHint:
+      "Формат: RC_ADULT:adult,RC_KID:child. Неизвестная категория даёт ошибку строки, а не тихую подстановку.",
+    fieldFareActive: "Публикация тарифов",
+    fieldFareActiveHint:
+      "В GTFS признака публикации нет. Пусто — новый продукт создаётся неактивным, существующий сохраняет свой флаг.",
+    fareActiveAuto: "Не менять (по умолчанию)",
+    fareActiveYes: "Активировать",
+    fareActiveNo: "Деактивировать",
+    faresGapsLead:
+      "Срок действия (validity_minutes) и носитель (fare_media) в GTFS Fares v2 отсутствуют: они не импортируются, и каждый такой случай попадает в отчёт предупреждением.",
+    colFormat: "Формат",
     runImport: "Запустить импорт",
     importing: "Выполняется импорт…",
     jobsTitle: "История импортов",
@@ -1290,8 +2314,15 @@ const ru: Dict = {
     finished: "Завершение",
     showErrors: "Показать ошибки",
     hideErrors: "Скрыть ошибки",
-    errorsTitle: "Ошибки импорта",
-    noErrors: "Для этого импорта ошибки не зарегистрированы",
+    errorsTitle: "Отчёт об импорте",
+    noErrors: "Для этого импорта записей нет",
+    warningsTitle: "Недостающие переводы",
+    warningsLead:
+      "Это не сбой: GTFS одноязычен, поэтому недостающие языки заполнены языком фида. Список того, что требует перевода.",
+    noWarnings: "Предупреждений нет",
+    errorsOnlyTitle: "Ошибки",
+    noHardErrors: "Ошибок нет",
+    severities: { error: "Ошибка", warning: "Предупреждение" },
     invalidFile: "Выберите корректный файл JSON/GeoJSON",
     importDone: "Импорт принят",
     calendarTitle: "Календарь движения",
@@ -1498,6 +2529,9 @@ const en: Dict = {
     requests: "Requests",
     incidents: "Incidents",
     fares: "Fares",
+    notifications: "Notifications",
+    tickets: "Tickets",
+    webhooks: "Integrations",
     imports: "Imports",
     calendar: "Calendar",
     features: "Features",
@@ -1573,6 +2607,304 @@ const en: Dict = {
       in_progress: "In progress",
       resolved: "Resolved",
       closed: "Closed",
+    },
+  },
+  notifications: {
+    title: "Notifications",
+    lead: "Passenger messages, templates and the delivery queue.",
+    tabMessages: "Messages",
+    tabProblems: "Delivery queue",
+    tabTemplates: "Templates",
+    simulatedNotice:
+      "In the demo environment only the “In app” channel really works. Push, Email and SMS are simulated: nothing reaches the passenger, and a “sent” mark is nominal.",
+    simulatedBadge: "Simulated",
+    simulatedHint: "This channel has no real provider — delivery is simulated.",
+    colCode: "Code",
+    colTitle: "Title",
+    colType: "Type",
+    colChannels: "Channels",
+    colStatus: "Status",
+    colTargets: "Targeting",
+    colScheduled: "Scheduled",
+    colSent: "Sent",
+    filterAll: "All",
+    createTitle: "New message",
+    editTitle: "Edit message",
+    fieldCode: "Code",
+    fieldCodeHint: "Latin letters; cannot be changed later.",
+    fieldTemplate: "Template",
+    fieldTemplateHint: "Texts are copied and no longer depend on the template.",
+    templateNone: "No template",
+    fieldType: "Message type",
+    fieldTitleText: "Title",
+    fieldBody: "Body",
+    fieldChannels: "Delivery channels",
+    fieldChannelsHint: "At least one channel.",
+    fieldTargets: "Targeting",
+    fieldTargetsHint: "An empty list means the whole network.",
+    fieldTargetType: "Type",
+    fieldTargetCode: "Code",
+    addTarget: "Add target",
+    removeTarget: "Remove",
+    networkWide: "Network-wide",
+    fieldScheduledAt: "Scheduled publication",
+    fieldScheduledAtHint: "Set it and the message moves to “Scheduled” at once.",
+    send: "Send",
+    sendTitle: "Send message",
+    sendWarning:
+      "The message goes out immediately and cannot be edited afterwards.",
+    sendDone: "Message sent",
+    statusTitle: "Change status",
+    changeStatus: "Status",
+    frozenTitle: "Editing is blocked",
+    frozenText:
+      "Delivery has already started (sending / sent / cancelled) — the record of what reached passengers cannot change retroactively.",
+    deliveriesTitle: "Deliveries of this message",
+    showDeliveries: "Show deliveries",
+    hideDeliveries: "Hide",
+    problemsTitle: "Problem deliveries",
+    problemsLead:
+      "Everything undelivered: queued and failed. A retry puts the delivery back in the queue rather than declaring it sent.",
+    problemsEmpty: "All deliveries completed",
+    colChannel: "Channel",
+    colRecipient: "Recipient",
+    colAttempts: "Attempts",
+    colError: "Failure reason",
+    colDeliveredAt: "Delivered",
+    retry: "Retry",
+    retryHint: "Retry is available for failed deliveries only.",
+    retryDone: "Delivery returned to the queue",
+    noDeliveries: "No deliveries recorded for this message",
+    templatesTitle: "Message templates",
+    templatesLead:
+      "Text blueprints. Editing a template does not touch messages already created from it.",
+    templateCreate: "New template",
+    templateEdit: "Edit template",
+    colName: "Internal name",
+    fieldName: "Internal name",
+    fieldNameHint: "Console only; never shown to passengers.",
+    fieldActive: "Template is active",
+    templatesReadOnly:
+      "Templates are editorial reference data: the Editor role is required to change them.",
+    types: {
+      info: "Info",
+      warning: "Warning",
+      incident: "Incident",
+      maintenance: "Maintenance",
+      promo: "Promo",
+    },
+    statuses: {
+      draft: "Draft",
+      scheduled: "Scheduled",
+      sending: "Sending",
+      sent: "Sent",
+      cancelled: "Cancelled",
+    },
+    channels: {
+      in_app: "In app",
+      push: "Push",
+      email: "Email",
+      sms: "SMS",
+    },
+    targetTypes: {
+      line: "Line",
+      station: "Station",
+      segment: "Segment",
+      role: "Role",
+    },
+    deliveryStatuses: {
+      pending: "Queued",
+      sent: "Sent",
+      delivered: "Delivered",
+      failed: "Failed",
+    },
+  },
+  tickets: {
+    title: "Tickets and payments",
+    lead: "Tickets, payments, manual refunds and the blocklist.",
+    demoNotice:
+      "Demo environment: payments are simulated by DemoPaymentGateway, no real money moves. Tickets marked “Demo” are not backed by a real payment.",
+    demoBadge: "Demo",
+    demoHint: "There is no real payment behind this record.",
+    tabTickets: "Tickets",
+    tabPayments: "Payments",
+    tabBlocklist: "Blocklist",
+    filterAll: "All",
+    colCode: "Ticket code",
+    colFare: "Fare",
+    colKind: "Kind",
+    colRider: "Category",
+    colStatus: "Status",
+    colPrice: "Price",
+    colValidity: "Validity",
+    colBalance: "Balance",
+    validityOpen: "Open-ended",
+    noToken: "The QR token is not stored in the system — only its hash.",
+    refund: "Refund",
+    refundTitle: "Manual refund",
+    refundLead:
+      "An operator refund accepts even an already used ticket. The action is attributed and recorded in the audit log.",
+    fieldRefundReason: "Refund grounds",
+    fieldRefundReasonHint: "Required: a refund without a reason cannot be contested.",
+    refundDone: "Refund recorded",
+    paymentsTitle: "Payment feed",
+    paymentsLead:
+      "Purchases and top-ups. No card data here — there is none in the model either.",
+    colPaymentKind: "Purpose",
+    colAmount: "Amount",
+    colProvider: "Provider",
+    colTicket: "Ticket",
+    colFailure: "Decline reason",
+    colCreated: "Date",
+    noTicket: "No ticket issued",
+    blocklistTitle: "Blocklist",
+    blocklistLead:
+      "A block applies immediately: the subject's tickets move to “Blocked”.",
+    blocklistAdd: "Block a subject",
+    blocklistRemove: "Unblock",
+    blocklistRemoveHint:
+      "Unblocking allows buying new tickets but does not restore already blocked ones: their tokens are compromised.",
+    colSubjectType: "Subject type",
+    colSubject: "Subject",
+    colReason: "Grounds",
+    colBlockedBy: "Blocked by",
+    fieldSubjectType: "Subject type",
+    fieldSubjectValue: "Subject value",
+    fieldSubjectValueHint: "Ticket code, token, or rider identifier.",
+    fieldBlockReason: "Blocking grounds",
+    fieldBlockReasonHint: "Required: a block without a reason cannot be lifted on merit.",
+    tokenHashNotice:
+      "For the “Token” type you enter the token itself — the service stores only its SHA-256; the plaintext token reaches neither the database nor the audit log.",
+    blockDone: "Subject blocked",
+    unblockDone: "Block lifted",
+    kinds: { single: "Single ride", pass: "Pass" },
+    statuses: {
+      issued: "Issued",
+      active: "Active",
+      used: "Used",
+      expired: "Expired",
+      refunded: "Refunded",
+      blocked: "Blocked",
+    },
+    paymentKinds: { purchase: "Purchase", topup: "Top-up" },
+    paymentStatuses: {
+      pending: "Pending",
+      authorized: "Authorized",
+      captured: "Captured",
+      failed: "Declined",
+      refunded: "Refunded",
+    },
+    subjectTypes: { ticket: "Ticket", token: "Token", rider: "Rider" },
+  },
+  webhooks: {
+    title: "Integrations",
+    lead: "Webhook subscribers, secrets, limits and the delivery queue.",
+    tabSubscribers: "Subscribers",
+    tabDeliveries: "Delivery queue",
+    subscribersTitle: "Webhook subscribers",
+    subscribersLead:
+      "External addresses that receive network data. The secret is never shown in the list.",
+    colName: "Name",
+    colUrl: "Endpoint",
+    colEvents: "Events",
+    colState: "State",
+    colRateLimit: "Limit",
+    colFingerprint: "Secret fingerprint",
+    perMinute: "per minute",
+    createTitle: "New subscriber",
+    editTitle: "Edit subscriber",
+    fieldCode: "Code",
+    fieldCodeHint: "A-Z, a-z, 0-9, _ and -; cannot be changed later.",
+    fieldName: "Name",
+    fieldUrl: "Delivery endpoint",
+    fieldUrlHint: "http:// or https://",
+    fieldEvents: "Event types",
+    fieldEventsHint: "At least one type.",
+    fieldActive: "Subscription is active",
+    fieldRateLimit: "Request limit (per minute)",
+    fieldRateLimitHint: "Empty — the service default.",
+    rotate: "Rotate secret",
+    rotateTitle: "Secret rotation",
+    rotateWarning:
+      "The old secret stops working immediately: the subscriber will reject deliveries until it updates the key on its side.",
+    rotateConfirm: "Generate a new secret",
+    secretTitle: "Secret — this once only",
+    secretOnceWarning:
+      "Copy it now: this is the only time the secret is shown. It cannot be retrieved again — only rotated.",
+    secretLead: "Hand it to the integrator and do not keep a copy.",
+    secretLabel: "Signing secret",
+    secretCopy: "Copy",
+    secretCopied: "Copied",
+    secretCopyFailed: "Copy failed — select it manually",
+    secretAck: "I have saved the secret",
+    fingerprintHint:
+      "The fingerprint is the first 8 characters of the hash: it lets you verify “is this the right key” after rotation without handing out the key.",
+    superadminOnly:
+      "Managing subscribers is superadmin-only; the delivery queue belongs to the duty operator.",
+    deliveriesTitle: "Delivery queue",
+    deliveriesLead:
+      "Webhook deliveries: reason, attempt count and next attempt time.",
+    dlqTitle: "DLQ — needs intervention",
+    dlqLead:
+      "Status “Dead”: automatic retries are exhausted. These deliveries will not move on their own.",
+    dlqEmpty: "The DLQ is empty",
+    filterAttention: "Needs attention",
+    colEvent: "Event",
+    colSubject: "Object",
+    colSubscriber: "Subscriber",
+    colAttempts: "Attempts",
+    colResponse: "Response",
+    colError: "Failure reason",
+    colNextAttempt: "Next attempt",
+    colTrace: "Trace",
+    retryDue: "now",
+    retry: "Retry",
+    retryDone: "Delivery returned to the queue",
+    notRetryable: "Retry unavailable",
+    eventTypes: {
+      alert_published: "Alert published",
+      alert_cleared: "Alert cleared",
+      incident_opened: "Incident opened",
+      incident_resolved: "Incident resolved",
+      station_status_changed: "Station status changed",
+      schedule_changed: "Schedule changed",
+      train_delayed: "Train delayed",
+    },
+    deliveryStatuses: {
+      pending: "Queued",
+      sent: "Delivered",
+      failed: "Failed",
+      dead: "Dead (DLQ)",
+    },
+  },
+  agents: {
+    title: "AI agents",
+    lead: "Operational model registry and readiness briefing for the metro platform.",
+    postureTitle: "Readiness posture",
+    fieldProvider: "Provider",
+    fieldModelClass: "Model class",
+    fieldCapabilities: "Capabilities",
+    errorTitle: "AI briefing is unavailable",
+    empty: "No AI briefing data.",
+    chatOpen: "Chat",
+    chatClose: "Close chat",
+    chatPlaceholder: "Ask the agent…",
+    chatInputLabel: "Ask the agent",
+    chatSend: "Send",
+    chatSending: "Sending…",
+    chatSources: "Sources",
+    postures: {
+      ready: "Ready",
+      pilot_ready_with_security_gap: "Pilot-ready with a security gap",
+    },
+    statuses: {
+      ready: "Ready",
+      watching: "Watching",
+      monitoring: "Monitoring",
+      needs_data: "Needs data",
+      needs_schedule: "Needs schedule",
+      needs_content: "Needs content",
+      needs_hardening: "Needs hardening",
     },
   },
   users: {
@@ -1744,6 +3076,13 @@ const en: Dict = {
   loadErrorHint: "Make sure the backend is running at http://localhost:8080.",
   empty: "No records",
   total: "Total",
+  pager: {
+    label: "Pagination",
+    prev: "Previous",
+    next: "Next",
+    page: "Page",
+    pageSize: "Per page",
+  },
   linesTitle: "Lines",
   stationsTitle: "Stations",
   alertsTitle: "Active alerts",
@@ -1751,12 +3090,63 @@ const en: Dict = {
   auditTitle: "Audit log",
   operations: {
     importsTitle: "Data imports",
-    importsLead: "Upload network GeoJSON and monitor the outcome of every import job.",
-    uploadTitle: "Upload GeoJSON",
+    importsLead:
+      "Upload the network as GeoJSON, GTFS or CSV and monitor the outcome of every import job.",
+    uploadTitle: "Upload network data",
     sourceName: "Source name",
     sourceHint: "File name or source system",
-    file: "GeoJSON file",
-    chooseFile: "Choose a GeoJSON file",
+    fieldFormat: "Import kind",
+    fieldFormatHint: "The kind determines the import route and what actually changes.",
+    formats: { geojson: "GeoJSON", gtfs: "GTFS", csv: "CSV" },
+    kinds: {
+      geojson: "GeoJSON — network",
+      gtfs: "GTFS — network",
+      "gtfs-fares": "GTFS Fares v2 — fares",
+      csv: "CSV — network",
+    },
+    kindHints: {
+      geojson: "A FeatureCollection of lines and stations.",
+      gtfs: "Feed ZIP archive; only metro routes (route_type=1) are imported.",
+      "gtfs-fares":
+        "Feed ZIP archive with fare_products.txt; imported into the fare catalogue, the network is untouched.",
+      csv: "UTF-8: header + rows; the entity column is line or station.",
+    },
+    fileByFormat: {
+      geojson: "GeoJSON file",
+      gtfs: "GTFS feed (ZIP)",
+      "gtfs-fares": "GTFS Fares feed (ZIP)",
+      csv: "CSV file",
+    },
+    chooseFileByFormat: {
+      geojson: "Choose a GeoJSON file",
+      gtfs: "Choose a GTFS ZIP archive",
+      "gtfs-fares": "Choose a fares ZIP archive",
+      csv: "Choose a CSV file",
+    },
+    types: {
+      network_geojson: "Network (GeoJSON)",
+      network_gtfs: "Network (GTFS)",
+      network_csv: "Network (CSV)",
+      fare_gtfs: "Fares (GTFS Fares)",
+    },
+    colType: "What was imported",
+    fieldFeedLang: "Feed language",
+    fieldFeedLangHint: "GTFS is monolingual; other languages are filled in with a warning.",
+    feedLangAuto: "Automatic (agency.txt)",
+    fieldTargetStatus: "Object status",
+    fieldTargetStatusHint: "GTFS carries no lifecycle status — it is set here.",
+    fieldRiderCategories: "Rider category mapping",
+    fieldRiderCategoriesHint:
+      "Format: RC_ADULT:adult,RC_KID:child. An unknown category fails that row instead of being silently coerced.",
+    fieldFareActive: "Publish fares",
+    fieldFareActiveHint:
+      "GTFS carries no publication flag. Empty — a new product is created inactive, an existing one keeps its flag.",
+    fareActiveAuto: "Leave unchanged (default)",
+    fareActiveYes: "Activate",
+    fareActiveNo: "Deactivate",
+    faresGapsLead:
+      "Validity (validity_minutes) and fare media (fare_media) do not exist in GTFS Fares v2: they are not imported, and every such case is reported as a warning.",
+    colFormat: "Format",
     runImport: "Run import",
     importing: "Importing…",
     jobsTitle: "Import history",
@@ -1770,8 +3160,15 @@ const en: Dict = {
     finished: "Finished",
     showErrors: "Show errors",
     hideErrors: "Hide errors",
-    errorsTitle: "Import errors",
-    noErrors: "No errors were recorded for this import",
+    errorsTitle: "Import report",
+    noErrors: "No records for this import",
+    warningsTitle: "Missing translations",
+    warningsLead:
+      "Not a failure: GTFS is monolingual, so missing languages were filled in with the feed language. This is the list of what needs translating.",
+    noWarnings: "No warnings",
+    errorsOnlyTitle: "Errors",
+    noHardErrors: "No errors",
+    severities: { error: "Error", warning: "Warning" },
     invalidFile: "Choose a valid JSON/GeoJSON file",
     importDone: "Import accepted",
     calendarTitle: "Service calendar",

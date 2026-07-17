@@ -15,6 +15,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { API_BASE } from "./api";
 import { SESSION_COOKIE, createSessionToken, isAdminRole } from "./auth";
+import { ADMIN_FETCH_TIMEOUT_MS, adminApiKey } from "./server-config";
 
 export type LoginState = {
   /** Код ошибки для локализации на клиенте; null — без ошибки. */
@@ -24,9 +25,6 @@ export type LoginState = {
 /** Сутки/месяц в секундах — срок cookie без и с «запомнить меня». */
 const DAY_S = 60 * 60 * 24;
 const MONTH_S = DAY_S * 30;
-
-/** Dev-ключ по умолчанию (совпадает с app.admin.dev-key backend). */
-const DEFAULT_ADMIN_KEY = "dev-admin-key-change-me";
 
 type LoginResponse = {
   user?: {
@@ -57,9 +55,10 @@ export async function login(
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
-        "X-Admin-Key": process.env.ADMIN_API_KEY ?? DEFAULT_ADMIN_KEY,
+        "X-Admin-Key": adminApiKey(),
       },
       body: JSON.stringify({ username, password }),
+      signal: AbortSignal.timeout(ADMIN_FETCH_TIMEOUT_MS),
     });
   } catch {
     // Backend недоступен — это не «неверный пароль», и путать их нельзя:

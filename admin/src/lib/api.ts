@@ -12,6 +12,8 @@
  * backend недоступен (офлайн-принцип, §8).
  */
 
+import "server-only";
+
 import type {
   AiBriefing,
   Alert,
@@ -21,10 +23,10 @@ import type {
   News,
   Station,
 } from "./types";
+import { ADMIN_API_BASE, ADMIN_FETCH_TIMEOUT_MS } from "./server-config";
 
 /** Базовый URL API (совпадает с web/src/lib/api.ts). */
-export const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8080/api/v1";
+export const API_BASE = ADMIN_API_BASE;
 
 /** Результат запроса: либо данные, либо человекочитаемая причина ошибки. */
 export type ApiResult<T> =
@@ -37,6 +39,7 @@ async function getJson<T>(path: string): Promise<ApiResult<T>> {
       // Операционная консоль: всегда свежие данные, без кэша Next.
       cache: "no-store",
       headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(ADMIN_FETCH_TIMEOUT_MS),
     });
     if (!res.ok) {
       return { data: null, error: `HTTP ${res.status} ${res.statusText}` };

@@ -4,6 +4,13 @@
  * Обзорная карта Таджикистана для презентационного дашборда.
  * Контур взят из public-domain набора Natural Earth 3.3.0 (Admin 0, 1:110m),
  * координаты WGS84. Маркер Душанбе использует фактическую геопозицию города.
+ *
+ * Цвета — только токены (--map-land-start/mid/end, --map-outline, --map-river,
+ * --map-grid) и бренд, см. packages/design/tokens.mjs. Раньше здесь было ~20
+ * сырых hex, у
+ * которых не было тёмного варианта: в тёмной теме карта оставалась светлым
+ * пятном на #0b1826. SVG не читает CSS-переменные через fill="#hex", поэтому
+ * подстановка идёт через var(--token) прямо в атрибутах — они каскадируются.
  */
 
 import { useMemo } from "react";
@@ -80,55 +87,82 @@ export default function TajikistanOverviewMap() {
     >
       <defs>
         <linearGradient id="tj-land" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#e8f2f7" />
-          <stop offset="0.55" stopColor="#dcebdc" />
-          <stop offset="1" stopColor="#bad7c2" />
+          <stop offset="0" stopColor="var(--map-land-start)" />
+          <stop offset="0.55" stopColor="var(--map-land-mid)" />
+          <stop offset="1" stopColor="var(--map-land-end)" />
         </linearGradient>
-        <filter id="tj-shadow" x="-20%" y="-20%" width="140%" height="150%">
-          <feDropShadow dx="0" dy="12" stdDeviation="14" floodColor="#082742" floodOpacity=".18" />
-        </filter>
         <clipPath id="tj-clip">
           <path d={map.path} />
         </clipPath>
         <pattern id="tj-grid" width="34" height="34" patternUnits="userSpaceOnUse" patternTransform="rotate(18)">
-          <path d="M 34 0 L 0 0 0 34" fill="none" stroke="#ffffff" strokeWidth="1" opacity=".55" />
+          <path d="M 34 0 L 0 0 0 34" fill="none" stroke="var(--map-grid)" strokeWidth="1" opacity=".55" />
         </pattern>
       </defs>
 
-      <rect x="0" y="0" width={VIEW_W} height={VIEW_H} rx="22" fill="var(--map-panel-bg, #f5f8fb)" />
+      <rect
+        x="0"
+        y="0"
+        width={VIEW_W}
+        height={VIEW_H}
+        rx="8"
+        fill="var(--map-panel-bg)"
+        stroke="var(--border-subtle)"
+      />
 
-      <g filter="url(#tj-shadow)">
-        <path d={map.path} fill="url(#tj-land)" stroke="#ffffff" strokeWidth="6" strokeLinejoin="round" />
-        <path d={map.path} fill="none" stroke="#2d6f70" strokeWidth="2" strokeLinejoin="round" opacity=".75" />
+      {/*
+        Фильтр tj-shadow (feDropShadow dy=12 stdDeviation=14) снят: суша не
+        висит над панелью, её отделяет обводка --map-land-edge. Это тот же
+        принцип, что и у --elevation-raised → 0 1px 2px.
+      */}
+      <g>
+        <path
+          d={map.path}
+          fill="url(#tj-land)"
+          stroke="var(--map-land-edge)"
+          strokeWidth="6"
+          strokeLinejoin="round"
+        />
+        <path
+          d={map.path}
+          fill="none"
+          stroke="var(--map-outline)"
+          strokeWidth="2"
+          strokeLinejoin="round"
+          opacity=".75"
+        />
       </g>
 
       <g clipPath="url(#tj-clip)">
         <rect width={VIEW_W} height={VIEW_H} fill="url(#tj-grid)" />
-        <path d="M70 290 C175 225 245 255 330 185 S500 115 600 160" fill="none" stroke="#74a995" strokeWidth="2" opacity=".5" />
-        <path d="M55 325 C170 275 250 315 355 225 S510 160 620 205" fill="none" stroke="#74a995" strokeWidth="2" opacity=".38" />
-        <path d="M85 350 C205 318 290 350 390 278 S525 230 610 250" fill="none" stroke="#74a995" strokeWidth="2" opacity=".3" />
+        <path d="M70 290 C175 225 245 255 330 185 S500 115 600 160" fill="none" stroke="var(--map-river)" strokeWidth="2" opacity=".5" />
+        <path d="M55 325 C170 275 250 315 355 225 S510 160 620 205" fill="none" stroke="var(--map-river)" strokeWidth="2" opacity=".38" />
+        <path d="M85 350 C205 318 290 350 390 278 S525 230 610 250" fill="none" stroke="var(--map-river)" strokeWidth="2" opacity=".3" />
       </g>
 
-      <text x="366" y="215" fill="#2d6f70" fontSize="24" fontWeight="800" opacity=".78">
+      <text x="366" y="215" fill="var(--map-outline)" fontSize="24" fontWeight="700" opacity=".78">
         {countryName}
       </text>
 
       <g transform={`translate(${cityX} ${cityY})`}>
-        <circle r="23" fill="#e21b2d" opacity=".13" className="country-map-pulse" />
-        <circle r="11" fill="#ffffff" stroke="#e21b2d" strokeWidth="5" />
-        <circle r="3" fill="#e21b2d" />
-        <path d="M14 -2 L32 -20" stroke="#e21b2d" strokeWidth="2" />
+        <circle r="23" fill="var(--brand-red)" opacity=".13" className="country-map-pulse" />
+        <circle r="11" fill="var(--surface-raised)" stroke="var(--brand-red)" strokeWidth="5" />
+        <circle r="3" fill="var(--brand-red)" />
+        <path d="M14 -2 L32 -20" stroke="var(--brand-red)" strokeWidth="2" />
+        {/* Выноска: navy-плашка одинакова в обеих темах — на ней белый ≈15:1 */}
         <g transform="translate(28 -55)">
-          <rect width="174" height="48" rx="14" fill="#082742" />
-          <text x="14" y="21" fill="#ffffff" fontSize="13" fontWeight="800">{cityName}</text>
-          <text x="14" y="37" fill="#c8d7e4" fontSize="10" fontWeight="600">{dict.dash.capitalLabel}</text>
+          <rect width="174" height="48" rx="4" fill="var(--brand-navy)" />
+          <text x="14" y="21" fill="var(--surface-light)" fontSize="13" fontWeight="700">{cityName}</text>
+          {/* #c8d7e4 → рассчитанная альфа белого: ≈8.6:1 к navy */}
+          <text x="14" y="37" fill="var(--surface-light)" fillOpacity=".78" fontSize="10" fontWeight="600">
+            {dict.dash.capitalLabel}
+          </text>
         </g>
       </g>
 
       <g transform="translate(28 26)">
-        <rect width="94" height="30" rx="15" fill="#ffffff" opacity=".92" />
-        <circle cx="16" cy="15" r="5" fill="#138a3d" />
-        <text x="29" y="19" fill="#082742" fontSize="10" fontWeight="800">WGS 84</text>
+        <rect width="94" height="30" rx="4" fill="var(--surface-raised)" stroke="var(--border-subtle)" />
+        <circle cx="16" cy="15" r="5" fill="var(--brand-green)" />
+        <text x="29" y="19" fill="var(--text-primary)" fontSize="10" fontWeight="700">WGS 84</text>
       </g>
     </svg>
   );

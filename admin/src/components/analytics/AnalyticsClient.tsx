@@ -19,6 +19,7 @@ import type {
 } from "@/lib/types";
 import LineBadge from "../LineBadge";
 import { useI18n } from "../I18nProvider";
+import { Card } from "@/shared/ui";
 
 type Props = {
   lines: Line[] | null;
@@ -64,7 +65,7 @@ function Donut({
 
   return (
     <svg viewBox="0 0 140 140" className="h-36 w-36 shrink-0" role="img" aria-label={centerLabel}>
-      <circle cx="70" cy="70" r={R} fill="none" stroke="var(--chip-bg)" strokeWidth="16" />
+      <circle cx="70" cy="70" r={R} fill="none" stroke="var(--surface-chip)" strokeWidth="16" />
       {total > 0 &&
         segments.map((seg, i) => {
           const frac = seg.value / total;
@@ -130,7 +131,7 @@ function HBar({
   return (
     <li className="flex items-center gap-3">
       <span className="w-40 shrink-0 truncate text-xs font-semibold">{label}</span>
-      <span className="relative h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-[var(--chip-bg)]">
+      <span className="relative h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-[var(--surface-chip)]">
         <span
           className="absolute inset-y-0 left-0 rounded-full"
           style={{ width: `${pct}%`, background: color }}
@@ -226,7 +227,7 @@ export default function AnalyticsClient({ lines, stations, alerts, news, network
 
   if (!lines && !stations) {
     return (
-      <p className="console-card p-8 text-center text-sm text-text-secondary">
+      <p className="rounded-panel border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-8 text-center text-small text-text-secondary">
         {dict.loadError}. {dict.loadErrorHint}
       </p>
     );
@@ -235,14 +236,14 @@ export default function AnalyticsClient({ lines, stations, alerts, news, network
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-2xl font-extrabold tracking-tight">{t.title}</h1>
-        <p className="mt-1 text-sm text-text-secondary">{t.lead}</p>
+        <h1 className="text-title-l font-bold">{t.title}</h1>
+        <p className="mt-1 text-body text-text-secondary">{t.lead}</p>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        {/* Станции по линиям */}
-        <section className="console-card p-5" aria-label={t.stationsPerLine}>
-          <h3 className="mb-4 text-base font-extrabold">{t.stationsPerLine}</h3>
+        {/* Станции по линиям. Card рендерит <h2>: прежние <h3> под <h1>
+            пропускали уровень (SC 1.3.1). */}
+        <Card heading={t.stationsPerLine} padding="lg" aria-label={t.stationsPerLine}>
           <div className="flex flex-wrap items-center gap-5">
             <Donut
               segments={stationsPerLine.map(({ line, count }) => ({
@@ -270,15 +271,22 @@ export default function AnalyticsClient({ lines, stations, alerts, news, network
               ))}
             </ul>
           </div>
-        </section>
+        </Card>
 
         {/* Протяжённость линий */}
-        <section className="console-card p-5" aria-label={t.lineLengths}>
-          <h3 className="mb-1 text-base font-extrabold">{t.lineLengths}</h3>
-          <p className="mb-4 text-xs text-text-secondary">
-            {t.totalLength}:{" "}
-            <span className="data-text font-bold text-ink">{totalKm.toFixed(1)} {t.km}</span>
-          </p>
+        <Card
+          heading={t.lineLengths}
+          description={
+            <>
+              {t.totalLength}:{" "}
+              <span className="data-text font-bold text-[var(--text-primary)]">
+                {totalKm.toFixed(1)} {t.km}
+              </span>
+            </>
+          }
+          padding="lg"
+          aria-label={t.lineLengths}
+        >
           <ul className="flex flex-col gap-3">
             {(lines ?? []).map((l) => {
               const km = lengths.get(l.code) ?? 0;
@@ -294,14 +302,13 @@ export default function AnalyticsClient({ lines, stations, alerts, news, network
               );
             })}
           </ul>
-          <p className="mt-4 text-[11px] leading-relaxed text-text-secondary">
+          <p className="mt-4 text-caption leading-relaxed text-text-secondary">
             {t.lengthFootnote}
           </p>
-        </section>
+        </Card>
 
         {/* Доступность станций */}
-        <section className="console-card p-5" aria-label={t.accessibilityTitle}>
-          <h3 className="mb-4 text-base font-extrabold">{t.accessibilityTitle}</h3>
+        <Card heading={t.accessibilityTitle} padding="lg" aria-label={t.accessibilityTitle}>
           <ul className="flex flex-col gap-3">
             {accessibilityCounts.map(({ key, count }) => (
               <HBar
@@ -314,11 +321,10 @@ export default function AnalyticsClient({ lines, stations, alerts, news, network
               />
             ))}
           </ul>
-        </section>
+        </Card>
 
         {/* Уведомления и статусы */}
-        <section className="console-card p-5" aria-label={t.alertsBySeverity}>
-          <h3 className="mb-4 text-base font-extrabold">{t.alertsBySeverity}</h3>
+        <Card heading={t.alertsBySeverity} padding="lg" aria-label={t.alertsBySeverity}>
           <div className="flex flex-wrap items-center gap-5">
             <Donut
               segments={(
@@ -346,7 +352,8 @@ export default function AnalyticsClient({ lines, stations, alerts, news, network
             </ul>
           </div>
 
-          <h4 className="mb-3 mt-6 text-sm font-extrabold">{t.stationStatuses}</h4>
+          {/* h4 → h3: карточка теперь даёт h2, уровень идёт без пропуска */}
+          <h3 className="mb-3 mt-6 text-small font-bold">{t.stationStatuses}</h3>
           <ul className="flex flex-col gap-2.5">
             {statusCounts.map(([status, count]) => (
               <HBar
@@ -360,7 +367,7 @@ export default function AnalyticsClient({ lines, stations, alerts, news, network
               />
             ))}
           </ul>
-        </section>
+        </Card>
       </div>
 
       {/* Новости: помесячная активность */}
@@ -403,16 +410,15 @@ function NewsByMonth({ news }: { news: News[] | null }) {
   const max = Math.max(...buckets.map((b) => b.count), 1);
 
   return (
-    <section className="console-card p-5" aria-label={t.newsByMonth}>
-      <h3 className="mb-4 text-base font-extrabold">{t.newsByMonth}</h3>
+    <Card heading={t.newsByMonth} padding="lg" aria-label={t.newsByMonth}>
       <div className="flex h-40 items-end gap-2">
         {buckets.map((b) => (
           <div key={b.key} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
-            <span className="data-text text-[10px] font-bold text-text-secondary">
+            <span className="data-text text-caption font-bold text-text-secondary">
               {b.count > 0 ? b.count : ""}
             </span>
             <div
-              className="w-full max-w-8 rounded-t-md bg-info transition-colors"
+              className="w-full max-w-8 rounded-t-[2px] bg-info transition-colors"
               style={{
                 height: `${(b.count / max) * 100}%`,
                 minHeight: b.count > 0 ? 6 : 2,
@@ -420,12 +426,12 @@ function NewsByMonth({ news }: { news: News[] | null }) {
               }}
               title={`${b.label}: ${b.count}`}
             />
-            <span className="truncate text-[10px] font-semibold text-text-secondary">
+            <span className="truncate text-caption font-semibold text-text-secondary">
               {b.label}
             </span>
           </div>
         ))}
       </div>
-    </section>
+    </Card>
   );
 }

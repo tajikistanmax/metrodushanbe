@@ -86,7 +86,7 @@ export default function NewsForm({ row, onSuccess, onCancel }: Props) {
       ) : null}
 
       {!editing ? (
-        <p className="rounded-lg border border-[var(--card-border)] bg-[var(--chip-bg)] px-3 py-2 text-xs text-text-secondary">
+        <p className="rounded-control border border-[var(--border-subtle)] bg-[var(--surface-chip)] px-3 py-2 text-xs text-text-secondary">
           {dict.form.draftHint}
         </p>
       ) : null}

@@ -10,6 +10,7 @@ import { useI18n } from "../I18nProvider";
 import Modal from "./Modal";
 import { ServerError } from "./fields";
 import type { ActionError } from "@/lib/admin-forms";
+import { Button } from "@/shared/ui";
 
 type ConfirmDialogProps = {
   open: boolean;
@@ -38,11 +39,11 @@ export default function ConfirmDialog({
       busy={busy}
     >
       <div className="grid gap-3">
-        <p className="text-sm">
+        <p className="text-small">
           {dict.confirmDelete.text}{" "}
           <span className="font-mono font-semibold">{target}</span>?
         </p>
-        <p className="text-xs text-text-secondary">{dict.confirmDelete.hint}</p>
+        <p className="text-caption text-text-secondary">{dict.confirmDelete.hint}</p>
         {error ? (
           <ServerError
             code={error.code}
@@ -51,22 +52,13 @@ export default function ConfirmDialog({
           />
         ) : null}
         <div className="flex justify-end gap-2 pt-1">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={busy}
-            className="rounded-lg border border-[var(--card-border)] px-4 py-2 text-sm font-semibold transition-colors hover:bg-[var(--table-row-hover)] disabled:opacity-50"
-          >
+          <Button onClick={onClose} disabled={busy}>
             {dict.actions.cancel}
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={busy}
-            className="rounded-lg bg-brand-red px-4 py-2 text-sm font-bold text-surface-light transition-opacity hover:opacity-90 disabled:opacity-50"
-          >
+          </Button>
+          {/* danger: смысл несёт глагол «Удалить», красный лишь дублирует его */}
+          <Button variant="danger" onClick={onConfirm} disabled={busy}>
             {busy ? dict.actions.saving : dict.actions.delete}
-          </button>
+          </Button>
         </div>
       </div>
     </Modal>

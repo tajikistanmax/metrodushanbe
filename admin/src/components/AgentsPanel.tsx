@@ -3,20 +3,28 @@
 import { useState } from "react";
 import type { AiBriefing, AiChatResponse } from "@/lib/types";
 import { sendAiChat } from "@/lib/admin-actions";
-import { formatDateTime } from "@/lib/i18n";
+import { formatDateTime, pickName } from "@/lib/i18n";
+import { Badge, Button, Card, type BadgeTone } from "@/shared/ui";
+import { useI18n } from "./I18nProvider";
 
 type AgentsPanelProps = {
   data: AiBriefing | null;
   error: string | null;
 };
 
-const STATUS_TONE: Record<string, string> = {
-  ready: "border-brand-green/40 bg-brand-green/10 text-brand-green",
-  watching: "border-warning/40 bg-warning/10 text-warning",
-  needs_data: "border-warning/40 bg-warning/10 text-warning",
-  needs_schedule: "border-warning/40 bg-warning/10 text-warning",
-  needs_content: "border-warning/40 bg-warning/10 text-warning",
-  needs_hardening: "border-brand-red/40 bg-brand-red/10 text-brand-red",
+/**
+ * Статус агента → тон бейджа. Было: своя тройка border/bg/text на каждый
+ * статус (цветной текст на цветном тинте — в тёмной теме ниже AA). Тон теперь
+ * несёт подложка и точка, подпись остаётся текстом (SC 1.4.1).
+ */
+const STATUS_TONE: Record<string, BadgeTone> = {
+  ready: "success",
+  monitoring: "success",
+  watching: "warning",
+  needs_data: "warning",
+  needs_schedule: "warning",
+  needs_content: "warning",
+  needs_hardening: "critical",
 };
 
 type ChatPanelProps = {
@@ -24,6 +32,7 @@ type ChatPanelProps = {
 };
 
 function ChatPanel({ agentCode }: ChatPanelProps) {
+  const { dict } = useI18n();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -46,13 +55,9 @@ function ChatPanel({ agentCode }: ChatPanelProps) {
 
   return (
     <div className="mt-4">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="rounded-lg border border-[var(--table-border)] px-3 py-2 text-sm font-semibold transition-colors hover:bg-[var(--chip-bg)]"
-      >
-        {open ? "Close chat" : "Chat"}
-      </button>
+      <Button onClick={() => setOpen(!open)} aria-expanded={open}>
+        {open ? dict.agents.chatClose : dict.agents.chatOpen}
+      </Button>
       {open && (
         <div className="mt-3 space-y-3">
           <div className="flex gap-2">
@@ -61,38 +66,43 @@ function ChatPanel({ agentCode }: ChatPanelProps) {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
-              placeholder="Ask the agent..."
-              className="min-w-0 flex-1 rounded-lg border border-[var(--card-border)] bg-[var(--card-bg)] px-3 py-2 text-sm outline-none focus:border-[var(--info)]"
+              placeholder={dict.agents.chatPlaceholder}
+              aria-label={dict.agents.chatInputLabel}
+              className="min-w-0 flex-1 rounded-control border border-[var(--border-strong)] bg-[var(--surface-raised)] px-3 py-2 text-small outline-none focus:border-info"
             />
-            <button
-              type="button"
+            <Button
+              variant="primary"
               onClick={handleSend}
               disabled={loading || !message.trim()}
-              className="shrink-0 rounded-lg bg-[var(--info)] px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
             >
-              {loading ? "..." : "Send"}
-            </button>
+              {loading ? dict.agents.chatSending : dict.agents.chatSend}
+            </Button>
           </div>
-          {chatError && (
-            <p className="text-sm text-brand-red">{chatError}</p>
-          )}
-          {response && (
-            <div className="rounded-lg border border-[var(--card-border)] bg-[var(--chip-bg)] p-3">
-              <p className="text-sm">{response.reply}</p>
-              {response.sources.length > 0 && (
-                <details className="mt-2">
-                  <summary className="cursor-pointer text-xs font-semibold text-text-secondary">
-                    Sources ({response.sources.length})
-                  </summary>
-                  <ul className="mt-1 list-inside list-disc space-y-1">
-                    {response.sources.map((src) => (
-                      <li key={src} className="text-xs text-text-secondary">{src}</li>
-                    ))}
-                  </ul>
-                </details>
-              )}
-            </div>
-          )}
+          {/* aria-live: ответ приходит асинхронно и должен быть объявлен */}
+          <div aria-live="polite">
+            {chatError && (
+              <p role="alert" className="text-small font-semibold text-brand-red">
+                {chatError}
+              </p>
+            )}
+            {response && (
+              <div className="rounded-control border border-[var(--border-subtle)] bg-[var(--surface-chip)] p-3">
+                <p className="text-small">{response.reply}</p>
+                {response.sources.length > 0 && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-caption font-semibold text-text-secondary">
+                      {dict.agents.chatSources} ({response.sources.length})
+                    </summary>
+                    <ul className="mt-1 list-inside list-disc space-y-1">
+                      {response.sources.map((src) => (
+                        <li key={src} className="text-caption text-text-secondary">{src}</li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -100,111 +110,108 @@ function ChatPanel({ agentCode }: ChatPanelProps) {
 }
 
 export default function AgentsPanel({ data, error }: AgentsPanelProps) {
+  const { dict, lang } = useI18n();
+
+  // Радиус был rounded-xl(12) у элемента той же роли, что и карточка (8),
+  // плюс своя тень на каждой панели. Теперь — примитив Card: 8px, граница,
+  // без тени (см. packages/design/MIGRATION.md).
   if (error) {
     return (
-      <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-5 shadow-[var(--shadow-card)]">
-        <p className="text-sm font-bold">AI briefing is unavailable</p>
-        <p className="mt-1 text-sm text-text-secondary">{error}</p>
-      </div>
+      <Card as="div" padding="lg">
+        <p className="text-small font-bold">{dict.agents.errorTitle}</p>
+        <p className="mt-1 text-small text-text-secondary">{error}</p>
+      </Card>
     );
   }
 
   if (!data) {
     return (
-      <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-5 shadow-[var(--shadow-card)]">
-        <p className="text-sm text-text-secondary">No AI briefing data.</p>
-      </div>
+      <Card as="div" padding="lg">
+        <p className="text-small text-text-secondary">{dict.agents.empty}</p>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-5">
-      <section className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-5 shadow-[var(--shadow-card)]">
+      <Card padding="lg" aria-label={dict.agents.postureTitle}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">
-              Readiness posture
+            <p className="text-caption font-bold uppercase tracking-[0.08em] text-text-secondary">
+              {dict.agents.postureTitle}
             </p>
-            <p className="mt-1 text-2xl font-extrabold">{data.posture}</p>
+            <p className="mt-1 text-title-m font-bold">
+              {dict.agents.postures[data.posture] ?? data.posture}
+            </p>
           </div>
-          <p className="rounded-full bg-[var(--chip-bg)] px-3 py-1 text-xs font-semibold text-text-secondary">
-            {formatDateTime(data.generatedAt, "en")}
+          <p className="rounded-chip bg-[var(--surface-chip)] px-3 py-1 text-caption font-semibold text-text-secondary">
+            {formatDateTime(data.generatedAt, lang)}
           </p>
         </div>
+        {/* Рекомендации — i18n-объекты без стабильного кода (одна из них рождается в рантайме
+            ответом LLM), поэтому ключ по индексу: список неупорядочиваемый и перестраивается целиком. */}
         <ul className="mt-4 grid gap-2">
-          {data.recommendations.map((item) => (
-            <li key={item} className="rounded-lg bg-[var(--chip-bg)] px-3 py-2 text-sm">
-              {item}
+          {data.recommendations.map((item, index) => (
+            <li key={index} className="rounded-control bg-[var(--surface-chip)] px-3 py-2 text-small">
+              {pickName(item, lang)}
             </li>
           ))}
         </ul>
-      </section>
+      </Card>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         {data.agents.map((agent) => (
-          <article
-            key={agent.code}
-            className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-5 shadow-[var(--shadow-card)]"
-          >
+          <Card as="article" key={agent.code} padding="lg">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-lg font-extrabold">{agent.name.en}</h2>
-                <p className="mt-1 text-sm text-text-secondary">{agent.role}</p>
+                <h2 className="text-title-s font-bold">{pickName(agent.name, lang)}</h2>
+                <p className="mt-1 text-small text-text-secondary">{pickName(agent.role, lang)}</p>
               </div>
-              <span
-                className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold ${
-                  STATUS_TONE[agent.status] ?? "border-info/40 bg-info/10 text-info"
-                }`}
-              >
-                {agent.status}
-              </span>
+              <Badge tone={STATUS_TONE[agent.status] ?? "info"} dot className="shrink-0">
+                {dict.agents.statuses[agent.status] ?? agent.status}
+              </Badge>
             </div>
 
             <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <dt className="text-xs font-bold uppercase tracking-wide text-text-secondary">
-                  Provider
+                <dt className="text-caption font-bold uppercase tracking-[0.08em] text-text-secondary">
+                  {dict.agents.fieldProvider}
                 </dt>
-                <dd className="mt-1 text-sm font-semibold">{agent.modelProvider}</dd>
+                <dd className="mt-1 text-small font-semibold">{agent.modelProvider}</dd>
               </div>
               <div>
-                <dt className="text-xs font-bold uppercase tracking-wide text-text-secondary">
-                  Model class
+                <dt className="text-caption font-bold uppercase tracking-[0.08em] text-text-secondary">
+                  {dict.agents.fieldModelClass}
                 </dt>
-                <dd className="mt-1 text-sm font-semibold">{agent.modelClass}</dd>
+                <dd className="mt-1 text-small font-semibold">{agent.modelClass}</dd>
               </div>
             </dl>
 
             <div className="mt-4">
-              <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">
-                Capabilities
+              <p className="text-caption font-bold uppercase tracking-[0.08em] text-text-secondary">
+                {dict.agents.fieldCapabilities}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
-                {agent.capabilities.map((capability) => (
-                  <span
-                    key={capability}
-                    className="rounded-full bg-[var(--chip-bg)] px-2.5 py-1 text-xs font-semibold"
-                  >
-                    {capability}
-                  </span>
+                {agent.capabilities.map((capability, index) => (
+                  <Badge key={index}>{pickName(capability, lang)}</Badge>
                 ))}
               </div>
             </div>
 
             <div className="mt-4 grid gap-2">
-              {agent.signals.map((signal) => (
-                <p key={signal} className="text-sm text-text-secondary">
-                  {signal}
+              {agent.signals.map((signal, index) => (
+                <p key={index} className="text-small text-text-secondary">
+                  {pickName(signal, lang)}
                 </p>
               ))}
             </div>
 
-            <p className="mt-4 rounded-lg border border-[var(--table-border)] px-3 py-2 text-sm font-semibold">
-              {agent.nextAction}
+            <p className="mt-4 rounded-control border border-[var(--border-subtle)] px-3 py-2 text-small font-semibold">
+              {pickName(agent.nextAction, lang)}
             </p>
 
             <ChatPanel agentCode={agent.code} />
-          </article>
+          </Card>
         ))}
       </section>
     </div>

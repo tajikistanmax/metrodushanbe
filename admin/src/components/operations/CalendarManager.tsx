@@ -210,7 +210,7 @@ export default function CalendarManager({ data, error }: CalendarManagerProps) {
                 value={editor.body.exceptionDate}
                 onChange={(event) => patchBody({ exceptionDate: event.target.value })}
                 disabled={busy}
-                className="w-full rounded-lg border border-[var(--card-border)] bg-[var(--card-bg)] px-3 py-2 text-sm outline-none focus-visible:outline-3 disabled:opacity-60"
+                className="w-full rounded-control border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-2 text-sm outline-none focus-visible:outline-3 disabled:opacity-60"
               />
             </div>
             <SelectField

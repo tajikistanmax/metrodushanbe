@@ -18,9 +18,13 @@ export type Section =
   | "requests"
   | "incidents"
   | "fares"
+  | "notifications"
+  | "tickets"
+  | "webhooks"
   | "imports"
   | "calendar"
   | "features"
+  | "agents"
   | "users"
   | "audit";
 
@@ -36,9 +40,13 @@ export default function SectionHeader({ section }: { section: Section }) {
     requests: dict.operations.requestsTitle,
     incidents: dict.incidents.title,
     fares: dict.operations.faresTitle,
+    notifications: dict.notifications.title,
+    tickets: dict.tickets.title,
+    webhooks: dict.webhooks.title,
     imports: dict.operations.importsTitle,
     calendar: dict.operations.calendarTitle,
     features: dict.operations.featuresTitle,
+    agents: dict.agents.title,
     users: dict.users.title,
     audit: dict.auditTitle,
   };
@@ -50,6 +58,10 @@ export default function SectionHeader({ section }: { section: Section }) {
     requests: dict.operations.requestsLead,
     incidents: dict.incidents.lead,
     fares: dict.operations.faresLead,
+    notifications: dict.notifications.lead,
+    tickets: dict.tickets.lead,
+    webhooks: dict.webhooks.lead,
+    agents: dict.agents.lead,
     users: dict.users.lead,
   };
 

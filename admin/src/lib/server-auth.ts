@@ -10,8 +10,7 @@ import {
   type AdminSession,
 } from "./auth";
 import { API_BASE } from "./api";
-
-const DEFAULT_ADMIN_KEY = "dev-admin-key-change-me";
+import { adminApiKey } from "./server-config";
 
 type CurrentAdmin = {
   username?: string;
@@ -29,7 +28,7 @@ async function isCurrentSession(session: AdminSession): Promise<boolean> {
         cache: "no-store",
         headers: {
           Accept: "application/json",
-          "X-Admin-Key": process.env.ADMIN_API_KEY ?? DEFAULT_ADMIN_KEY,
+          "X-Admin-Key": adminApiKey(),
         },
         signal: AbortSignal.timeout(3_000),
       },

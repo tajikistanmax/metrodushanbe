@@ -17,6 +17,16 @@ import type {
 /** i18n-значение формы: три обязательных языка (BR-NET-4/BR-CMS-1). */
 export type I18nInput = { tg: string; ru: string; en: string };
 
+/**
+ * Размер страницы админских лент по умолчанию — тот же, что у ленты импортов
+ * (контракт /v1/admin/imports). Потолок (200) держит backend: клиент не место
+ * для правила, которое защищает БД.
+ *
+ * Живёт здесь, а не в admin-actions.ts: тот модуль «use server», и экспортировать
+ * из него можно только async-функции.
+ */
+export const ADMIN_PAGE_SIZE = 50;
+
 // --- Перечни допустимых значений (зеркало серверных множеств) --------------
 
 /** Статусы линии (NetworkService.LINE_STATUSES). */
@@ -172,6 +182,209 @@ export type IncidentTransitionBody = {
   status: string;
   resolution?: string;
 };
+
+// --- Рассылки (NTF-01…06) ---------------------------------------------------
+
+/** NotificationType.codes(). */
+export const NOTIFICATION_TYPES = [
+  "info",
+  "warning",
+  "incident",
+  "maintenance",
+  "promo",
+] as const;
+export type NotificationTypeInput = (typeof NOTIFICATION_TYPES)[number];
+
+/** NotificationStatus.codes(). */
+export const NOTIFICATION_STATUSES = [
+  "draft",
+  "scheduled",
+  "sending",
+  "sent",
+  "cancelled",
+] as const;
+export type NotificationStatusInput = (typeof NOTIFICATION_STATUSES)[number];
+
+/**
+ * NotificationChannel.codes(). Реален только in_app (публичный фид);
+ * push/email/sms на demo-контуре имитируются — NotificationChannel.external().
+ */
+export const NOTIFICATION_CHANNELS = ["in_app", "push", "email", "sms"] as const;
+export type NotificationChannelInput = (typeof NOTIFICATION_CHANNELS)[number];
+
+/** Каналы без реального провайдера: доставка по ним только имитируется. */
+export const SIMULATED_CHANNELS: readonly NotificationChannelInput[] = [
+  "push",
+  "email",
+  "sms",
+] as const;
+
+/** NotificationTargetDto.type. */
+export const NOTIFICATION_TARGET_TYPES = [
+  "line",
+  "station",
+  "segment",
+  "role",
+] as const;
+export type NotificationTargetTypeInput =
+  (typeof NOTIFICATION_TARGET_TYPES)[number];
+
+export type NotificationTargetBody = {
+  type: NotificationTargetTypeInput;
+  code: string;
+};
+
+/**
+ * Создание рассылки. Статус не принимается: рассылка всегда стартует черновиком.
+ * Заданный scheduledAt сразу переводит её в scheduled (NTF-05).
+ *
+ * type/title/body/channels необязательны на уровне контракта только потому, что
+ * их может дать templateCode; без шаблона их требует сервис.
+ */
+export type NotificationCreateBody = {
+  code: string;
+  templateCode?: string;
+  alertCode?: string;
+  type?: NotificationTypeInput;
+  title?: I18nInput;
+  body?: I18nInput;
+  channels?: NotificationChannelInput[];
+  targets?: NotificationTargetBody[];
+  /** ISO-8601 со смещением; отсутствие — публикация не запланирована. */
+  scheduledAt?: string;
+};
+
+/** Редактирование: полная замена содержимого, тексты обязательны. */
+export type NotificationUpdateBody = {
+  type: NotificationTypeInput;
+  title: I18nInput;
+  body: I18nInput;
+  channels: NotificationChannelInput[];
+  targets?: NotificationTargetBody[];
+  scheduledAt?: string;
+};
+
+export type NotificationTemplateCreateBody = {
+  code: string;
+  name: string;
+  type: NotificationTypeInput;
+  title: I18nInput;
+  body: I18nInput;
+  channels: NotificationChannelInput[];
+  active: boolean;
+};
+export type NotificationTemplateUpdateBody = Omit<
+  NotificationTemplateCreateBody,
+  "code"
+>;
+
+// --- Билеты, платежи, чёрный список (TKT-03/05/06) --------------------------
+
+export const TICKET_STATUSES = [
+  "issued",
+  "active",
+  "used",
+  "expired",
+  "refunded",
+  "blocked",
+] as const;
+export type TicketStatusInput = (typeof TICKET_STATUSES)[number];
+
+export const PAYMENT_STATUSES = [
+  "pending",
+  "authorized",
+  "captured",
+  "failed",
+  "refunded",
+] as const;
+export type PaymentStatusInput = (typeof PAYMENT_STATUSES)[number];
+
+export const BLOCKLIST_SUBJECT_TYPES = ["ticket", "token", "rider"] as const;
+export type BlocklistSubjectTypeInput =
+  (typeof BLOCKLIST_SUBJECT_TYPES)[number];
+
+/** Ручной возврат из консоли: допускает даже погашенный билет (TKT-03). */
+export type TicketRefundBody = {
+  reason: string;
+};
+
+/**
+ * Добавление в чёрный список. Для subjectType=token в subjectValue передаётся
+ * САМ токен — сервис заменит его на SHA-256 перед записью.
+ */
+export type BlocklistCreateBody = {
+  subjectType: BlocklistSubjectTypeInput;
+  subjectValue: string;
+  reason: string;
+};
+
+// --- Вебхуки (ADM-06, U-OPS-04) ---------------------------------------------
+
+/** WebhookEventType.codes(). */
+export const WEBHOOK_EVENT_TYPES = [
+  "alert_published",
+  "alert_cleared",
+  "incident_opened",
+  "incident_resolved",
+  "station_status_changed",
+  "schedule_changed",
+  "train_delayed",
+] as const;
+export type WebhookEventTypeInput = (typeof WEBHOOK_EVENT_TYPES)[number];
+
+/** WebhookDeliveryStatus.codes(); dead — это DLQ. */
+export const WEBHOOK_DELIVERY_STATUSES = [
+  "pending",
+  "sent",
+  "failed",
+  "dead",
+] as const;
+export type WebhookDeliveryStatusInput =
+  (typeof WEBHOOK_DELIVERY_STATUSES)[number];
+
+/**
+ * Заведение подписчика. Секрета во входных данных нет намеренно: его
+ * генерирует сервер и показывает ОДИН раз в ответе.
+ */
+export type WebhookCreateBody = {
+  code: string;
+  name: string;
+  targetUrl: string;
+  eventTypes: WebhookEventTypeInput[];
+  active: boolean;
+  rateLimitPerMinute?: number;
+};
+export type WebhookUpdateBody = Omit<WebhookCreateBody, "code">;
+
+// --- Импорт (INT-04) --------------------------------------------------------
+
+/**
+ * Что выбирает оператор в форме — вид импорта, а не формат источника (`ImportFormat`
+ * в types.ts): `gtfs` и `gtfs-fares` идут одним ZIP, но первый переписывает сеть,
+ * второй — цены. Один пункт списка на оба означал бы, что от загруженного файла
+ * зависит, что именно поменяется, — а оператор узнаёт об этом уже по факту.
+ */
+export const IMPORT_KINDS = ["geojson", "gtfs", "gtfs-fares", "csv"] as const;
+export type ImportKindInput = (typeof IMPORT_KINDS)[number];
+
+/**
+ * Публикация импортированных тарифов. Пусто — решает не импорт: новый продукт создаётся
+ * неактивным, у существующего флаг сохраняется (в GTFS признака публикации нет).
+ */
+export const IMPORT_FARE_ACTIVE = ["", "true", "false"] as const;
+export type ImportFareActive = (typeof IMPORT_FARE_ACTIVE)[number];
+
+/** Язык GTFS-фида; пусто — берётся из agency.txt:agency_lang. */
+export const IMPORT_FEED_LANGS = ["", "tg", "ru", "en"] as const;
+export type ImportFeedLang = (typeof IMPORT_FEED_LANGS)[number];
+
+/** Статус жизненного цикла импортируемых объектов: в GTFS его нет. */
+export const IMPORT_TARGET_STATUSES: readonly LineStatus[] = [
+  "planned",
+  "under_construction",
+  "testing",
+  "active",
+] as const;
 
 // --- Операторы консоли ------------------------------------------------------
 

@@ -31,6 +31,7 @@ import {
   TextField,
 } from "../admin/fields";
 import { useToast } from "../admin/ToastProvider";
+import { Badge } from "@/shared/ui";
 
 type Editor = {
   /** null — создание; иначе логин редактируемого оператора. */
@@ -159,11 +160,9 @@ export default function UsersManager({
       rowHeader: true,
       cell: (row) => (
         <span className="flex items-center gap-2">
-          <span className="font-mono text-xs">{row.username}</span>
+          <span className="font-mono text-caption">{row.username}</span>
           {row.username === currentUsername ? (
-            <span className="rounded-full bg-info/15 px-2 py-0.5 text-[10px] font-bold text-info">
-              {dict.users.youBadge}
-            </span>
+            <Badge tone="info">{dict.users.youBadge}</Badge>
           ) : null}
         </span>
       ),

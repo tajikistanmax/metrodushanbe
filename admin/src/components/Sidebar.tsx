@@ -11,7 +11,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
 import { roleAtLeast, type AdminRole } from "@/lib/auth";
-import { LANG_LABELS, LANG_SHORT_LABELS, LANGS } from "@/lib/i18n";
 import {
   IconAudit,
   IconBell,
@@ -23,16 +22,19 @@ import {
   IconLines,
   IconMap,
   IconNews,
+  IconPlug,
   IconRequests,
+  IconSend,
   IconSpark,
   IconStation,
   IconTicket,
   IconUsers,
   IconWarning,
 } from "@/lib/icons";
-import BrandMark from "./BrandMark";
-import ThemeToggle from "./ThemeToggle";
-import { useI18n } from "./I18nProvider";
+import BrandMark from "@/shared/BrandMark";
+import ThemeToggle from "@/shared/ThemeToggle";
+import LangSwitcher from "@/shared/LangSwitcher";
+import { useI18n } from "@/shared/I18nProvider";
 
 type NavKey =
   | "overview"
@@ -45,6 +47,9 @@ type NavKey =
   | "requests"
   | "incidents"
   | "fares"
+  | "notifications"
+  | "tickets"
+  | "webhooks"
   | "imports"
   | "calendar"
   | "features"
@@ -88,10 +93,12 @@ const GROUPS: NavGroup[] = [
     labelKey: "content",
     items: [
       { key: "alerts", href: "/alerts", icon: IconBell },
+      { key: "notifications", href: "/notifications", icon: IconSend },
       { key: "news", href: "/news", icon: IconNews },
       { key: "requests", href: "/requests", icon: IconRequests },
       { key: "incidents", href: "/incidents", icon: IconWarning },
       { key: "fares", href: "/fares", icon: IconTicket },
+      { key: "tickets", href: "/tickets", icon: IconTicket },
     ],
   },
   {
@@ -99,6 +106,11 @@ const GROUPS: NavGroup[] = [
     items: [
       { key: "agents", href: "/agents", icon: IconSpark },
       { key: "features", href: "/features", icon: IconBolt },
+      // Раздел содержит и конфигурацию подписчиков (суперадмин), и очередь
+      // доставок с ручным повтором — рутину дежурной смены. Прятать его от
+      // операторов значило бы оставить DLQ без тех, кто её и разбирает,
+      // поэтому порог — operator, а CRUD подписчиков закрыт уже внутри.
+      { key: "webhooks", href: "/webhooks", icon: IconPlug, minRole: "operator" },
       { key: "users", href: "/users", icon: IconUsers, minRole: "superadmin" },
       { key: "audit", href: "/audit", icon: IconAudit },
     ],
@@ -113,7 +125,7 @@ function isActive(pathname: string, href: string): boolean {
 }
 
 export default function Sidebar({ role }: { role: AdminRole }) {
-  const { lang, setLang, dict } = useI18n();
+  const { dict } = useI18n();
   const pathname = usePathname();
 
   // Скрытие пункта — только удобство: недоступный раздел всё равно закрыт
@@ -128,13 +140,15 @@ export default function Sidebar({ role }: { role: AdminRole }) {
   return (
     <aside className="sidebar flex shrink-0 flex-col gap-5 bg-brand-navy p-4 text-surface-light lg:sticky lg:top-0 lg:h-dvh lg:w-[264px] lg:overflow-y-auto">
       {/* Бренд */}
-      <Link href="/" className="flex items-center gap-2.5 rounded-lg">
+      <Link href="/" className="flex items-center gap-2.5 rounded-control">
         <BrandMark className="h-10 w-[43px] shrink-0" holeColor="var(--brand-navy)" />
         <span className="min-w-0">
-          <span className="block truncate text-[15px] font-extrabold uppercase leading-tight tracking-wide">
+          {/* 800 — словесный знак: единственное место в консоли, где вес 800
+              оправдан (см. tokens.mjs: --weight-black). */}
+          <span className="block truncate text-body font-extrabold uppercase leading-tight tracking-wide">
             {dict.appSubtitle}
           </span>
-          <span className="block truncate text-[11px] font-medium text-surface-light/65">
+          <span className="block truncate text-caption font-semibold text-surface-light/70">
             {dict.appTitle}
           </span>
         </span>
@@ -146,7 +160,9 @@ export default function Sidebar({ role }: { role: AdminRole }) {
           {groups.map((group, gi) => (
             <div key={gi} className="shrink-0">
               {group.labelKey && (
-                <p className="mb-1.5 hidden px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-surface-light/45 lg:block">
+                // /45 давал ≈4.2:1 к navy — ниже AA для 12px-надписи;
+                // /65 → ≈7.2:1. Трекинг 0.08em — единая ступень разрядки.
+                <p className="mb-1.5 hidden px-3 text-caption font-bold uppercase tracking-[0.08em] text-surface-light/65 lg:block">
                   {dict.navGroups[group.labelKey]}
                 </p>
               )}
@@ -159,9 +175,12 @@ export default function Sidebar({ role }: { role: AdminRole }) {
                         href={href}
                         aria-current={active ? "page" : undefined}
                         className={
+                          // Активный пункт держится на плоскости и весе (700),
+                          // а не на свечении: тень 0 4px 14px rgba(0,0,0,.25)
+                          // снята — в консоли пункт меню ни над чем не висит.
                           active
-                            ? "flex items-center gap-2.5 whitespace-nowrap rounded-xl bg-[var(--sidebar-active-bg)] px-3 py-2.5 text-sm font-bold text-[var(--sidebar-active-text)] shadow-[0_4px_14px_rgba(0,0,0,0.25)]"
-                            : "flex items-center gap-2.5 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-semibold text-surface-light/80 transition-colors hover:bg-surface-light/10 hover:text-surface-light"
+                            ? "flex items-center gap-2.5 whitespace-nowrap rounded-control bg-[var(--sidebar-active-bg)] px-3 py-2.5 text-small font-bold text-[var(--sidebar-active-text)]"
+                            : "flex items-center gap-2.5 whitespace-nowrap rounded-control px-3 py-2.5 text-small font-semibold text-surface-light/80 transition-colors hover:bg-surface-light/10 hover:text-surface-light"
                         }
                       >
                         <Icon className="h-[18px] w-[18px] shrink-0" />
@@ -180,34 +199,10 @@ export default function Sidebar({ role }: { role: AdminRole }) {
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
           <ThemeToggle />
-          <nav aria-label={dict.languageSwitcher} className="shrink-0">
-            <div
-              role="group"
-              aria-label={dict.languageSwitcher}
-              className="flex gap-0.5 rounded-full bg-surface-dark/60 p-1"
-            >
-              {LANGS.map((code) => (
-                <button
-                  key={code}
-                  type="button"
-                  lang={code}
-                  aria-pressed={lang === code}
-                  aria-label={LANG_LABELS[code]}
-                  title={LANG_LABELS[code]}
-                  onClick={() => setLang(code)}
-                  className={
-                    lang === code
-                      ? "rounded-full bg-surface-light px-2.5 py-1 text-xs font-bold text-brand-navy"
-                      : "rounded-full px-2.5 py-1 text-xs font-semibold text-surface-light transition-colors hover:bg-surface-light/15"
-                  }
-                >
-                  {LANG_SHORT_LABELS[code]}
-                </button>
-              ))}
-            </div>
-          </nav>
+          <LangSwitcher />
         </div>
-        <p className="hidden px-1 text-[10px] font-medium text-surface-light/40 lg:block">
+        {/* /40 давал ≈3.5:1 к navy — ниже AA; /60 → ≈6.4:1 */}
+        <p className="hidden px-1 text-caption font-semibold text-surface-light/60 lg:block">
           {dict.sidebarFootnote}
         </p>
       </div>

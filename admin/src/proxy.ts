@@ -12,14 +12,18 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Upload API returns JSON 401/403 itself; redirecting it would turn fetch errors into HTML.
+  if (pathname.startsWith("/api/admin/imports/")) {
+    return NextResponse.next();
+  }
+
   const cookie = request.cookies.get(SESSION_COOKIE)?.value ?? "";
   const authenticated = cookie !== "" && (await verifySessionToken(cookie)) !== null;
 
-  // Авторизованного пользователя со страницы входа уводим в консоль.
+  // Не редиректим с /login только по локальной подписи cookie: роль/активность
+  // могла измениться, и такой redirect создавал бесконечный цикл с server guard.
   if (pathname === "/login") {
-    if (authenticated) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
     return NextResponse.next();
   }
 

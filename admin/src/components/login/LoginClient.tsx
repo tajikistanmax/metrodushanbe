@@ -8,8 +8,14 @@
  * акцентами. Пароль проверяется Server Action `login` (lib/auth-actions.ts);
  * сюда возвращается только код ошибки. Языки — общий I18nProvider.
  *
- * Карточка намеренно всегда светлая (не зависит от темы): она лежит поверх
- * фотографии, как в макете.
+ * ГРАНИЦА С ИНСТИТУЦИОНАЛЬНОЙ ТЕМОЙ — осознанная, макет утверждён владельцем:
+ *  1) карточка всегда светлая и не реагирует на тёмную тему — она лежит поверх
+ *     ночной фотографии, перекрасить её значит разрушить макет;
+ *  2) CTA синий (--login-accent #2563eb), а не --brand-navy;
+ *  3) скругления крупнее шкалы (--corner-panel 8px): карточка 28px, поля 16px.
+ * Всё это оставлено как в макете. Приведено к общему слою другое: сырые hex
+ * вынесены в токены --login-* (packages/design/tokens.mjs), размеры — на шкалу
+ * --type-*, вес 500 (не загружен) заменён на загруженные 400/600/700.
  */
 
 import Image from "next/image";
@@ -30,43 +36,62 @@ import { useI18n } from "../I18nProvider";
 const INITIAL: LoginState = { error: null };
 
 /**
+ * Цвета государственных флагов — НЕ дизайн-токены и намеренно не вынесены в
+ * packages/design: это факт о флаге другого государства, а не решение о теме
+ * платформы. Тема их перекрашивать не должна и не может. Собраны в одну
+ * таблицу (регистр — нижний, как требует dev-conventions §5), чтобы не быть
+ * россыпью инлайновых литералов по разметке.
+ *
+ * Красный и зелёный флага Таджикистана совпадают с --brand-red/--brand-green
+ * не случайно: бренд платформы выведен из флага. Но здесь это именно флаг,
+ * поэтому источник значения — спецификация флага, а не токен бренда.
+ */
+const FLAG = {
+  white: "#ffffff",
+  tjRed: "#e21b2d",
+  tjGreen: "#138a3d",
+  tjGold: "#f8c300",
+  ruBlue: "#0039a6",
+  ruRed: "#d52b1e",
+  gbNavy: "#012169",
+  gbRed: "#c8102e",
+} as const;
+
+/**
  * Мини-флаг языка для пилюли-переключателя (как в макете: «🇷🇺 Русский»).
  * SVG вместо эмодзи: флаговые эмодзи в Windows отображаются буквами.
  */
 function FlagIcon({ code }: { code: Lang }) {
-  const common = "h-3.5 w-5 shrink-0 rounded-[2.5px]";
+  const common = "h-3.5 w-5 shrink-0 rounded-chip";
   if (code === "tg") {
     return (
       <svg viewBox="0 0 20 14" className={common} aria-hidden="true">
-        <rect width="20" height="14" fill="#ffffff" />
-        <rect width="20" height="4" fill="#e21b2d" />
-        <rect y="10" width="20" height="4" fill="#138a3d" />
-        <circle cx="10" cy="7" r="1.1" fill="#f8c300" />
+        <rect width="20" height="14" fill={FLAG.white} />
+        <rect width="20" height="4" fill={FLAG.tjRed} />
+        <rect y="10" width="20" height="4" fill={FLAG.tjGreen} />
+        <circle cx="10" cy="7" r="1.1" fill={FLAG.tjGold} />
       </svg>
     );
   }
   if (code === "ru") {
     return (
       <svg viewBox="0 0 20 14" className={common} aria-hidden="true">
-        <rect width="20" height="14" fill="#ffffff" />
-        <rect y="4.7" width="20" height="4.6" fill="#0039a6" />
-        <rect y="9.3" width="20" height="4.7" fill="#d52b1e" />
+        <rect width="20" height="14" fill={FLAG.white} />
+        <rect y="4.7" width="20" height="4.6" fill={FLAG.ruBlue} />
+        <rect y="9.3" width="20" height="4.7" fill={FLAG.ruRed} />
       </svg>
     );
   }
   return (
     <svg viewBox="0 0 20 14" className={common} aria-hidden="true">
-      <rect width="20" height="14" fill="#012169" />
-      <path d="M0 0 20 14M20 0 0 14" stroke="#ffffff" strokeWidth="2.8" />
-      <path d="M0 0 20 14M20 0 0 14" stroke="#c8102e" strokeWidth="1.2" />
-      <path d="M10 0v14M0 7h20" stroke="#ffffff" strokeWidth="4.6" />
-      <path d="M10 0v14M0 7h20" stroke="#c8102e" strokeWidth="2.6" />
+      <rect width="20" height="14" fill={FLAG.gbNavy} />
+      <path d="M0 0 20 14M20 0 0 14" stroke={FLAG.white} strokeWidth="2.8" />
+      <path d="M0 0 20 14M20 0 0 14" stroke={FLAG.gbRed} strokeWidth="1.2" />
+      <path d="M10 0v14M0 7h20" stroke={FLAG.white} strokeWidth="4.6" />
+      <path d="M10 0v14M0 7h20" stroke={FLAG.gbRed} strokeWidth="2.6" />
     </svg>
   );
 }
-
-/** Синий акцент формы входа — цвет CTA из утверждённого макета. */
-const BLUE = "#2563eb";
 
 export default function LoginClient() {
   const { lang, setLang, dict } = useI18n();
@@ -98,7 +123,7 @@ export default function LoginClient() {
           : null;
 
   return (
-    <div className="relative min-h-dvh overflow-hidden bg-[#0b1622]">
+    <div className="relative min-h-dvh overflow-hidden bg-surface-dark">
       {/* Фон: ночной Душанбе с поездом (сжатая копия референса из photo/) */}
       <Image
         src="/login-bg.jpg"
@@ -109,9 +134,10 @@ export default function LoginClient() {
         className="object-cover"
         aria-hidden="true"
       />
-      {/* Градиент для читаемости текста поверх фотографии */}
+      {/* Затемнение фотографии. Это не декор, а носитель контраста: без него
+          белый текст лёг бы на произвольные пиксели снимка (SC 1.4.3). */}
       <div
-        className="absolute inset-0 bg-gradient-to-r from-[#050d16]/85 via-[#050d16]/30 to-[#050d16]/55"
+        className="absolute inset-0 bg-gradient-to-r from-[var(--login-scrim)]/85 via-[var(--login-scrim)]/30 to-[var(--login-scrim)]/55"
         aria-hidden="true"
       />
 
@@ -123,7 +149,7 @@ export default function LoginClient() {
           aria-expanded={langOpen}
           aria-haspopup="listbox"
           aria-label={dict.languageSwitcher}
-          className="flex items-center gap-2 rounded-xl border border-white/25 bg-[#0b1622]/55 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-[#0b1622]/75"
+          className="flex items-center gap-2 rounded-control border border-surface-light/40 bg-surface-dark/70 px-4 py-2.5 text-small font-semibold text-surface-light transition-colors hover:bg-surface-dark/85 focus-visible:outline-[var(--focus-ring-on-dark)]"
         >
           <FlagIcon code={lang} />
           {LANG_LABELS[lang]}
@@ -144,7 +170,7 @@ export default function LoginClient() {
           <ul
             role="listbox"
             aria-label={dict.languageSwitcher}
-            className="absolute right-0 top-full mt-2 w-44 overflow-hidden rounded-xl border border-white/20 bg-[#0d1c2c]/95 py-1.5 shadow-[0_16px_48px_rgba(0,0,0,0.5)] backdrop-blur-md"
+            className="absolute right-0 top-full mt-2 w-44 overflow-hidden rounded-panel border border-surface-light/25 bg-[var(--login-overlay-bg)] py-1.5 shadow-overlay"
           >
             {LANGS.map((code) => (
               <li key={code} role="option" aria-selected={lang === code}>
@@ -156,9 +182,10 @@ export default function LoginClient() {
                     setLangOpen(false);
                   }}
                   className={
+                    // /70 на #0d1c2c ≈ 7.4:1; выбранный — 700 + полная непрозрачность
                     lang === code
-                      ? "flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-bold text-white"
-                      : "flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-semibold text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                      ? "flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-small font-bold text-surface-light"
+                      : "flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-small font-semibold text-surface-light/70 transition-colors hover:bg-surface-light/10 hover:text-surface-light"
                   }
                 >
                   <FlagIcon code={code} />
@@ -174,7 +201,7 @@ export default function LoginClient() {
       <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-[1440px] flex-col px-6 pb-6 pt-8 sm:px-10 lg:px-14">
         <div className="flex flex-1 flex-col gap-10 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(420px,560px)] lg:items-stretch lg:gap-16">
           {/* Левая колонка: логотип, приветствие, бейдж */}
-          <div className="flex flex-col text-white">
+          <div className="flex flex-col text-surface-light">
             {/* Белый логотип (монохром поверх фотографии) */}
             <div className="flex items-center gap-4">
               <BrandMark
@@ -182,30 +209,31 @@ export default function LoginClient() {
                 holeColor="rgba(0,0,0,0)"
                 className="h-16 w-[70px] shrink-0 text-white"
               />
-              <p className="text-2xl font-extrabold uppercase leading-[1.08] tracking-wide">
+              <p className="text-title-m font-extrabold uppercase leading-[1.08] tracking-wide">
                 Dushanbe
                 <br />
                 Metro
-                <span className="mt-2 block h-px w-24 bg-white/40" aria-hidden="true" />
+                <span className="mt-2 block h-px w-24 bg-surface-light/40" aria-hidden="true" />
               </p>
             </div>
 
             <div className="mt-10 lg:mt-16">
-              <h1 className="text-3xl font-extrabold leading-tight sm:text-[42px] sm:leading-[1.15]">
+              {/* Было text-3xl → sm:text-[42px]; шкала: title-l 32 → title-xl 40 */}
+              <h1 className="text-title-l font-extrabold leading-tight sm:text-title-xl">
                 {t.welcome1}
                 <br />
                 {t.welcome2Prefix}
-                <span className="text-[#4d8dff]">{t.welcome2Accent}</span>
+                <span className="text-[var(--login-hero-accent)]">{t.welcome2Accent}</span>
               </h1>
-              <p className="mt-5 max-w-md text-sm leading-relaxed text-white/75 sm:text-[15px]">
+              <p className="mt-5 max-w-md text-body leading-relaxed text-surface-light/80">
                 {t.heroLead}
               </p>
             </div>
 
             {/* Бейдж прижат к низу — как в макете, над футером */}
             <div className="mt-auto hidden pt-10 lg:block">
-              <span className="inline-flex items-center gap-2.5 rounded-lg bg-[#0b1622]/70 px-4 py-2.5 text-[13px] font-semibold backdrop-blur-md">
-                <IconShield className="h-[18px] w-[18px] text-[#4d8dff]" />
+              <span className="inline-flex items-center gap-2.5 rounded-control bg-surface-dark/80 px-4 py-2.5 text-small font-semibold">
+                <IconShield className="h-[18px] w-[18px] text-[var(--login-hero-accent)]" aria-hidden="true" />
                 {t.badgeSecure} • {t.badgeReliable} • {t.badgeConvenient}
               </span>
             </div>
@@ -213,40 +241,46 @@ export default function LoginClient() {
 
           {/* Правая колонка: карточка формы (всегда светлая, как в макете) */}
           <div className="flex items-center lg:py-10">
-            <div className="w-full rounded-[28px] bg-white p-7 shadow-[0_24px_80px_rgba(3,10,20,0.5)] sm:p-10">
-              <h2 className="text-center text-[28px] font-extrabold tracking-tight text-[#0b1b33] sm:text-[32px]">
+            {/*
+              Радиус 28px и тень карточки — из макета, вне шкалы --corner-*.
+              Оставлены намеренно: карточка физически лежит поверх фотографии,
+              это единственный экран платформы с таким слоем.
+            */}
+            <div className="w-full rounded-[28px] bg-[var(--login-card-bg)] p-7 shadow-overlay sm:p-10">
+              <h2 className="text-center text-title-l font-extrabold text-[var(--login-ink)]">
                 {t.title}
               </h2>
-              <p className="mt-1.5 text-center text-sm text-[#5b6b7f]">{t.subtitle}</p>
+              <p className="mt-1.5 text-center text-small text-[var(--login-muted)]">{t.subtitle}</p>
 
               <form action={formAction} className="mt-8 flex flex-col gap-4" noValidate>
                 {/* Логин */}
-                <label className="flex items-center gap-3.5 rounded-2xl border border-[#e2e8f0] bg-white p-3 pr-4 transition-colors focus-within:border-[#2563eb]">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#eaf1ff] text-[#2563eb]">
+                <label className="flex items-center gap-3.5 rounded-panel border border-[var(--login-field-border)] p-3 pr-4 transition-colors focus-within:border-[var(--login-accent)]">
+                  <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-[var(--login-accent-tint)] text-[var(--login-accent)]">
                     <IconUser className="h-5 w-5" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[13px] font-bold text-[#0b1b33]">
+                    <span className="block text-small font-bold text-[var(--login-ink)]">
                       {t.usernameLabel}
                     </span>
+                    {/* font-medium(500) не загружен — 400 */}
                     <input
                       type="text"
                       name="username"
                       autoComplete="username"
                       required
                       placeholder={t.usernamePlaceholder}
-                      className="w-full bg-transparent text-sm font-medium text-[#0b1b33] outline-none placeholder:text-[#93a1b3]"
+                      className="w-full bg-transparent text-small text-[var(--login-ink)] outline-none placeholder:text-[var(--login-placeholder)]"
                     />
                   </span>
                 </label>
 
                 {/* Пароль */}
-                <label className="flex items-center gap-3.5 rounded-2xl border border-[#e2e8f0] bg-white p-3 pr-2.5 transition-colors focus-within:border-[#2563eb]">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#eaf1ff] text-[#2563eb]">
+                <label className="flex items-center gap-3.5 rounded-panel border border-[var(--login-field-border)] p-3 pr-2.5 transition-colors focus-within:border-[var(--login-accent)]">
+                  <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-[var(--login-accent-tint)] text-[var(--login-accent)]">
                     <IconLock className="h-5 w-5" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[13px] font-bold text-[#0b1b33]">
+                    <span className="block text-small font-bold text-[var(--login-ink)]">
                       {t.passwordLabel}
                     </span>
                     <input
@@ -255,7 +289,7 @@ export default function LoginClient() {
                       autoComplete="current-password"
                       required
                       placeholder={t.passwordPlaceholder}
-                      className="w-full bg-transparent text-sm font-medium text-[#0b1b33] outline-none placeholder:text-[#93a1b3]"
+                      className="w-full bg-transparent text-small text-[var(--login-ink)] outline-none placeholder:text-[var(--login-placeholder)]"
                     />
                   </span>
                   <button
@@ -263,7 +297,7 @@ export default function LoginClient() {
                     onClick={() => setShowPassword((v) => !v)}
                     aria-label={showPassword ? t.hidePassword : t.showPassword}
                     aria-pressed={showPassword}
-                    className="shrink-0 rounded-lg p-2 text-[#93a1b3] transition-colors hover:bg-[#f1f5f9] hover:text-[#0b1b33]"
+                    className="shrink-0 rounded-control p-2 text-[var(--login-muted)] transition-colors hover:bg-[var(--login-field-hover)] hover:text-[var(--login-ink)]"
                   >
                     {showPassword ? (
                       <IconEyeOff className="h-5 w-5" />
@@ -275,84 +309,87 @@ export default function LoginClient() {
 
                 {/* Запомнить меня / Забыли пароль */}
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <label className="flex cursor-pointer items-center gap-2.5 text-sm">
+                  <label className="flex cursor-pointer items-center gap-2.5 text-small">
                     <input
                       type="checkbox"
                       name="remember"
                       defaultChecked
-                      className="h-4 w-4 rounded accent-[#2563eb]"
+                      className="h-4 w-4 rounded-chip accent-[var(--login-accent)]"
                     />
-                    <span className="font-medium text-[#3c4c60]">{t.remember}</span>
+                    <span className="font-semibold text-[var(--login-ink-soft)]">{t.remember}</span>
                   </label>
                   <button
                     type="button"
                     onClick={() => setNote(note === "forgot" ? null : "forgot")}
-                    className="text-sm font-semibold text-[#2563eb] hover:underline"
+                    className="rounded-chip text-small font-semibold text-[var(--login-accent)] hover:underline"
                   >
                     {t.forgot}
                   </button>
                 </div>
                 {note === "forgot" && (
-                  <p className="rounded-xl bg-[#f1f5f9] px-4 py-3 text-xs leading-relaxed text-[#3c4c60]">
+                  <p className="rounded-control bg-[var(--login-field-hover)] px-4 py-3 text-small leading-relaxed text-[var(--login-ink-soft)]">
                     {t.forgotNote}
                   </p>
                 )}
 
-                {/* Ошибка */}
+                {/* Ошибка: role="alert" объявляется немедленно; смысл несёт
+                    текст, красный лишь дублирует его (SC 1.4.1) */}
                 {errorText && (
                   <p
                     role="alert"
-                    className="rounded-xl border border-[#f5b5bc] bg-[#fdecee] px-4 py-3 text-sm font-semibold text-[#c31424]"
+                    className="rounded-control border-l-4 border-[var(--login-error-border)] bg-[var(--login-error-bg)] px-4 py-3 text-small font-semibold text-[var(--login-error-text)]"
                   >
                     {errorText}
                   </p>
                 )}
 
+                {/* CTA из макета: синий, а не --brand-navy. Инлайновый style
+                    заменён токеном — цвет теперь редактируется в одном месте. */}
                 <button
                   type="submit"
                   disabled={pending}
-                  className="mt-1 flex items-center justify-center gap-2.5 rounded-xl py-4 text-[15px] font-bold text-white transition-colors disabled:opacity-60"
-                  style={{ background: BLUE }}
+                  className="mt-1 flex items-center justify-center gap-2.5 rounded-control bg-[var(--login-accent)] py-4 text-body font-bold text-surface-light transition-colors hover:bg-[var(--login-accent-strong)] disabled:opacity-60"
                 >
-                  <IconArrowRight className="h-5 w-5" />
+                  <IconArrowRight className="h-5 w-5" aria-hidden="true" />
                   {pending ? t.submitting : t.submit}
                 </button>
               </form>
 
               {/* Разделитель */}
-              <div className="mt-6 flex items-center gap-3 text-xs font-medium text-[#93a1b3]">
-                <span className="h-px flex-1 bg-[#e2e8f0]" aria-hidden="true" />
+              <div className="mt-6 flex items-center gap-3 text-caption font-semibold text-[var(--login-muted)]">
+                <span className="h-px flex-1 bg-[var(--login-field-border)]" aria-hidden="true" />
                 {t.or}
-                <span className="h-px flex-1 bg-[#e2e8f0]" aria-hidden="true" />
+                <span className="h-px flex-1 bg-[var(--login-field-border)]" aria-hidden="true" />
               </div>
 
               {/* SSO (Keycloak — следующая фаза по ТЗ §9.2) */}
               <button
                 type="button"
                 onClick={() => setNote(note === "sso" ? null : "sso")}
-                className="mt-6 flex w-full items-center justify-center gap-2.5 rounded-xl border border-[#bcd0f7] py-3.5 text-sm font-semibold text-[#2563eb] transition-colors hover:bg-[#f3f7ff]"
+                className="mt-6 flex w-full items-center justify-center gap-2.5 rounded-control border border-[var(--login-accent-border)] py-3.5 text-small font-semibold text-[var(--login-accent)] transition-colors hover:bg-[var(--login-accent-soft)]"
               >
-                <IconShield className="h-[18px] w-[18px]" />
+                <IconShield className="h-[18px] w-[18px]" aria-hidden="true" />
                 {t.ssoButton}
               </button>
               {note === "sso" && (
-                <p className="mt-3 rounded-xl bg-[#f1f5f9] px-4 py-3 text-xs leading-relaxed text-[#3c4c60]">
+                <p className="mt-3 rounded-control bg-[var(--login-field-hover)] px-4 py-3 text-small leading-relaxed text-[var(--login-ink-soft)]">
                   {t.ssoNote}
                 </p>
               )}
 
-              <p className="mt-7 text-center text-sm text-[#5b6b7f]">
+              <p className="mt-7 text-center text-small text-[var(--login-muted)]">
                 {t.noAccount}{" "}
-                <span className="font-semibold text-[#2563eb]">{t.contactAdmin}</span>
+                <span className="font-semibold text-[var(--login-accent)]">{t.contactAdmin}</span>
               </p>
             </div>
           </div>
         </div>
 
         {/* Футер поверх фотографии */}
-        <footer className="mt-8 flex flex-col items-center gap-2 text-xs text-white/60 sm:flex-row sm:justify-between">
+        {/* /60 на затемнённом снимке даёт <4.5:1 — поднято до /75 */}
+        <footer className="mt-8 flex flex-col items-center gap-2 text-caption text-surface-light/75 sm:flex-row sm:justify-between">
           <p>{t.copyright}</p>
-          <p className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-white/70">
+          <p className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-surface-light/75">
             <span>{t.footerPrivacy}</span>
             <span>{t.footerTerms}</span>
             <span>{t.footerSupport}</span>

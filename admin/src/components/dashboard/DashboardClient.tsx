@@ -42,6 +42,20 @@ import LineBadge from "../LineBadge";
 import { useI18n } from "../I18nProvider";
 import NetworkSchematic from "./NetworkSchematic";
 import TajikistanOverviewMap from "./TajikistanOverviewMap";
+import { Badge, Card } from "@/shared/ui";
+
+/** Ссылка «смотреть все» в шапке карточки — повторялась в 4 секциях. */
+function ViewAllLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-1 text-small font-bold text-info hover:underline"
+    >
+      {label}
+      <IconArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+    </Link>
+  );
+}
 
 type Props = {
   lines: Line[] | null;
@@ -57,12 +71,22 @@ type Props = {
   health: string;
 };
 
+/**
+ * Тинты плашки-иконки KPI. Токены — новые (--tint-*), старые --kpi-tint-*
+ * оставались алиасами.
+ *
+ * Текст/иконка внутри плашки — --text-primary, а не цвет тона. Прежняя пара
+ * «цветной текст на цветном тинте» (text-brand-green на --tint-success)
+ * проваливала AA в тёмной теме: тинт там — rgba(19,138,61,.24) поверх #0f1d2e,
+ * и #138a3d на нём даёт ≈1.6:1. Тон теперь несёт подложка и подпись рядом,
+ * а не цвет глифа (SC 1.4.1 + 1.4.3).
+ */
 const TINTS = {
-  navy: "bg-[var(--kpi-tint-navy)] text-ink",
-  red: "bg-[var(--kpi-tint-red)] text-brand-red",
-  green: "bg-[var(--kpi-tint-green)] text-brand-green",
-  info: "bg-[var(--kpi-tint-info)] text-info",
-  warning: "bg-[var(--kpi-tint-warning)] text-warning",
+  navy: "bg-[var(--tint-neutral)]",
+  red: "bg-[var(--tint-critical)]",
+  green: "bg-[var(--tint-success)]",
+  info: "bg-[var(--tint-info)]",
+  warning: "bg-[var(--tint-warning)]",
 } as const;
 
 const subscribeClock = () => () => undefined;
@@ -85,20 +109,26 @@ function KpiCard({
   href: string;
 }) {
   return (
+    // Карточка-ссылка не «подпрыгивает» на ховере: hover:-translate-y-0.5 —
+    // язык маркетинговых плиток. Отклик даёт подложка (SC 1.4.1 не затронут:
+    // ссылка и так распознаётся по подписи).
     <Link
       href={href}
-      className="console-card group flex min-h-36 flex-col gap-3 p-4 transition-transform hover:-translate-y-0.5"
+      className="group flex min-h-36 flex-col gap-3 rounded-panel border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-4 transition-colors hover:bg-[var(--surface-hover-subtle)]"
     >
       <div className="flex items-center gap-3">
-        <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${TINTS[tint]}`}>
+        <span
+          aria-hidden="true"
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-[var(--text-primary)] ${TINTS[tint]}`}
+        >
           <Icon className="h-[22px] w-[22px]" />
         </span>
-        <span className="text-[11px] font-bold uppercase leading-tight tracking-wide text-text-secondary">
+        <span className="text-caption font-bold uppercase leading-tight tracking-[0.08em] text-text-secondary">
           {label}
         </span>
       </div>
-      <p className="data-text text-3xl font-extrabold leading-none tracking-tight">{value}</p>
-      <div className="mt-auto text-xs font-medium leading-relaxed text-text-secondary">{sub}</div>
+      <p className="data-text text-title-l font-bold leading-none">{value}</p>
+      <div className="mt-auto text-caption leading-relaxed text-text-secondary">{sub}</div>
     </Link>
   );
 }
@@ -113,18 +143,19 @@ function severityIcon(severity: Alert["severity"]) {
   return <IconInfo className="h-[18px] w-[18px] text-info" />;
 }
 
+/** Тинт + знак операции. Знак — не единственный носитель: рядом текст action. */
 function auditVisual(action: string): { cls: string; label: string } {
   const normalized = action.toLowerCase();
   if (normalized.includes("delete")) {
-    return { cls: "bg-[var(--kpi-tint-red)] text-brand-red", label: "−" };
+    return { cls: "bg-[var(--tint-critical)]", label: "−" };
   }
   if (normalized.includes("create")) {
-    return { cls: "bg-[var(--kpi-tint-green)] text-brand-green", label: "+" };
+    return { cls: "bg-[var(--tint-success)]", label: "+" };
   }
   if (normalized.includes("publish")) {
-    return { cls: "bg-[var(--kpi-tint-info)] text-info", label: "↗" };
+    return { cls: "bg-[var(--tint-info)]", label: "↗" };
   }
-  return { cls: "bg-[var(--kpi-tint-navy)] text-ink", label: "✎" };
+  return { cls: "bg-[var(--tint-neutral)]", label: "✎" };
 }
 
 export default function DashboardClient({
@@ -208,22 +239,26 @@ export default function DashboardClient({
 
   return (
     <div className="flex flex-col gap-5">
-      <section className="showcase-hero relative overflow-hidden rounded-[22px] p-5 text-surface-light shadow-[0_18px_46px_rgba(8,39,66,0.28)] sm:p-7">
-        <div className="absolute right-6 top-5 hidden items-center gap-1 opacity-80 sm:flex" aria-hidden="true">
-          <span className="h-2.5 w-8 rounded-l-full bg-brand-red" />
-          <span className="h-2.5 w-8 bg-white" />
-          <span className="h-2.5 w-8 rounded-r-full bg-brand-green" />
-        </div>
-        <div className="relative max-w-4xl">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em]">
-            <span className="h-2 w-2 rounded-full bg-[#5de18b]" />
+      {/*
+        Шапка дашборда. Было: .showcase-hero (два радиальных градиента +
+        трёхстоповый линейный) + тень 0 18px 46px + радиус 22px + rounded-full
+        на кнопках. Стало: плоская navy-плоскость, лента флага сверху как
+        государственная сигнатура, радиусы по шкале. Никакого свечения.
+      */}
+      <section className="overflow-hidden rounded-panel bg-brand-navy text-surface-light">
+        <div className="ribbon-flag" aria-hidden="true" />
+        <div className="max-w-4xl p-5 sm:p-7">
+          <span className="inline-flex items-center gap-2 rounded-chip border border-surface-light/25 px-3 py-1.5 text-caption font-bold uppercase tracking-[0.08em]">
+            {/* --status-ok (#4ade80) вместо выдуманного #5de18b: ≥3:1 к navy */}
+            <span aria-hidden="true" className="h-2 w-2 rounded-full bg-status-ok" />
             {t.phaseBadge}
           </span>
-          <p className="mt-5 text-sm font-semibold text-white/70">{greeting}</p>
-          <h1 className="mt-1 max-w-3xl text-2xl font-black tracking-tight sm:text-4xl">
+          <p className="mt-5 text-small font-semibold text-surface-light/75">{greeting}</p>
+          {/* font-black(900) не загружен вовсе; 800 — предел шкалы */}
+          <h1 className="mt-1 max-w-3xl text-title-m font-extrabold sm:text-title-l">
             {t.heroTitle}
           </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-white/75 sm:text-base">
+          <p className="mt-3 max-w-3xl text-small leading-relaxed text-surface-light/80 sm:text-body">
             {t.heroLead}
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
@@ -231,14 +266,14 @@ export default function DashboardClient({
               href={publicPortalUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-extrabold text-brand-navy transition-transform hover:-translate-y-0.5"
+              className="inline-flex items-center gap-2 rounded-control bg-surface-light px-4 py-2.5 text-small font-bold text-brand-navy transition-colors hover:bg-surface-light/90 focus-visible:outline-[var(--focus-ring-on-dark)]"
             >
               {t.openPublicPortal}
               <IconArrowRight className="h-4 w-4" />
             </a>
             <Link
               href="/map"
-              className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2.5 text-xs font-extrabold text-white transition-colors hover:bg-white/15"
+              className="inline-flex items-center gap-2 rounded-control border border-surface-light/40 px-4 py-2.5 text-small font-bold text-surface-light transition-colors hover:bg-surface-light/10 focus-visible:outline-[var(--focus-ring-on-dark)]"
             >
               <IconMap className="h-4 w-4" />
               {t.openCityMap}
@@ -315,40 +350,39 @@ export default function DashboardClient({
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(300px,0.82fr)_minmax(0,1.7fr)]">
-        <section className="console-card overflow-hidden p-5" aria-label={t.countryTitle}>
-          <div className="mb-3">
-            <h2 className="text-base font-extrabold">{t.countryTitle}</h2>
-            <p className="mt-1 text-xs leading-relaxed text-text-secondary">{t.countrySubtitle}</p>
-          </div>
+        <Card
+          heading={t.countryTitle}
+          description={t.countrySubtitle}
+          padding="lg"
+          className="overflow-hidden"
+          aria-label={t.countryTitle}
+        >
           <TajikistanOverviewMap />
-          <p className="mt-3 text-[10px] font-semibold text-text-secondary">{t.countrySource}</p>
-        </section>
+          <p className="mt-3 text-caption text-text-secondary">{t.countrySource}</p>
+        </Card>
 
-        <section className="console-card flex min-w-0 flex-col overflow-hidden p-5" aria-label={t.cityTitle}>
-          <div className="mb-2 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-base font-extrabold">{t.cityTitle}</h2>
-              <p className="mt-1 text-xs leading-relaxed text-text-secondary">{t.citySubtitle}</p>
-            </div>
-            <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${
-              networkSource === "api"
-                ? "bg-[var(--kpi-tint-green)] text-brand-green"
-                : "bg-[var(--kpi-tint-warning)] text-warning"
-            }`}>
+        <Card
+          heading={t.cityTitle}
+          description={t.citySubtitle}
+          actions={
+            <Badge tone={networkSource === "api" ? "success" : "warning"} dot>
               {networkSource === "api" ? t.sourceApi : t.sourceDemo}
-            </span>
-          </div>
-
+            </Badge>
+          }
+          padding="lg"
+          className="flex min-w-0 flex-col overflow-hidden"
+          aria-label={t.cityTitle}
+        >
           {network ? (
             <NetworkSchematic data={network} />
           ) : (
-            <p className="py-20 text-center text-sm text-text-secondary">{dict.loadError}</p>
+            <p className="py-20 text-center text-small text-text-secondary">{dict.loadError}</p>
           )}
 
           {lines && lines.length > 0 && (
-            <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 border-t border-card-border pt-3">
+            <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 border-t border-[var(--border-subtle)] pt-3">
               {lines.map((line) => (
-                <li key={line.code} className="flex items-center gap-2 text-xs font-semibold">
+                <li key={line.code} className="flex items-center gap-2 text-small font-semibold">
                   <LineBadge code={line.code} colorHex={line.colorHex} />
                   <span>{pickName(line.name, lang)}</span>
                   <span className="text-text-secondary">
@@ -356,72 +390,71 @@ export default function DashboardClient({
                   </span>
                 </li>
               ))}
-              <li className="flex items-center gap-2 text-xs font-semibold text-text-secondary">
+              <li className="flex items-center gap-2 text-small font-semibold text-text-secondary">
                 <IconTransfer className="h-4 w-4" />
                 {t.legendTransfer}: {transferCount}
               </li>
             </ul>
           )}
-        </section>
+        </Card>
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,0.8fr)]">
-        <section className="console-card p-5" aria-label={t.readinessTitle}>
-          <div className="mb-4">
-            <h2 className="text-base font-extrabold">{t.readinessTitle}</h2>
-            <p className="mt-1 text-xs leading-relaxed text-text-secondary">{t.readinessLead}</p>
-          </div>
+        <Card
+          heading={t.readinessTitle}
+          description={t.readinessLead}
+          padding="lg"
+          aria-label={t.readinessTitle}
+        >
           <div className="grid gap-3 sm:grid-cols-2">
             {readiness.map((item) => (
-              <div key={item.label} className="flex items-start justify-between gap-3 rounded-2xl border border-card-border p-4">
+              <div key={item.label} className="flex items-start justify-between gap-3 rounded-panel border border-[var(--border-subtle)] p-4">
                 <div>
-                  <p className="text-sm font-bold">{item.label}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-text-secondary">{item.detail}</p>
+                  <p className="text-small font-bold">{item.label}</p>
+                  <p className="mt-1 text-caption leading-relaxed text-text-secondary">{item.detail}</p>
                 </div>
-                <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${
-                  item.ok
-                    ? "bg-[var(--kpi-tint-green)] text-brand-green"
-                    : "bg-[var(--kpi-tint-red)] text-brand-red"
-                }`}>
+                <Badge tone={item.ok ? "success" : "critical"} dot className="shrink-0">
                   {item.ok ? t.ready : dict.loadError}
-                </span>
+                </Badge>
               </div>
             ))}
           </div>
-        </section>
+        </Card>
 
-        <section className="console-card p-5" aria-label={t.externalTitle}>
-          <h2 className="text-base font-extrabold">{t.externalTitle}</h2>
-          <p className="mt-1 text-xs leading-relaxed text-text-secondary">{t.externalLead}</p>
-          <ul className="mt-4 flex flex-col gap-2.5">
+        <Card
+          heading={t.externalTitle}
+          description={t.externalLead}
+          padding="lg"
+          aria-label={t.externalTitle}
+        >
+          <ul className="flex flex-col gap-2.5">
             {[t.externalAfc, t.externalRealtime, t.externalPayments].map((label) => (
-              <li key={label} className="flex items-center justify-between gap-3 rounded-xl border border-card-border px-3.5 py-3">
-                <span className="text-xs font-bold">{label}</span>
-                <span className="shrink-0 rounded-full bg-[var(--kpi-tint-warning)] px-2 py-1 text-[9px] font-extrabold uppercase text-warning">
+              <li key={label} className="flex items-center justify-between gap-3 rounded-control border border-[var(--border-subtle)] px-3.5 py-3">
+                <span className="text-small font-bold">{label}</span>
+                <Badge tone="warning" className="shrink-0">
                   {t.notConnected}
-                </span>
+                </Badge>
               </li>
             ))}
           </ul>
-        </section>
+        </Card>
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-3">
-        <section className="console-card p-5" aria-label={dict.alertsTitle}>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-extrabold">{dict.alertsTitle}</h2>
-            <Link href="/alerts" className="flex items-center gap-1 text-xs font-bold text-info hover:underline">
-              {t.viewAll}<IconArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
+        <Card
+          heading={dict.alertsTitle}
+          actions={<ViewAllLink href="/alerts" label={t.viewAll} />}
+          padding="lg"
+          aria-label={dict.alertsTitle}
+        >
           {alerts && alerts.length > 0 ? (
             <ul className="flex flex-col gap-3">
               {alerts.slice(0, 4).map((alert) => (
                 <li key={alert.code} className="flex gap-3">
                   <span className="mt-0.5 shrink-0">{severityIcon(alert.severity)}</span>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{pickName(alert.title, lang)}</p>
-                    <p className="text-xs text-text-secondary">
+                    <p className="truncate text-small font-semibold">{pickName(alert.title, lang)}</p>
+                    <p className="text-caption text-text-secondary">
                       {dict.severity[alert.severity]} · <time dateTime={alert.startsAt} className="data-text">{formatDateTime(alert.startsAt, lang)}</time>
                     </p>
                   </div>
@@ -429,42 +462,48 @@ export default function DashboardClient({
               ))}
             </ul>
           ) : (
-            <p className="flex items-center gap-2 rounded-xl bg-[var(--kpi-tint-green)] px-3 py-3 text-sm font-semibold text-brand-green">
-              <IconCheckCircle className="h-5 w-5 shrink-0" />
+            // Текст --text-primary поверх тинта (≈13:1 в обеих темах) вместо
+            // text-brand-green на --tint-success (≈1.6:1 в тёмной).
+            <p className="flex items-center gap-2 rounded-control bg-[var(--tint-success)] px-3 py-3 text-small font-semibold text-[var(--text-primary)]">
+              <IconCheckCircle className="h-5 w-5 shrink-0 text-brand-green" />
               {t.alertsEmpty}
             </p>
           )}
-        </section>
+        </Card>
 
-        <section className="console-card p-5" aria-label={t.requestQueueTitle}>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-extrabold">{t.requestQueueTitle}</h2>
-            <Link href="/requests" className="flex items-center gap-1 text-xs font-bold text-info hover:underline">
-              {t.viewAll}<IconArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
+        <Card
+          heading={t.requestQueueTitle}
+          actions={<ViewAllLink href="/requests" label={t.viewAll} />}
+          padding="lg"
+          aria-label={t.requestQueueTitle}
+        >
           {openRequests.length > 0 ? (
             <ul className="flex flex-col gap-3">
               {openRequests.slice(0, 4).map((request) => (
-                <li key={request.code} className="rounded-xl border border-card-border px-3 py-2.5">
+                <li key={request.code} className="rounded-control border border-[var(--border-subtle)] px-3 py-2.5">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="data-text text-[10px] font-bold text-info">{request.code}</span>
-                    <span className="text-[10px] font-bold text-text-secondary">{dict.operations.requestStatuses[request.status]}</span>
+                    <span className="data-text text-caption font-bold">{request.code}</span>
+                    <span className="text-caption font-semibold text-text-secondary">{dict.operations.requestStatuses[request.status]}</span>
                   </div>
-                  <p className="mt-1 truncate text-sm font-semibold">{request.subject}</p>
+                  <p className="mt-1 truncate text-small font-semibold">{request.subject}</p>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="py-6 text-center text-sm text-text-secondary">{t.requestQueueEmpty}</p>
+            <p className="py-6 text-center text-small text-text-secondary">{t.requestQueueEmpty}</p>
           )}
-        </section>
+        </Card>
 
-        <section className="console-card p-5" aria-label={t.quickTitle}>
-          <h2 className="mb-3 flex items-center gap-2 text-base font-extrabold">
-            <IconBolt className="h-[18px] w-[18px] text-warning" />
-            {t.quickTitle}
-          </h2>
+        <Card
+          heading={
+            <span className="flex items-center gap-2">
+              <IconBolt className="h-[18px] w-[18px] text-warning" aria-hidden="true" />
+              {t.quickTitle}
+            </span>
+          }
+          padding="lg"
+          aria-label={t.quickTitle}
+        >
           <div className="grid grid-cols-2 gap-2.5">
             {[
               { href: "/lines", label: t.quickLine },
@@ -472,79 +511,84 @@ export default function DashboardClient({
               { href: "/alerts", label: t.quickAlert },
               { href: "/imports", label: dict.operations.importsTitle },
             ].map((action) => (
-              <Link key={action.href} href={action.href} className="flex items-center gap-2 rounded-xl border border-card-border px-3 py-3 text-xs font-bold transition-colors hover:border-info hover:text-info">
-                <IconPlus className="h-4 w-4 shrink-0" />
+              <Link key={action.href} href={action.href} className="flex items-center gap-2 rounded-control border border-[var(--border-subtle)] px-3 py-3 text-small font-bold transition-colors hover:bg-[var(--surface-hover)]">
+                <IconPlus className="h-4 w-4 shrink-0" aria-hidden="true" />
                 {action.label}
               </Link>
             ))}
           </div>
           {latestNews && (
-            <div className="mt-3 rounded-xl bg-[var(--chip-bg)] p-3">
-              <p className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wide text-text-secondary">
-                <IconNews className="h-3.5 w-3.5" />{dict.countNews}
+            <div className="mt-3 rounded-control bg-[var(--surface-chip)] p-3">
+              <p className="flex items-center gap-2 text-caption font-bold uppercase tracking-[0.08em] text-text-secondary">
+                <IconNews className="h-3.5 w-3.5" aria-hidden="true" />{dict.countNews}
               </p>
-              <p className="mt-1 truncate text-xs font-bold">{pickName(latestNews.title, lang)}</p>
+              <p className="mt-1 truncate text-small font-bold">{pickName(latestNews.title, lang)}</p>
             </div>
           )}
-        </section>
+        </Card>
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
-        <section className="console-card p-5" aria-label={t.auditTitle}>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-extrabold">{t.auditTitle}</h2>
-            <Link href="/audit" className="flex items-center gap-1 text-xs font-bold text-info hover:underline">
-              {t.viewAll}<IconArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
+        <Card
+          heading={t.auditTitle}
+          actions={<ViewAllLink href="/audit" label={t.viewAll} />}
+          padding="lg"
+          aria-label={t.auditTitle}
+        >
           {auditTail.length > 0 ? (
             <ol className="grid gap-x-5 sm:grid-cols-2">
               {auditTail.map((event) => {
                 const visual = auditVisual(event.action);
                 return (
-                  <li key={event.id} className="flex gap-3 border-b border-card-border py-3 first:pt-0 last:border-0">
-                    <span aria-hidden="true" className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${visual.cls}`}>{visual.label}</span>
+                  <li key={event.id} className="flex gap-3 border-b border-[var(--border-subtle)] py-3 first:pt-0 last:border-0">
+                    {/* Окружность — законный rounded-full; знак дублирует
+                        текст action рядом, а не заменяет его. */}
+                    <span aria-hidden="true" className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-small font-bold text-[var(--text-primary)] ${visual.cls}`}>{visual.label}</span>
                     <div className="min-w-0 pt-1">
-                      <p className="truncate text-sm font-semibold"><span className="data-text text-xs">{event.action}</span> · {event.entityType}</p>
-                      <p className="truncate text-xs text-text-secondary">{event.actor} · <time dateTime={event.at} className="data-text">{formatDateTime(event.at, lang)}</time></p>
+                      <p className="truncate text-small font-semibold"><span className="data-text text-caption">{event.action}</span> · {event.entityType}</p>
+                      <p className="truncate text-caption text-text-secondary">{event.actor} · <time dateTime={event.at} className="data-text">{formatDateTime(event.at, lang)}</time></p>
                     </div>
                   </li>
                 );
               })}
             </ol>
           ) : (
-            <p className="py-6 text-center text-sm text-text-secondary">{t.auditEmpty}</p>
+            <p className="py-6 text-center text-small text-text-secondary">{t.auditEmpty}</p>
           )}
-        </section>
+        </Card>
 
-        <section className="console-card p-5" aria-label={t.systemTitle}>
-          <h2 className="mb-3 flex items-center gap-2 text-base font-extrabold">
-            <IconPulse className="h-[18px] w-[18px] text-info" />
-            {t.systemTitle}
-          </h2>
+        <Card
+          heading={
+            <span className="flex items-center gap-2">
+              <IconPulse className="h-[18px] w-[18px] text-info" aria-hidden="true" />
+              {t.systemTitle}
+            </span>
+          }
+          padding="lg"
+          aria-label={t.systemTitle}
+        >
           <ul className="flex flex-col gap-2.5">
-            <li className="flex items-center justify-between rounded-xl border border-card-border px-3.5 py-3">
-              <span className="text-sm font-semibold">{t.healthBackend}</span>
-              <span className={`flex items-center gap-1.5 text-xs font-bold ${healthOk ? "text-brand-green" : "text-brand-red"}`}>
-                <span aria-hidden="true" className={`h-2 w-2 rounded-full ${healthOk ? "bg-brand-green" : "bg-brand-red"}`} />
+            <li className="flex items-center justify-between rounded-control border border-[var(--border-subtle)] px-3.5 py-3">
+              <span className="text-small font-semibold">{t.healthBackend}</span>
+              <Badge tone={healthOk ? "success" : "critical"} dot>
                 {healthOk ? t.healthUp : t.healthDown}
-              </span>
+              </Badge>
             </li>
-            <li className="flex items-center justify-between rounded-xl border border-card-border px-3.5 py-3">
-              <span className="text-sm font-semibold">{t.healthData}</span>
-              <span className={`text-xs font-bold ${networkSource === "api" ? "text-brand-green" : "text-warning"}`}>
+            <li className="flex items-center justify-between rounded-control border border-[var(--border-subtle)] px-3.5 py-3">
+              <span className="text-small font-semibold">{t.healthData}</span>
+              <Badge tone={networkSource === "api" ? "success" : "warning"} dot>
                 {networkSource === "api" ? t.sourceApi : t.sourceDemo}
-              </span>
+              </Badge>
             </li>
           </ul>
           {briefing && (
-            <div className="mt-3 rounded-xl bg-[var(--chip-bg)] p-3">
-              <p className="flex items-center gap-2 text-xs font-extrabold"><IconSpark className="h-4 w-4 text-brand-green" />{t.aiTitle}</p>
-              <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">{briefing.recommendations[0] ?? briefing.posture}</p>
+            <div className="mt-3 rounded-control bg-[var(--surface-chip)] p-3">
+              <p className="flex items-center gap-2 text-small font-bold"><IconSpark className="h-4 w-4 text-brand-green" aria-hidden="true" />{t.aiTitle}</p>
+              <p className="mt-1 text-caption leading-relaxed text-text-secondary">{briefing.recommendations[0] ? pickName(briefing.recommendations[0], lang) : briefing.posture}</p>
             </div>
           )}
-          <p className="mt-3 text-[11px] leading-relaxed text-text-secondary">{t.systemFootnote}</p>
-        </section>
+          <p className="mt-3 text-caption leading-relaxed text-text-secondary">{t.systemFootnote}</p>
+        </Card>
       </div>
     </div>
   );

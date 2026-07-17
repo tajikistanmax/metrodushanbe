@@ -83,7 +83,7 @@ export default function StationsTable({
             {s.accessibility.map((a) => (
               <span
                 key={a}
-                className="rounded-full bg-[var(--chip-bg)] px-2 py-0.5 text-xs"
+                className="rounded-full bg-[var(--surface-chip)] px-2 py-0.5 text-xs"
               >
                 {dict.accessibility[a] ?? a}
               </span>

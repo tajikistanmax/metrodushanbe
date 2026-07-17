@@ -15,17 +15,24 @@
 
 import { revalidatePath } from "next/cache";
 import { API_BASE } from "./api";
+import { ADMIN_FETCH_TIMEOUT_MS, adminApiKey } from "./server-config";
 import { requireAdminRole, requireAdminSession } from "./server-auth";
+import { ADMIN_PAGE_SIZE } from "./admin-forms";
 import type {
   ActionResult,
   AdminUserCreateBody,
   AdminUserUpdateBody,
   AlertCreateBody,
   AlertUpdateBody,
+  BlocklistCreateBody,
   LineCreateBody,
   LineUpdateBody,
   NewsCreateBody,
   NewsUpdateBody,
+  NotificationCreateBody,
+  NotificationTemplateCreateBody,
+  NotificationTemplateUpdateBody,
+  NotificationUpdateBody,
   CalendarExceptionBody,
   CitizenRequestUpdateBody,
   FareCreateBody,
@@ -35,6 +42,9 @@ import type {
   IncidentUpdateBody,
   StationCreateBody,
   StationUpdateBody,
+  TicketRefundBody,
+  WebhookCreateBody,
+  WebhookUpdateBody,
 } from "./admin-forms";
 import type {
   AdminUserAccount,
@@ -42,6 +52,7 @@ import type {
   AiChatResponse,
   Alert,
   AuditEvent,
+  BlocklistEntry,
   CalendarException,
   CitizenRequestAdmin,
   FeatureFlag,
@@ -49,18 +60,31 @@ import type {
   Incident,
   IncidentStats,
   ImportError,
-  ImportJob,
   ImportPage,
   Line,
   News,
+  Notification,
+  NotificationDelivery,
+  NotificationDeliveryPage,
+  NotificationPage,
+  NotificationTemplate,
+  Payment,
+  Refund,
   Station,
+  Ticket,
+  WebhookDelivery,
+  WebhookDeliveryPage,
+  WebhookSecret,
+  WebhookSubscription,
 } from "./types";
 
 /** Форма результата чтения для таблиц/панелей: данные либо причина ошибки. */
 type ReadResult<T> = { data: T | null; error: string | null };
 
-/** Dev-ключ по умолчанию (совпадает с app.admin.dev-key backend). */
-const DEFAULT_ADMIN_KEY = "dev-admin-key-change-me";
+/** Единая query-строка пагинации: контракт /v1/admin/imports. */
+function pageQuery(page: number, size: number): string {
+  return `?page=${page}&size=${size}`;
+}
 
 type Method = "POST" | "PUT" | "DELETE";
 
@@ -76,7 +100,7 @@ async function adminFetch<T>(
   extraHeaders?: Record<string, string>,
 ): Promise<ActionResult<T>> {
   const session = await requireAdminSession();
-  const adminKey = process.env.ADMIN_API_KEY ?? DEFAULT_ADMIN_KEY;
+  const adminKey = adminApiKey();
   try {
     const res = await fetch(`${API_BASE}/admin${path}`, {
       method,
@@ -91,6 +115,7 @@ async function adminFetch<T>(
         ...extraHeaders,
       },
       body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(ADMIN_FETCH_TIMEOUT_MS),
     });
 
     if (res.status === 204) {
@@ -126,7 +151,7 @@ async function adminFetch<T>(
 /** Защищённое серверное чтение /admin/** с единым ключом и envelope ошибки. */
 async function adminRead<T>(path: string): Promise<ReadResult<T>> {
   const session = await requireAdminSession();
-  const adminKey = process.env.ADMIN_API_KEY ?? DEFAULT_ADMIN_KEY;
+  const adminKey = adminApiKey();
   try {
     const res = await fetch(`${API_BASE}/admin${path}`, {
       cache: "no-store",
@@ -135,6 +160,7 @@ async function adminRead<T>(path: string): Promise<ReadResult<T>> {
         "X-Admin-Key": adminKey,
         "X-Admin-Actor": session.username,
       },
+      signal: AbortSignal.timeout(ADMIN_FETCH_TIMEOUT_MS),
     });
     if (!res.ok) {
       return { data: null, error: `HTTP ${res.status} ${res.statusText}`.trim() };
@@ -158,6 +184,7 @@ function safeJson(text: string): unknown {
 export async function createLine(
   body: LineCreateBody,
 ): Promise<ActionResult<Line>> {
+  await requireAdminRole("editor");
   const r = await adminFetch<Line>("/lines", "POST", body);
   if (r.ok) revalidatePath("/lines");
   return r;
@@ -167,12 +194,14 @@ export async function updateLine(
   code: string,
   body: LineUpdateBody,
 ): Promise<ActionResult<Line>> {
+  await requireAdminRole("editor");
   const r = await adminFetch<Line>(`/lines/${encodeURIComponent(code)}`, "PUT", body);
   if (r.ok) revalidatePath("/lines");
   return r;
 }
 
 export async function deleteLine(code: string): Promise<ActionResult<null>> {
+  await requireAdminRole("editor");
   const r = await adminFetch<null>(`/lines/${encodeURIComponent(code)}`, "DELETE");
   if (r.ok) revalidatePath("/lines");
   return r;
@@ -183,6 +212,7 @@ export async function deleteLine(code: string): Promise<ActionResult<null>> {
 export async function createStation(
   body: StationCreateBody,
 ): Promise<ActionResult<Station>> {
+  await requireAdminRole("editor");
   const r = await adminFetch<Station>("/stations", "POST", body);
   if (r.ok) revalidatePath("/stations");
   return r;
@@ -192,6 +222,7 @@ export async function updateStation(
   code: string,
   body: StationUpdateBody,
 ): Promise<ActionResult<Station>> {
+  await requireAdminRole("editor");
   const r = await adminFetch<Station>(
     `/stations/${encodeURIComponent(code)}`,
     "PUT",
@@ -202,6 +233,7 @@ export async function updateStation(
 }
 
 export async function deleteStation(code: string): Promise<ActionResult<null>> {
+  await requireAdminRole("editor");
   const r = await adminFetch<null>(
     `/stations/${encodeURIComponent(code)}`,
     "DELETE",
@@ -215,6 +247,7 @@ export async function deleteStation(code: string): Promise<ActionResult<null>> {
 export async function createAlert(
   body: AlertCreateBody,
 ): Promise<ActionResult<Alert>> {
+  await requireAdminRole("operator");
   const r = await adminFetch<Alert>("/alerts", "POST", body);
   if (r.ok) revalidatePath("/alerts");
   return r;
@@ -224,6 +257,7 @@ export async function updateAlert(
   code: string,
   body: AlertUpdateBody,
 ): Promise<ActionResult<Alert>> {
+  await requireAdminRole("operator");
   const r = await adminFetch<Alert>(
     `/alerts/${encodeURIComponent(code)}`,
     "PUT",
@@ -234,6 +268,7 @@ export async function updateAlert(
 }
 
 export async function publishAlert(code: string): Promise<ActionResult<Alert>> {
+  await requireAdminRole("operator");
   const r = await adminFetch<Alert>(
     `/alerts/${encodeURIComponent(code)}/publish`,
     "POST",
@@ -247,6 +282,7 @@ export async function publishAlert(code: string): Promise<ActionResult<Alert>> {
 export async function createNews(
   body: NewsCreateBody,
 ): Promise<ActionResult<News>> {
+  await requireAdminRole("editor");
   const r = await adminFetch<News>("/news", "POST", body);
   if (r.ok) revalidatePath("/news");
   return r;
@@ -256,6 +292,7 @@ export async function updateNews(
   slug: string,
   body: NewsUpdateBody,
 ): Promise<ActionResult<News>> {
+  await requireAdminRole("editor");
   const r = await adminFetch<News>(
     `/news/${encodeURIComponent(slug)}`,
     "PUT",
@@ -266,6 +303,7 @@ export async function updateNews(
 }
 
 export async function publishNews(slug: string): Promise<ActionResult<News>> {
+  await requireAdminRole("editor");
   const r = await adminFetch<News>(
     `/news/${encodeURIComponent(slug)}/publish`,
     "POST",
@@ -276,46 +314,15 @@ export async function publishNews(slug: string): Promise<ActionResult<News>> {
 
 // --- Импорт сети ------------------------------------------------------------
 
-export async function getImportJobs(): Promise<ReadResult<ImportPage>> {
-  return adminRead<ImportPage>("/imports?page=0&size=50");
+export async function getImportJobs(
+  page = 0,
+  size = ADMIN_PAGE_SIZE,
+): Promise<ReadResult<ImportPage>> {
+  return adminRead<ImportPage>(`/imports${pageQuery(page, size)}`);
 }
 
 export async function getImportErrors(id: string): Promise<ReadResult<ImportError[]>> {
   return adminRead<ImportError[]>(`/imports/${encodeURIComponent(id)}/errors`);
-}
-
-export async function importNetworkGeoJson(
-  sourceName: string,
-  text: string,
-): Promise<ActionResult<ImportJob>> {
-  let payload: unknown;
-  try {
-    payload = JSON.parse(text);
-  } catch {
-    return {
-      ok: false,
-      error: { code: "import.invalid_json", message: "Invalid JSON/GeoJSON" },
-    };
-  }
-  if (
-    !payload ||
-    typeof payload !== "object" ||
-    (payload as { type?: unknown }).type !== "FeatureCollection"
-  ) {
-    return {
-      ok: false,
-      error: {
-        code: "import.invalid_geojson",
-        message: "Expected a GeoJSON FeatureCollection",
-      },
-    };
-  }
-  const safeSource = sourceName.trim().replace(/[^\x20-\x7e]/g, "_") || "admin-upload.geojson";
-  const result = await adminFetch<ImportJob>("/imports", "POST", payload, {
-    "X-Import-Source": safeSource,
-  });
-  if (result.ok) revalidatePath("/imports");
-  return result;
 }
 
 // --- Календарные исключения -------------------------------------------------
@@ -327,6 +334,7 @@ export async function getCalendarExceptions(): Promise<ReadResult<CalendarExcept
 export async function createCalendarException(
   body: CalendarExceptionBody,
 ): Promise<ActionResult<CalendarException>> {
+  await requireAdminRole("editor");
   const result = await adminFetch<CalendarException>("/calendar-exceptions", "POST", body);
   if (result.ok) revalidatePath("/calendar");
   return result;
@@ -336,6 +344,7 @@ export async function updateCalendarException(
   id: number,
   body: CalendarExceptionBody,
 ): Promise<ActionResult<CalendarException>> {
+  await requireAdminRole("editor");
   const result = await adminFetch<CalendarException>(
     `/calendar-exceptions/${id}`,
     "PUT",
@@ -346,6 +355,7 @@ export async function updateCalendarException(
 }
 
 export async function deleteCalendarException(id: number): Promise<ActionResult<null>> {
+  await requireAdminRole("editor");
   const result = await adminFetch<null>(`/calendar-exceptions/${id}`, "DELETE");
   if (result.ok) revalidatePath("/calendar");
   return result;
@@ -361,6 +371,7 @@ export async function setFeatureFlag(
   flagKey: string,
   enabled: boolean,
 ): Promise<ActionResult<null>> {
+  await requireAdminRole("superadmin");
   const result = await adminFetch<null>(
     `/feature-flags/${encodeURIComponent(flagKey)}`,
     "PUT",
@@ -380,6 +391,7 @@ export async function updateCitizenRequest(
   code: string,
   body: CitizenRequestUpdateBody,
 ): Promise<ActionResult<CitizenRequestAdmin>> {
+  await requireAdminRole("operator");
   const result = await adminFetch<CitizenRequestAdmin>(
     `/requests/${encodeURIComponent(code)}`,
     "PUT",
@@ -398,6 +410,7 @@ export async function getFareProducts(): Promise<ReadResult<FareProduct[]>> {
 export async function createFareProduct(
   body: FareCreateBody,
 ): Promise<ActionResult<FareProduct>> {
+  await requireAdminRole("editor");
   const result = await adminFetch<FareProduct>("/fares", "POST", body);
   if (result.ok) revalidatePath("/fares");
   return result;
@@ -407,6 +420,7 @@ export async function updateFareProduct(
   code: string,
   body: FareUpdateBody,
 ): Promise<ActionResult<FareProduct>> {
+  await requireAdminRole("editor");
   const result = await adminFetch<FareProduct>(
     `/fares/${encodeURIComponent(code)}`,
     "PUT",
@@ -417,6 +431,7 @@ export async function updateFareProduct(
 }
 
 export async function deleteFareProduct(code: string): Promise<ActionResult<null>> {
+  await requireAdminRole("editor");
   const result = await adminFetch<null>(`/fares/${encodeURIComponent(code)}`, "DELETE");
   if (result.ok) revalidatePath("/fares");
   return result;
@@ -477,6 +492,344 @@ export async function transitionIncident(
   return result;
 }
 
+// --- Рассылки (NTF-01…06) ---------------------------------------------------
+
+/**
+ * Рассылки ведёт дежурная смена: роль operator (зеркало AdminKeyAuthFilter,
+ * префикс /v1/admin/notifications). Шаблоны — ниже, они редакционные (editor).
+ */
+/**
+ * Лента рассылок (NTF-01) страницей. Фильтр по статусу считает backend, а не
+ * консоль: отфильтровать уже пришедшую страницу значило бы фильтровать 50 строк
+ * из тысячи и показывать оператору не ту ленту, которую он выбрал.
+ */
+export async function getNotifications(
+  status?: string,
+  page = 0,
+  size = ADMIN_PAGE_SIZE,
+): Promise<ReadResult<NotificationPage>> {
+  const filter = status ? `&status=${encodeURIComponent(status)}` : "";
+  return adminRead<NotificationPage>(`/notifications${pageQuery(page, size)}${filter}`);
+}
+
+export async function getNotificationDeliveries(
+  code: string,
+  page = 0,
+  size = ADMIN_PAGE_SIZE,
+): Promise<ReadResult<NotificationDeliveryPage>> {
+  return adminRead<NotificationDeliveryPage>(
+    `/notifications/${encodeURIComponent(code)}/deliveries${pageQuery(page, size)}`,
+  );
+}
+
+/** Всё, что не доставлено: pending и failed (OPS-04). Выдача постраничная. */
+export async function getNotificationProblemDeliveries(
+  page = 0,
+  size = ADMIN_PAGE_SIZE,
+): Promise<ReadResult<NotificationDeliveryPage>> {
+  return adminRead<NotificationDeliveryPage>(
+    `/notifications/deliveries/problems${pageQuery(page, size)}`,
+  );
+}
+
+export async function createNotification(
+  body: NotificationCreateBody,
+): Promise<ActionResult<Notification>> {
+  await requireAdminRole("operator");
+  const result = await adminFetch<Notification>("/notifications", "POST", body);
+  if (result.ok) revalidatePath("/notifications");
+  return result;
+}
+
+/**
+ * Правка рассылки. Замороженную (sending/sent/cancelled) backend не даст
+ * изменить — 400 notification.frozen; консоль гасит кнопку заранее, но
+ * решение всё равно остаётся за сервером.
+ */
+export async function updateNotification(
+  code: string,
+  body: NotificationUpdateBody,
+): Promise<ActionResult<Notification>> {
+  await requireAdminRole("operator");
+  const result = await adminFetch<Notification>(
+    `/notifications/${encodeURIComponent(code)}`,
+    "PUT",
+    body,
+  );
+  if (result.ok) revalidatePath("/notifications");
+  return result;
+}
+
+/** Перевод по карте NotificationStatus.TRANSITIONS; sent — только через send. */
+export async function changeNotificationStatus(
+  code: string,
+  status: string,
+): Promise<ActionResult<Notification>> {
+  await requireAdminRole("operator");
+  const result = await adminFetch<Notification>(
+    `/notifications/${encodeURIComponent(code)}/status`,
+    "POST",
+    { status },
+  );
+  if (result.ok) revalidatePath("/notifications");
+  return result;
+}
+
+/**
+ * Отправка: draft/scheduled → sending → sent, создаёт доставку на каждого
+ * получателя × канал. Реально уходит только in_app; push/email/sms имитируются.
+ */
+export async function sendNotification(
+  code: string,
+): Promise<ActionResult<Notification>> {
+  await requireAdminRole("operator");
+  const result = await adminFetch<Notification>(
+    `/notifications/${encodeURIComponent(code)}/send`,
+    "POST",
+  );
+  if (result.ok) revalidatePath("/notifications");
+  return result;
+}
+
+/**
+ * Повтор проваленной доставки: failed → pending. Повтор ставит доставку обратно
+ * в очередь, а не объявляет её отправленной. {id} — uuid (своего code у неё нет).
+ */
+export async function retryNotificationDelivery(
+  id: string,
+): Promise<ActionResult<NotificationDelivery>> {
+  await requireAdminRole("operator");
+  const result = await adminFetch<NotificationDelivery>(
+    `/notifications/deliveries/${encodeURIComponent(id)}/retry`,
+    "POST",
+  );
+  if (result.ok) revalidatePath("/notifications");
+  return result;
+}
+
+// --- Шаблоны рассылок (NTF-05) ----------------------------------------------
+
+/**
+ * Шаблоны — редакционный справочник: роль editor. Префикс
+ * /v1/admin/notification-templates НЕ попадает под /v1/admin/notifications
+ * (расходятся на '-' против 's'), поэтому backend требует здесь EDITOR.
+ */
+export async function getNotificationTemplates(): Promise<
+  ReadResult<NotificationTemplate[]>
+> {
+  return adminRead<NotificationTemplate[]>("/notification-templates");
+}
+
+export async function createNotificationTemplate(
+  body: NotificationTemplateCreateBody,
+): Promise<ActionResult<NotificationTemplate>> {
+  await requireAdminRole("editor");
+  const result = await adminFetch<NotificationTemplate>(
+    "/notification-templates",
+    "POST",
+    body,
+  );
+  if (result.ok) revalidatePath("/notifications");
+  return result;
+}
+
+/** Правка шаблона не трогает уже созданные из него рассылки: их тексты — копия. */
+export async function updateNotificationTemplate(
+  code: string,
+  body: NotificationTemplateUpdateBody,
+): Promise<ActionResult<NotificationTemplate>> {
+  await requireAdminRole("editor");
+  const result = await adminFetch<NotificationTemplate>(
+    `/notification-templates/${encodeURIComponent(code)}`,
+    "PUT",
+    body,
+  );
+  if (result.ok) revalidatePath("/notifications");
+  return result;
+}
+
+export async function deleteNotificationTemplate(
+  code: string,
+): Promise<ActionResult<null>> {
+  await requireAdminRole("editor");
+  const result = await adminFetch<null>(
+    `/notification-templates/${encodeURIComponent(code)}`,
+    "DELETE",
+  );
+  if (result.ok) revalidatePath("/notifications");
+  return result;
+}
+
+// --- Билеты, платежи, чёрный список (TKT-03/05/06) --------------------------
+
+/**
+ * Билеты и платежи — контур кассы и дежурного: роль operator (зеркало
+ * AdminKeyAuthFilter для /tickets, /payments, /blocklist).
+ */
+export async function getTickets(status?: string): Promise<ReadResult<Ticket[]>> {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  return adminRead<Ticket[]>(`/tickets${query}`);
+}
+
+export async function getPayments(
+  status?: string,
+): Promise<ReadResult<Payment[]>> {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  return adminRead<Payment[]>(`/payments${query}`);
+}
+
+export async function getBlocklist(
+  subjectType?: string,
+): Promise<ReadResult<BlocklistEntry[]>> {
+  const query = subjectType
+    ? `?subjectType=${encodeURIComponent(subjectType)}`
+    : "";
+  return adminRead<BlocklistEntry[]>(`/blocklist${query}`);
+}
+
+/**
+ * Ручной возврат: в отличие от публичного допускает уже использованный билет
+ * (сбой турникета, решение по жалобе). Операция именная и попадает в аудит.
+ */
+export async function refundTicket(
+  code: string,
+  body: TicketRefundBody,
+): Promise<ActionResult<Refund>> {
+  await requireAdminRole("operator");
+  const result = await adminFetch<Refund>(
+    `/tickets/${encodeURIComponent(code)}/refund`,
+    "POST",
+    body,
+  );
+  if (result.ok) revalidatePath("/tickets");
+  return result;
+}
+
+/**
+ * Блокировка применяется немедленно: билеты субъекта переводятся в blocked.
+ * Для subjectType=token сюда идёт САМ токен — сервис сохранит только SHA-256.
+ */
+export async function addToBlocklist(
+  body: BlocklistCreateBody,
+): Promise<ActionResult<BlocklistEntry>> {
+  await requireAdminRole("operator");
+  const result = await adminFetch<BlocklistEntry>("/blocklist", "POST", body);
+  if (result.ok) revalidatePath("/tickets");
+  return result;
+}
+
+/**
+ * Снятие блокировки открывает субъекту покупку новых билетов, но уже
+ * заблокированные билеты не восстанавливает: их токены скомпрометированы.
+ */
+export async function removeFromBlocklist(
+  code: string,
+): Promise<ActionResult<null>> {
+  await requireAdminRole("operator");
+  const result = await adminFetch<null>(
+    `/blocklist/${encodeURIComponent(code)}`,
+    "DELETE",
+  );
+  if (result.ok) revalidatePath("/tickets");
+  return result;
+}
+
+// --- Вебхуки: подписчики и очередь доставок (ADM-06, U-OPS-04) --------------
+
+export async function getWebhookSubscriptions(): Promise<
+  ReadResult<WebhookSubscription[]>
+> {
+  return adminRead<WebhookSubscription[]>("/webhooks");
+}
+
+/**
+ * Без фильтра backend отдаёт только требующие внимания: failed и dead (DLQ).
+ * Выдача постраничная — очередь растёт как события × подписчики.
+ */
+export async function getWebhookDeliveries(
+  status?: string,
+  page = 0,
+  size = ADMIN_PAGE_SIZE,
+): Promise<ReadResult<WebhookDeliveryPage>> {
+  const filter = status ? `&status=${encodeURIComponent(status)}` : "";
+  return adminRead<WebhookDeliveryPage>(
+    `/webhooks/deliveries${pageQuery(page, size)}${filter}`,
+  );
+}
+
+/**
+ * Подписчик — это внешний адрес, куда уходят данные сети, плюс секрет подписи
+ * и лимиты: заводить их вправе только суперадмин.
+ */
+export async function createWebhookSubscription(
+  body: WebhookCreateBody,
+): Promise<ActionResult<WebhookSecret>> {
+  await requireAdminRole("superadmin");
+  const result = await adminFetch<WebhookSecret>("/webhooks", "POST", body);
+  if (result.ok) revalidatePath("/webhooks");
+  return result;
+}
+
+/** Секрет этой операцией не меняется — только ротацией. */
+export async function updateWebhookSubscription(
+  code: string,
+  body: WebhookUpdateBody,
+): Promise<ActionResult<WebhookSubscription>> {
+  await requireAdminRole("superadmin");
+  const result = await adminFetch<WebhookSubscription>(
+    `/webhooks/${encodeURIComponent(code)}`,
+    "PUT",
+    body,
+  );
+  if (result.ok) revalidatePath("/webhooks");
+  return result;
+}
+
+/**
+ * Ротация: новый секрет виден ОДИН раз. Старый перестаёт действовать немедленно —
+ * подписчик будет отвергать доставки, пока не обновит ключ у себя.
+ */
+export async function rotateWebhookSecret(
+  code: string,
+): Promise<ActionResult<WebhookSecret>> {
+  await requireAdminRole("superadmin");
+  const result = await adminFetch<WebhookSecret>(
+    `/webhooks/${encodeURIComponent(code)}/secret`,
+    "POST",
+  );
+  if (result.ok) revalidatePath("/webhooks");
+  return result;
+}
+
+export async function deleteWebhookSubscription(
+  code: string,
+): Promise<ActionResult<null>> {
+  await requireAdminRole("superadmin");
+  const result = await adminFetch<null>(
+    `/webhooks/${encodeURIComponent(code)}`,
+    "DELETE",
+  );
+  if (result.ok) revalidatePath("/webhooks");
+  return result;
+}
+
+/**
+ * Ручной повтор доставки — рутина дежурной смены, а не владельца ключей:
+ * роль operator, как и в AdminKeyAuthFilter (там /webhooks/deliveries
+ * проверяется ДО /webhooks именно ради этого).
+ */
+export async function retryWebhookDelivery(
+  code: string,
+): Promise<ActionResult<WebhookDelivery>> {
+  await requireAdminRole("operator");
+  const result = await adminFetch<WebhookDelivery>(
+    `/webhooks/deliveries/${encodeURIComponent(code)}/retry`,
+    "POST",
+  );
+  if (result.ok) revalidatePath("/webhooks");
+  return result;
+}
+
 // --- Операторы консоли ------------------------------------------------------
 
 /**
@@ -533,7 +886,7 @@ export async function deleteAdminUser(
  */
 export async function getAuditEvents(): Promise<ReadResult<AuditEvent[]>> {
   const session = await requireAdminSession();
-  const adminKey = process.env.ADMIN_API_KEY ?? DEFAULT_ADMIN_KEY;
+  const adminKey = adminApiKey();
   try {
     const res = await fetch(`${API_BASE}/admin/audit`, {
       cache: "no-store",
@@ -542,6 +895,7 @@ export async function getAuditEvents(): Promise<ReadResult<AuditEvent[]>> {
         "X-Admin-Key": adminKey,
         "X-Admin-Actor": session.username,
       },
+      signal: AbortSignal.timeout(ADMIN_FETCH_TIMEOUT_MS),
     });
     if (!res.ok) {
       return { data: null, error: `HTTP ${res.status} ${res.statusText}`.trim() };

@@ -109,7 +109,7 @@ export default function AlertForm({ row, onSuccess, onCancel }: Props) {
   }
 
   const dateInput =
-    "w-full rounded-lg border border-[var(--card-border)] bg-[var(--card-bg)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus-visible:outline-3";
+    "w-full rounded-control border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus-visible:outline-3";
 
   return (
     <form onSubmit={submit} className="grid gap-4" noValidate>
@@ -122,7 +122,7 @@ export default function AlertForm({ row, onSuccess, onCancel }: Props) {
       ) : null}
 
       {!editing ? (
-        <p className="rounded-lg border border-[var(--card-border)] bg-[var(--chip-bg)] px-3 py-2 text-xs text-text-secondary">
+        <p className="rounded-control border border-[var(--border-subtle)] bg-[var(--surface-chip)] px-3 py-2 text-xs text-text-secondary">
           {dict.form.draftHint}
         </p>
       ) : null}
@@ -210,7 +210,7 @@ export default function AlertForm({ row, onSuccess, onCancel }: Props) {
         </div>
       </div>
 
-      <fieldset className="rounded-lg border border-[var(--card-border)] px-3 pb-3 pt-2">
+      <fieldset className="rounded-control border border-[var(--border-subtle)] px-3 pb-3 pt-2">
         <legend className="px-1 text-sm font-semibold">
           {dict.form.fieldTargets}{" "}
           <span className="text-xs font-normal text-text-secondary">
@@ -240,7 +240,7 @@ export default function AlertForm({ row, onSuccess, onCancel }: Props) {
                 type="button"
                 onClick={() => setTargets((prev) => prev.filter((_, idx) => idx !== i))}
                 aria-label={dict.form.removeTarget}
-                className="mb-1 rounded-lg border border-[var(--card-border)] px-3 py-2 text-sm text-brand-red hover:bg-brand-red/10"
+                className="mb-1 rounded-control border border-[var(--border-subtle)] px-3 py-2 text-sm text-brand-red hover:bg-brand-red/10"
               >
                 <span aria-hidden="true">×</span>
               </button>
@@ -249,7 +249,7 @@ export default function AlertForm({ row, onSuccess, onCancel }: Props) {
           <button
             type="button"
             onClick={() => setTargets((prev) => [...prev, { type: "line", code: "" }])}
-            className="w-fit rounded-lg border border-dashed border-[var(--card-border)] px-3 py-1.5 text-xs font-semibold hover:bg-[var(--table-row-hover)]"
+            className="w-fit rounded-control border border-dashed border-[var(--border-subtle)] px-3 py-1.5 text-xs font-semibold hover:bg-[var(--surface-hover-subtle)]"
           >
             + {dict.form.addTarget}
           </button>

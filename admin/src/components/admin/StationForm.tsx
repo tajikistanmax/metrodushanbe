@@ -144,8 +144,8 @@ export default function StationForm({ row, onSuccess, onCancel }: Props) {
       />
 
       <fieldset
-        className={`rounded-lg border ${
-          errors.coordinates ? "border-brand-red" : "border-[var(--card-border)]"
+        className={`rounded-control border ${
+          errors.coordinates ? "border-brand-red" : "border-[var(--border-subtle)]"
         } px-3 pb-3 pt-2`}
       >
         <legend className="px-1 text-sm font-semibold">
@@ -175,7 +175,7 @@ export default function StationForm({ row, onSuccess, onCancel }: Props) {
         onChange={setIsTransfer}
       />
 
-      <fieldset className="rounded-lg border border-[var(--card-border)] px-3 pb-3 pt-2">
+      <fieldset className="rounded-control border border-[var(--border-subtle)] px-3 pb-3 pt-2">
         <legend className="px-1 text-sm font-semibold">
           {dict.colAccessibility}
         </legend>

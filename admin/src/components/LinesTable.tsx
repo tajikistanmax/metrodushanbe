@@ -52,7 +52,7 @@ export default function LinesTable({ data, error, actions }: LinesTableProps) {
         <span className="inline-flex items-center gap-2">
           <span
             aria-hidden="true"
-            className="h-4 w-4 shrink-0 rounded border border-[var(--card-border)]"
+            className="h-4 w-4 shrink-0 rounded border border-[var(--border-subtle)]"
             style={{ background: l.colorHex }}
           />
           <span className="font-mono text-xs uppercase">{l.colorHex}</span>

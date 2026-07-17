@@ -6,6 +6,7 @@
  * и доступным aria-label «действие + сущность» для скринридеров.
  */
 
+import { Button } from "@/shared/ui";
 import { useI18n } from "../I18nProvider";
 
 type RowActionsProps = {
@@ -24,40 +25,42 @@ export default function RowActions({
   busy = false,
 }: RowActionsProps) {
   const { dict } = useI18n();
-  const btn =
-    "rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-50";
+  // Иерархия действий строки: Изменить — рядовое (secondary), Опубликовать —
+  // основное (primary), Удалить — разрушительное (danger).
+  // Зелёного варианта у Button нет намеренно: белый на #138a3d ≈4.4:1 (ниже
+  // AA), а прежняя пара text-brand-green на bg-brand-green/15 в тёмной теме
+  // давала ≈1.7:1. Смысл «Опубликовать» несёт глагол, а не цвет (SC 1.4.1).
   return (
     <div className="flex flex-wrap justify-end gap-1.5">
-      <button
-        type="button"
+      <Button
+        size="sm"
         onClick={onEdit}
         disabled={busy}
         aria-label={`${dict.actions.edit}: ${entityLabel}`}
-        className={`${btn} border border-[var(--card-border)] hover:bg-[var(--table-row-hover)]`}
       >
         {dict.actions.edit}
-      </button>
+      </Button>
       {onPublish ? (
-        <button
-          type="button"
+        <Button
+          size="sm"
+          variant="primary"
           onClick={onPublish}
           disabled={busy}
           aria-label={`${dict.actions.publish}: ${entityLabel}`}
-          className={`${btn} bg-brand-green/15 text-brand-green hover:bg-brand-green/25`}
         >
           {dict.actions.publish}
-        </button>
+        </Button>
       ) : null}
       {onDelete ? (
-        <button
-          type="button"
+        <Button
+          size="sm"
+          variant="danger"
           onClick={onDelete}
           disabled={busy}
           aria-label={`${dict.actions.delete}: ${entityLabel}`}
-          className={`${btn} text-brand-red hover:bg-brand-red/10`}
         >
           {dict.actions.delete}
-        </button>
+        </Button>
       ) : null}
     </div>
   );

@@ -107,7 +107,7 @@ export default function NetworkSchematic({
 
     const colorByLine = new Map<string, string>();
     const projLines: ProjectedLine[] = lineFeatures.map((f) => {
-      const color = f.properties.color_hex ?? "#0e5a8a";
+      const color = f.properties.color_hex ?? "var(--info)";
       colorByLine.set(f.properties.code, color);
       return {
         code: f.properties.code,
@@ -129,7 +129,7 @@ export default function NetworkSchematic({
         name: pickName(f.properties.name, lang),
         isTransfer,
         colors: (f.properties.lines ?? []).map(
-          (lc) => colorByLine.get(lc) ?? "#0e5a8a",
+          (lc) => colorByLine.get(lc) ?? "var(--info)",
         ),
         x,
         y,
@@ -152,12 +152,15 @@ export default function NetworkSchematic({
           <stop offset="0" stopColor="var(--map-city-start)" />
           <stop offset="1" stopColor="var(--map-city-end)" />
         </linearGradient>
-        <filter id="line-glow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#082742" floodOpacity=".18" />
-        </filter>
       </defs>
 
-      <rect width={VIEW_W} height={VIEW_H} rx="18" fill="url(#city-map-bg)" />
+      <rect
+        width={VIEW_W}
+        height={VIEW_H}
+        rx="8"
+        fill="url(#city-map-bg)"
+        stroke="var(--border-subtle)"
+      />
 
       {/* Городская подложка: квартальная сетка, магистрали, река и зелёные зоны. */}
       <g stroke="var(--map-road-minor)" strokeWidth="1" opacity="0.72">
@@ -204,14 +207,16 @@ export default function NetworkSchematic({
         <text x="10" y="38" textAnchor="middle" fontSize="10" fontWeight="800">N</text>
       </g>
 
-      {/* Кассинг линий (подложка цвета карточки для «прорезания» сетки) */}
-      <g filter="url(#line-glow)">
+      {/* Кассинг линий (подложка цвета карточки для «прорезания» сетки).
+          Фильтр line-glow (feDropShadow #082742) снят: линии схемы лежат в
+          плоскости карты, а не висят над ней. Кассинг и так их отделяет. */}
+      <g>
       {lines.map((l) => (
         <polyline
           key={`case-${l.code}`}
           points={l.points.map((p) => p.join(",")).join(" ")}
           fill="none"
-          stroke="var(--card-bg)"
+          stroke="var(--surface-raised)"
           strokeWidth="13"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -245,7 +250,7 @@ export default function NetworkSchematic({
                 cy={s.y}
                 r="18"
                 fill="none"
-                stroke="#e21b2d"
+                stroke="var(--brand-red)"
                 strokeWidth="3"
                 opacity=".32"
                 className="network-selection-ring"
@@ -257,7 +262,7 @@ export default function NetworkSchematic({
                   cx={s.x}
                   cy={s.y}
                   r="12"
-                  fill="var(--card-bg)"
+                  fill="var(--surface-raised)"
                   stroke="var(--text-primary)"
                   strokeWidth="3.5"
                   className="transition-transform group-hover:scale-110 group-focus-visible:scale-110"
@@ -276,7 +281,7 @@ export default function NetworkSchematic({
                 cx={s.x}
                 cy={s.y}
                 r="7"
-                fill="var(--card-bg)"
+                fill="var(--surface-raised)"
                 stroke={s.colors[0] ?? "var(--text-primary)"}
                 strokeWidth="3.5"
                 className="transition-transform group-hover:scale-125 group-focus-visible:scale-125"
@@ -293,7 +298,7 @@ export default function NetworkSchematic({
               fontSize="12.5"
               fontWeight={s.isTransfer ? 700 : 600}
               paintOrder="stroke"
-              stroke="var(--card-bg)"
+              stroke="var(--surface-raised)"
               strokeWidth="4"
               strokeLinejoin="round"
             >

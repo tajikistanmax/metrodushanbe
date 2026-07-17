@@ -36,6 +36,7 @@ import {
   TextareaField,
 } from "../admin/fields";
 import { useToast } from "../admin/ToastProvider";
+import { Badge, Button, Card, type BadgeTone } from "@/shared/ui";
 
 type Editor = {
   /** null — регистрация нового инцидента. */
@@ -66,20 +67,25 @@ const STATUS_FILTERS: (IncidentStatus | "all")[] = [
   "closed",
 ];
 
-/** Цвет плашки критичности; текст дублирует смысл — цвет не единственный носитель. */
-const SEVERITY_STYLE: Record<IncidentSeverity, string> = {
-  low: "bg-[var(--table-head-bg)] text-text-secondary",
-  medium: "bg-info/15 text-info",
-  high: "bg-warning/15 text-warning",
-  critical: "bg-brand-red/15 text-brand-red",
+/**
+ * Тон плашки критичности; текст дублирует смысл — цвет не единственный
+ * носитель (SC 1.4.1). Было: своя пара bg-<цвет>/15 + text-<цвет> на каждый
+ * ключ — цветной текст на цветном тинте, в тёмной теме ≈1.7–2.4:1.
+ * Badge кладёт --text-primary поверх тинта: ≈13:1 в обеих темах.
+ */
+const SEVERITY_TONE: Record<IncidentSeverity, BadgeTone> = {
+  low: "neutral",
+  medium: "info",
+  high: "warning",
+  critical: "critical",
 };
 
-const STATUS_STYLE: Record<IncidentStatus, string> = {
-  open: "bg-brand-red/15 text-brand-red",
-  acknowledged: "bg-warning/15 text-warning",
-  in_progress: "bg-info/15 text-info",
-  resolved: "bg-brand-green/15 text-brand-green",
-  closed: "bg-[var(--table-head-bg)] text-text-secondary",
+const STATUS_TONE: Record<IncidentStatus, BadgeTone> = {
+  open: "critical",
+  acknowledged: "warning",
+  in_progress: "info",
+  resolved: "success",
+  closed: "neutral",
 };
 
 /**
@@ -216,22 +222,18 @@ export default function IncidentsManager({
       key: "severity",
       header: t.colSeverity,
       cell: (row) => (
-        <span
-          className={`rounded-full px-2.5 py-1 text-xs font-bold ${SEVERITY_STYLE[row.severity]}`}
-        >
+        <Badge tone={SEVERITY_TONE[row.severity]} dot>
           {t.severities[row.severity]}
-        </span>
+        </Badge>
       ),
     },
     {
       key: "status",
       header: t.colStatus,
       cell: (row) => (
-        <span
-          className={`rounded-full px-2.5 py-1 text-xs font-bold ${STATUS_STYLE[row.status]}`}
-        >
+        <Badge tone={STATUS_TONE[row.status]} dot>
           {t.statuses[row.status]}
-        </span>
+        </Badge>
       ),
     },
     {
@@ -268,29 +270,28 @@ export default function IncidentsManager({
         }
         return (
           <div className="flex justify-end gap-2">
-            <button
-              type="button"
+            <Button
+              size="sm"
               disabled={busy || row.status === "closed"}
               onClick={() => {
                 setServerError(null);
                 setEditor({ originalCode: row.code, body: bodyFromRow(row) });
               }}
-              className="rounded-lg border border-card-border px-3 py-1.5 text-xs font-bold transition-colors hover:bg-[var(--table-row-hover)] disabled:opacity-40"
             >
               {dict.actions.edit}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
               // Пустой allowedTransitions = терминальное состояние: кнопке нечего делать.
               disabled={busy || row.allowedTransitions.length === 0}
               onClick={() => {
                 setServerError(null);
                 setTransition({ incident: row, status: "", resolution: "" });
               }}
-              className="rounded-lg bg-brand-navy px-3 py-1.5 text-xs font-bold text-surface-light transition-opacity hover:opacity-90 disabled:opacity-40"
             >
               {t.transitionTitle}
-            </button>
+            </Button>
           </div>
         );
       },
@@ -321,10 +322,12 @@ export default function IncidentsManager({
               type="button"
               aria-pressed={filter === value}
               onClick={() => setFilter(value)}
+              // Форма фильтра — как в эталоне (NotificationsManager):
+              // rounded-control, а не rounded-full.
               className={
                 filter === value
-                  ? "rounded-full bg-brand-navy px-3 py-1.5 text-xs font-bold text-surface-light"
-                  : "rounded-full border border-card-border px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-[var(--table-row-hover)]"
+                  ? "rounded-control bg-brand-navy px-3 py-1.5 text-caption font-bold text-surface-light"
+                  : "rounded-control border border-[var(--border-strong)] px-3 py-1.5 text-caption font-semibold transition-colors hover:bg-[var(--surface-hover)]"
               }
             >
               {value === "all" ? t.filterAll : t.statuses[value]}
@@ -511,13 +514,13 @@ function StatTile({
   accent?: boolean;
 }) {
   return (
-    <div className="console-card px-3 py-2.5">
-      <p className="text-[11px] font-semibold text-text-secondary">{label}</p>
-      <p
-        className={`text-xl font-extrabold ${accent ? "text-brand-navy dark:text-surface-light" : ""}`}
-      >
+    <Card as="div" padding="none" className="px-3 py-2.5">
+      <p className="text-caption font-semibold text-text-secondary">{label}</p>
+      {/* accent подсвечивал числo цветом; --text-primary уже даёт нужный
+          контраст в обеих темах, а вес отличает акцентную плитку. */}
+      <p className={`text-title-s ${accent ? "font-extrabold" : "font-bold"}`}>
         {value}
       </p>
-    </div>
+    </Card>
   );
 }

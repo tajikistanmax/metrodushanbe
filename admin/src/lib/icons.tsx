@@ -333,6 +333,27 @@ export function IconCalendar(props: IconProps) {
   );
 }
 
+/** Отправка (бумажный самолётик) — рассылки. */
+export function IconSend(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M21 3 10.5 13.5" />
+      <path d="M21 3l-6.8 18-3.7-7.5L3 9.8 21 3Z" />
+    </Base>
+  );
+}
+
+/** Разъём (интеграции, вебхуки). */
+export function IconPlug(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M9 3v5M15 3v5" />
+      <path d="M6 8h12v3a6 6 0 0 1-12 0V8Z" />
+      <path d="M12 17v4" />
+    </Base>
+  );
+}
+
 /** Пересадка (две стрелки). */
 export function IconTransfer(props: IconProps) {
   return (

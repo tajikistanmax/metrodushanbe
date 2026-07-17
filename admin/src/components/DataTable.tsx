@@ -50,17 +50,19 @@ export default function DataTable<T>({
   totalLabel,
 }: DataTableProps<T>) {
   return (
-    <div className="console-card overflow-hidden">
+    // Не <Card>: таблице нужен overflow-x на внутренней обёртке, а рамка и фон
+    // — на внешней. Поверхность собрана теми же токенами, что и Card.
+    <div className="overflow-hidden rounded-panel border border-[var(--border-subtle)] bg-[var(--surface-raised)]">
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full border-collapse text-small">
           <caption className="sr-only">{caption}</caption>
           <thead>
-            <tr className="bg-[var(--table-head-bg)]">
+            <tr className="bg-[var(--surface-sunken)]">
               {columns.map((col) => (
                 <th
                   key={col.key}
                   scope="col"
-                  className={`border-b border-[var(--table-border)] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-text-secondary ${
+                  className={`border-b border-[var(--border-subtle)] px-4 py-3 text-caption font-bold uppercase tracking-[0.08em] text-text-secondary ${
                     ALIGN[col.align ?? "left"]
                   } ${col.srOnlyHeader ? "sr-only" : ""}`}
                 >
@@ -73,11 +75,11 @@ export default function DataTable<T>({
             {rows.map((row) => (
               <tr
                 key={rowKey(row)}
-                className="transition-colors hover:bg-[var(--table-row-hover)]"
+                className="transition-colors hover:bg-[var(--surface-hover-subtle)]"
               >
                 {columns.map((col) => {
                   const content = col.cell(row);
-                  const base = `border-b border-[var(--table-border)] px-4 py-3 align-middle ${
+                  const base = `border-b border-[var(--border-subtle)] px-4 py-3 align-middle ${
                     ALIGN[col.align ?? "left"]
                   }`;
                   return col.rowHeader ? (
@@ -100,7 +102,7 @@ export default function DataTable<T>({
         </table>
       </div>
       {totalLabel ? (
-        <p className="border-t border-[var(--table-border)] px-4 py-2.5 text-xs text-text-secondary">
+        <p className="border-t border-[var(--border-subtle)] px-4 py-2.5 text-caption text-text-secondary">
           {totalLabel}
         </p>
       ) : null}

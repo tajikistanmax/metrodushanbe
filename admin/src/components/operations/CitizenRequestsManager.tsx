@@ -22,6 +22,7 @@ import {
   TextField,
 } from "../admin/fields";
 import { useToast } from "../admin/ToastProvider";
+import { Badge, type BadgeTone } from "@/shared/ui";
 
 const STATUSES: CitizenRequestStatus[] = [
   "new",
@@ -46,35 +47,41 @@ type Editor = {
   body: CitizenRequestUpdateBody;
 };
 
+/**
+ * Тон вместо своей пары bg-<цвет>/15 + text-<цвет>: цветной текст на цветном
+ * тинте в тёмной теме давал ≈1.7–2.4:1. Badge кладёт --text-primary поверх
+ * тинта (≈13:1 в обеих темах), тон дублируется точкой и подписью (SC 1.4.1).
+ */
+const STATUS_TONE: Record<CitizenRequestStatus, BadgeTone> = {
+  new: "info",
+  in_progress: "warning",
+  awaiting_info: "warning",
+  resolved: "success",
+  closed: "neutral",
+  reopened: "critical",
+};
+
+const PRIORITY_TONE: Record<CitizenRequestPriority, BadgeTone> = {
+  high: "critical",
+  normal: "info",
+  low: "neutral",
+};
+
 function StatusPill({ status }: { status: CitizenRequestStatus }) {
   const { dict } = useI18n();
-  const color: Record<CitizenRequestStatus, string> = {
-    new: "bg-info/15 text-info",
-    in_progress: "bg-warning/15 text-warning",
-    awaiting_info: "bg-warning/15 text-warning",
-    resolved: "bg-brand-green/15 text-brand-green",
-    closed: "bg-text-secondary/15 text-text-secondary",
-    reopened: "bg-brand-red/15 text-brand-red",
-  };
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${color[status]}`}>
+    <Badge tone={STATUS_TONE[status]} dot>
       {dict.operations.requestStatuses[status]}
-    </span>
+    </Badge>
   );
 }
 
 function PriorityPill({ priority }: { priority: CitizenRequestPriority }) {
   const { dict } = useI18n();
-  const color =
-    priority === "high"
-      ? "bg-brand-red/15 text-brand-red"
-      : priority === "normal"
-        ? "bg-info/15 text-info"
-        : "bg-text-secondary/15 text-text-secondary";
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${color}`}>
+    <Badge tone={PRIORITY_TONE[priority] ?? "neutral"} dot>
       {dict.operations.requestPriorities[priority]}
-    </span>
+    </Badge>
   );
 }
 
@@ -196,7 +203,7 @@ export default function CitizenRequestsManager({
         <button
           type="button"
           onClick={() => open(row)}
-          className="rounded-lg border border-[var(--card-border)] px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-[var(--table-row-hover)]"
+          className="rounded-control border border-[var(--border-subtle)] px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-[var(--surface-hover-subtle)]"
         >
           {dict.operations.openRequest}
         </button>
@@ -215,7 +222,7 @@ export default function CitizenRequestsManager({
           <select
             value={filter}
             onChange={(event) => setFilter(event.target.value as CitizenRequestStatus | "all")}
-            className="rounded-lg border border-[var(--card-border)] bg-[var(--card-bg)] px-3 py-2 text-sm"
+            className="rounded-control border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-2 text-sm"
           >
             <option value="all">{dict.operations.filterAll}</option>
             {STATUSES.map((status) => (
@@ -249,7 +256,7 @@ export default function CitizenRequestsManager({
       >
         {editor ? (
           <form onSubmit={submit} className="grid gap-4">
-            <div className="grid gap-3 rounded-xl bg-[var(--table-row-hover)] p-4 text-sm sm:grid-cols-2">
+            <div className="grid gap-3 rounded-panel bg-[var(--surface-hover-subtle)] p-4 text-sm sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">
                   {dict.operations.subject}

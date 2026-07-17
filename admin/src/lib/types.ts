@@ -97,23 +97,28 @@ export type News = {
   publishedAt: string;
 };
 
+/**
+ * Карточка AI-агента. Свободные тексты приходят полными i18n-объектами (tg/ru/en), как и у
+ * остальных сущностей платформы, — язык выбирает консоль через pickName.
+ * modelProvider/modelClass/status — коды: подписи статусов живут в словаре (agents.statuses).
+ */
 export type AiAgent = {
   code: string;
   name: I18nName;
-  role: string;
+  role: I18nName;
   modelProvider: string;
   modelClass: string;
   status: string;
-  capabilities: string[];
-  signals: string[];
-  nextAction: string;
+  capabilities: I18nName[];
+  signals: I18nName[];
+  nextAction: I18nName;
 };
 
 export type AiBriefing = {
   generatedAt: string;
   posture: string;
   agents: AiAgent[];
-  recommendations: string[];
+  recommendations: I18nName[];
 };
 
 /** GET /api/v1/admin/audit — событие журнала аудита. */
@@ -128,10 +133,32 @@ export type AuditEvent = {
   at: string;
 };
 
-/** Задание импорта GeoJSON — GET/POST /api/v1/admin/imports. */
+/** Формат источника импорта (ImportFormat.codes()). */
+export type ImportFormat = "geojson" | "gtfs" | "csv";
+
+/**
+ * Вид импорта (ImportJob.TYPE_*): что именно импортировали. Отличается от формата —
+ * `network_gtfs` и `fare_gtfs` приходят одним контейнером (format=gtfs), но меняют разное:
+ * первый — топологию сети, второй — цены. В ленте они обязаны быть различимы.
+ */
+export type ImportJobType =
+  | "network_geojson"
+  | "network_gtfs"
+  | "network_csv"
+  | "fare_gtfs";
+
+/**
+ * Что выбирает оператор в форме загрузки. Это не формат: `gtfs` и `gtfs-fares` —
+ * один формат (ZIP), но разные эндпоинты, наборы полей и последствия.
+ */
+export type ImportKind = "geojson" | "gtfs" | "csv" | "gtfs-fares";
+
+/** Задание импорта — GET/POST /api/v1/admin/imports[/gtfs|/gtfs-fares|/csv]. */
 export type ImportJob = {
   id: string;
-  type: string;
+  type: ImportJobType | string;
+  /** Формат источника: geojson | gtfs | csv (INT-04). */
+  format: ImportFormat | string;
   status: "pending" | "running" | "success" | "partial" | "failed" | string;
   sourceName: string | null;
   sourceHash: string;
@@ -144,19 +171,36 @@ export type ImportJob = {
   createdAt: string;
 };
 
-export type ImportPage = {
-  items: ImportJob[];
+/**
+ * Постраничная выдача admin-контура. Форма едина для всех лент: у backend один
+ * контракт пагинации (ImportPageDto), и второй, отличающийся только именами
+ * полей, консоли ничего не даёт.
+ */
+export type AdminPage<T> = {
+  items: T[];
+  /** Номер текущей страницы, с нуля. */
   page: number;
+  /** Запрошенный размер страницы (backend зажимает его в 1..200). */
   size: number;
   totalElements: number;
   totalPages: number;
 };
 
+export type ImportPage = AdminPage<ImportJob>;
+
+/**
+ * Уровень записи в отчёте импорта. `warning` — не сбой: так GTFS-парсер
+ * сообщает о недостающих переводах (язык фида подставлен вместо tg/ru/en).
+ * Консоль обязана показывать их отдельно от `error`, иначе рабочий список
+ * «что перевести» читается как список поломок.
+ */
+export type ImportErrorSeverity = "error" | "warning";
+
 export type ImportError = {
   id: string;
   featureRef: string;
   message: string;
-  severity: string;
+  severity: ImportErrorSeverity | string;
   at: string;
 };
 
@@ -297,6 +341,269 @@ export type FareProduct = {
   active: boolean;
   updatedAt: string | null;
 };
+
+// --- Рассылки (NTF-01…06) ---------------------------------------------------
+
+export type NotificationType =
+  | "info"
+  | "warning"
+  | "incident"
+  | "maintenance"
+  | "promo";
+
+export type NotificationStatus =
+  | "draft"
+  | "scheduled"
+  | "sending"
+  | "sent"
+  | "cancelled";
+
+/** Каналы доставки. Реален только in_app; остальные имитируются (см. `simulated`). */
+export type NotificationChannel = "in_app" | "push" | "email" | "sms";
+
+/** Тип адресации рассылки; пустой список targets = вся сеть. */
+export type NotificationTargetType = "line" | "station" | "segment" | "role";
+
+export type NotificationTarget = {
+  type: NotificationTargetType;
+  code: string;
+};
+
+/**
+ * Рассылка (GET /admin/notifications). title/body — полные i18n-объекты:
+ * backend не резолвит ?lang=, выбор языка делает консоль (pickName).
+ */
+export type Notification = {
+  code: string;
+  /** Шаблон-источник; тексты уже скопированы и от шаблона не зависят. */
+  templateCode: string | null;
+  alertCode: string | null;
+  type: NotificationType;
+  title: I18nName;
+  body: I18nName;
+  channels: NotificationChannel[];
+  status: NotificationStatus;
+  targets: NotificationTarget[];
+  scheduledAt: string | null;
+  sentAt: string | null;
+  updatedAt: string | null;
+  /**
+   * Куда рассылку можно перевести из текущего состояния — считает backend
+   * (NotificationStatus.TRANSITIONS), как и у Incident/WebhookDelivery.
+   * Держать копию карты здесь нельзя: две копии одного правила разъедутся,
+   * и консоль начнёт предлагать переход, который backend отклонит 400.
+   */
+  allowedTransitions: NotificationStatus[];
+  /** NotificationStatus.frozen(): доставка начата — содержимое уже неизменно. */
+  frozen: boolean;
+};
+
+/**
+ * Страница ленты рассылок (GET /admin/notifications). Лента растёт без потолка,
+ * а каждая строка тянет за собой таргеты — поэтому целиком не отдаётся.
+ */
+export type NotificationPage = AdminPage<Notification>;
+
+/** Статус одной доставки (DeliveryStatus). */
+export type NotificationDeliveryStatus =
+  | "pending"
+  | "sent"
+  | "delivered"
+  | "failed";
+
+/**
+ * Доставка по одному каналу одному получателю (NTF-06).
+ * `simulated` — у канала нет реального провайдера, на demo-контуре доставка
+ * только имитируется. Скрывать этот признак нельзя: «доставлено» там, где
+ * ничего не ушло, дезинформирует оператора.
+ */
+export type NotificationDelivery = {
+  /** uuid; своего code у доставки нет — повтор идёт по нему. */
+  id: string;
+  messageCode: string;
+  channel: NotificationChannel;
+  recipient: string;
+  status: NotificationDeliveryStatus;
+  attempts: number;
+  lastError: string | null;
+  simulated: boolean;
+  sentAt: string | null;
+  deliveredAt: string | null;
+  updatedAt: string | null;
+};
+
+/**
+ * Страница очереди доставок (GET /admin/notifications/{code}/deliveries и
+ * /admin/notifications/deliveries/problems). Очередь растёт как рассылки ×
+ * получатели × каналы, поэтому целиком не отдаётся.
+ */
+export type NotificationDeliveryPage = AdminPage<NotificationDelivery>;
+
+/** Заготовка текста рассылки (NTF-05). */
+export type NotificationTemplate = {
+  code: string;
+  name: string;
+  type: NotificationType;
+  title: I18nName;
+  body: I18nName;
+  channels: NotificationChannel[];
+  active: boolean;
+  updatedAt: string | null;
+};
+
+// --- Билеты и платежи (TKT-01…06) -------------------------------------------
+
+export type TicketKind = "single" | "pass";
+
+export type TicketStatus =
+  | "issued"
+  | "active"
+  | "used"
+  | "expired"
+  | "refunded"
+  | "blocked";
+
+/**
+ * Билет (GET /admin/tickets). Токена QR здесь нет и быть не может — в системе
+ * хранится только его хеш. `demo === true` — за билетом нет реального платежа.
+ */
+export type Ticket = {
+  code: string;
+  fareProductCode: string;
+  kind: TicketKind;
+  riderCategory: FareRiderCategory;
+  status: TicketStatus;
+  validFrom: string;
+  validUntil: string | null;
+  /** Цена, зафиксированная при покупке, а не текущая цена тарифа. */
+  priceAmount: number;
+  priceCurrency: string;
+  balanceAmount: number | null;
+  usedAt: string | null;
+  demo: boolean;
+  updatedAt: string | null;
+  allowedTransitions: TicketStatus[];
+};
+
+export type PaymentKind = "purchase" | "topup";
+
+export type PaymentStatus =
+  | "pending"
+  | "authorized"
+  | "captured"
+  | "failed"
+  | "refunded";
+
+/** Платёж (GET /admin/payments). Карточных данных нет — их нет и в модели. */
+export type Payment = {
+  code: string;
+  /** null — платёж отклонён, билет не выпускался. */
+  ticketCode: string | null;
+  kind: PaymentKind;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  provider: string;
+  providerRef: string | null;
+  /** Заполнена ровно при status=failed. */
+  failureReason: string | null;
+  demo: boolean;
+  createdAt: string;
+  updatedAt: string | null;
+};
+
+/** Результат ручного возврата (POST /admin/tickets/{code}/refund). */
+export type Refund = {
+  code: string;
+  paymentCode: string;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  reason: string;
+  failureReason: string | null;
+  createdBy: string;
+  demo: boolean;
+  createdAt: string;
+};
+
+export type BlocklistSubjectType = "ticket" | "token" | "rider";
+
+/** Запись чёрного списка (TKT-06); для token в subjectCode — SHA-256. */
+export type BlocklistEntry = {
+  code: string;
+  subjectType: BlocklistSubjectType;
+  subjectCode: string;
+  reason: string;
+  createdBy: string;
+  createdAt: string;
+};
+
+// --- Интеграции: вебхуки (INT-02/03/05, ADM-06, U-OPS-04) -------------------
+
+export type WebhookEventType =
+  | "alert_published"
+  | "alert_cleared"
+  | "incident_opened"
+  | "incident_resolved"
+  | "station_status_changed"
+  | "schedule_changed"
+  | "train_delayed";
+
+/**
+ * Подписчик вебхуков (GET /admin/webhooks). Секрета здесь нет и не будет —
+ * только `secretFingerprint` (первые 8 hex хеша) для сверки после ротации.
+ */
+export type WebhookSubscription = {
+  code: string;
+  name: string;
+  targetUrl: string;
+  eventTypes: WebhookEventType[];
+  active: boolean;
+  rateLimitPerMinute: number;
+  secretFingerprint: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string | null;
+};
+
+/**
+ * Ответ операций, порождающих секрет (создание и ротация). Единственное место
+ * во всём API, где виден плейнтекст: показать интегратору и не сохранять.
+ */
+export type WebhookSecret = {
+  subscription: WebhookSubscription;
+  secret: string;
+};
+
+/** pending|sent|failed|dead; dead — это DLQ. */
+export type WebhookDeliveryStatus = "pending" | "sent" | "failed" | "dead";
+
+export type WebhookDelivery = {
+  code: string;
+  eventId: string;
+  eventType: WebhookEventType;
+  aggregateType: string;
+  aggregateCode: string;
+  subscriptionCode: string;
+  status: WebhookDeliveryStatus;
+  attempts: number;
+  responseStatus: number | null;
+  lastError: string | null;
+  traceId: string | null;
+  nextAttemptAt: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+  /** Решает backend; консоль по нему рисует кнопку «Повторить». */
+  retryable: boolean;
+  allowedTransitions: WebhookDeliveryStatus[];
+};
+
+/**
+ * Страница очереди доставок вебхуков (GET /admin/webhooks/deliveries).
+ * Очередь растёт как события × подписчики — полная выдача на проде означала бы
+ * вычитывание всей таблицы на каждый заход в раздел.
+ */
+export type WebhookDeliveryPage = AdminPage<WebhookDelivery>;
 
 /**
  * Минимальная GeoJSON-модель сети для схемы на дашборде

@@ -9,6 +9,7 @@ import DataTable, { type Column } from "../DataTable";
 import { useI18n } from "../I18nProvider";
 import StateNotice from "../StateNotice";
 import { useToast } from "../admin/ToastProvider";
+import { Badge, Button } from "@/shared/ui";
 
 type FeatureFlagsManagerProps = {
   data: FeatureFlag[] | null;
@@ -56,15 +57,9 @@ export default function FeatureFlagsManager({
       key: "state",
       header: dict.operations.state,
       cell: (flag) => (
-        <span
-          className={`rounded-full px-2.5 py-1 text-xs font-bold ${
-            flag.enabled
-              ? "bg-brand-green/15 text-brand-green"
-              : "bg-[var(--table-head-bg)] text-text-secondary"
-          }`}
-        >
+        <Badge tone={flag.enabled ? "success" : "neutral"} dot>
           {flag.enabled ? dict.operations.enabled : dict.operations.disabled}
-        </span>
+        </Badge>
       ),
     },
     {
@@ -82,24 +77,23 @@ export default function FeatureFlagsManager({
       header: dict.colActions,
       align: "right",
       cell: (flag) => (
-        <button
-          type="button"
+        // Включить — рядовое действие (secondary), Выключить — разрушительное
+        // (danger). Смысл несёт глагол, цвет лишь дублирует его (SC 1.4.1).
+        <Button
+          size="sm"
+          variant={flag.enabled ? "danger" : "secondary"}
           onClick={() => toggle(flag)}
           disabled={busyKey !== null}
           aria-pressed={flag.enabled}
           aria-label={`${dict.operations.toggle}: ${flag.flagKey}`}
-          className={`min-w-24 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors disabled:opacity-50 ${
-            flag.enabled
-              ? "border border-brand-red/30 text-brand-red hover:bg-brand-red/10"
-              : "bg-brand-green/15 text-brand-green hover:bg-brand-green/25"
-          }`}
+          className="min-w-24"
         >
           {busyKey === flag.flagKey
             ? dict.actions.saving
             : flag.enabled
               ? dict.operations.disable
               : dict.operations.enable}
-        </button>
+        </Button>
       ),
     },
   ];

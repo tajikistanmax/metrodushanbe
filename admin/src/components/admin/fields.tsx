@@ -11,9 +11,12 @@
 import { useId, type ReactNode } from "react";
 import { useI18n } from "../I18nProvider";
 import type { I18nInput } from "@/lib/admin-forms";
+import { Alert, Button } from "@/shared/ui";
 
+// Граница поля — --border-strong: --border-subtle (0.12) на белом даёт ≈1.4:1
+// к подложке, ниже 3:1 из SC 1.4.11 для границ контролов.
 const CONTROL =
-  "w-full rounded-lg border border-[var(--card-border)] bg-[var(--card-bg)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus-visible:outline-3 disabled:opacity-60";
+  "w-full rounded-control border border-[var(--border-strong)] bg-[var(--surface-raised)] px-3 py-2 text-small text-[var(--text-primary)] outline-none focus-visible:outline-3 disabled:opacity-60";
 const CONTROL_INVALID = "border-brand-red";
 
 function LabelRow({
@@ -238,8 +241,8 @@ export function I18nField({
   ];
   return (
     <fieldset
-      className={`rounded-lg border ${
-        error ? "border-brand-red" : "border-[var(--card-border)]"
+      className={`rounded-control border ${
+        error ? "border-brand-red" : "border-[var(--border-subtle)]"
       } px-3 pb-3 pt-2`}
       aria-describedby={error ? errId : undefined}
     >
@@ -296,15 +299,15 @@ export function ServerError({
   message: string;
   details?: unknown;
 }) {
+  // Врезка ошибки — на примитиве Alert: он даёт role="alert"/aria-live,
+  // акцентную полосу и обязательное дублирование тона словом. Прежний вариант
+  // нёс тон только цветом (text-brand-red на bg-brand-red/10 — в тёмной теме
+  // ≈2.4:1), см. packages/design/shared/ui/Alert.tsx.
   return (
-    <div
-      role="alert"
-      className="rounded-lg border border-brand-red/40 bg-brand-red/10 px-3 py-2 text-sm"
-    >
-      <p className="font-semibold text-brand-red">{message}</p>
-      <p className="mt-0.5 font-mono text-xs text-text-secondary">{code}</p>
+    <Alert tone="critical" label={message}>
+      <p className="font-mono text-caption text-text-secondary">{code}</p>
       {renderDetails(details)}
-    </div>
+    </Alert>
   );
 }
 
@@ -359,21 +362,13 @@ export function FormActions({
   const { dict } = useI18n();
   return (
     <div className="flex justify-end gap-2 pt-1">
-      <button
-        type="button"
-        onClick={onCancel}
-        disabled={busy}
-        className="rounded-lg border border-[var(--card-border)] px-4 py-2 text-sm font-semibold transition-colors hover:bg-[var(--table-row-hover)] disabled:opacity-50"
-      >
+      <Button onClick={onCancel} disabled={busy}>
         {dict.actions.cancel}
-      </button>
-      <button
-        type="submit"
-        disabled={busy}
-        className="rounded-lg bg-brand-navy px-4 py-2 text-sm font-bold text-surface-light transition-opacity hover:opacity-90 disabled:opacity-50"
-      >
+      </Button>
+      {/* type="submit" обязателен: у примитива дефолт "button" */}
+      <Button type="submit" variant="primary" disabled={busy}>
         {busy ? dict.actions.saving : submitLabel ?? dict.actions.save}
-      </button>
+      </Button>
     </div>
   );
 }
