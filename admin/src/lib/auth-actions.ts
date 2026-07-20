@@ -19,7 +19,7 @@ import { ADMIN_FETCH_TIMEOUT_MS, adminApiKey } from "./server-config";
 
 export type LoginState = {
   /** Код ошибки для локализации на клиенте; null — без ошибки. */
-  error: "invalid" | "required" | "unavailable" | null;
+  error: "invalid" | "required" | "unavailable" | "locked" | null;
 };
 
 /** Сутки/месяц в секундах — срок cookie без и с «запомнить меня». */
@@ -68,6 +68,11 @@ export async function login(
 
   if (response.status === 401) {
     return { error: "invalid" };
+  }
+  // 429 — сработала защита от подбора (аудит-пункт 9). Отдельное сообщение: это
+  // не «неверный пароль», а временная блокировка, повтор сейчас бесполезен.
+  if (response.status === 429) {
+    return { error: "locked" };
   }
   if (!response.ok) {
     return { error: "unavailable" };

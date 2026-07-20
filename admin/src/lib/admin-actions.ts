@@ -17,6 +17,7 @@ import { revalidatePath } from "next/cache";
 import { API_BASE } from "./api";
 import { ADMIN_FETCH_TIMEOUT_MS, adminApiKey } from "./server-config";
 import { requireAdminRole, requireAdminSession } from "./server-auth";
+import { createActorToken } from "./actor-token";
 import { ADMIN_PAGE_SIZE } from "./admin-forms";
 import type {
   ActionResult,
@@ -101,6 +102,9 @@ async function adminFetch<T>(
 ): Promise<ActionResult<T>> {
   const session = await requireAdminSession();
   const adminKey = adminApiKey();
+  // Подписанный токен актора (аудит-пункт 5): backend по нему подтверждает имя и
+  // сверяет sessionVersion. Голый X-Admin-Actor в prod уже не принимается.
+  const actorToken = await createActorToken(session.username, session.accountVersion);
   try {
     const res = await fetch(`${API_BASE}/admin${path}`, {
       method,
@@ -112,6 +116,7 @@ async function adminFetch<T>(
         // Актор аудита (BR-ADM-1) — логин из подписанной сессии, а не константа:
         // в журнале должно быть видно, кто именно выполнил операцию.
         "X-Admin-Actor": session.username,
+        "X-Admin-Actor-Token": actorToken,
         ...extraHeaders,
       },
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -152,6 +157,7 @@ async function adminFetch<T>(
 async function adminRead<T>(path: string): Promise<ReadResult<T>> {
   const session = await requireAdminSession();
   const adminKey = adminApiKey();
+  const actorToken = await createActorToken(session.username, session.accountVersion);
   try {
     const res = await fetch(`${API_BASE}/admin${path}`, {
       cache: "no-store",
@@ -159,6 +165,7 @@ async function adminRead<T>(path: string): Promise<ReadResult<T>> {
         Accept: "application/json",
         "X-Admin-Key": adminKey,
         "X-Admin-Actor": session.username,
+        "X-Admin-Actor-Token": actorToken,
       },
       signal: AbortSignal.timeout(ADMIN_FETCH_TIMEOUT_MS),
     });
@@ -887,6 +894,7 @@ export async function deleteAdminUser(
 export async function getAuditEvents(): Promise<ReadResult<AuditEvent[]>> {
   const session = await requireAdminSession();
   const adminKey = adminApiKey();
+  const actorToken = await createActorToken(session.username, session.accountVersion);
   try {
     const res = await fetch(`${API_BASE}/admin/audit`, {
       cache: "no-store",
@@ -894,6 +902,7 @@ export async function getAuditEvents(): Promise<ReadResult<AuditEvent[]>> {
         Accept: "application/json",
         "X-Admin-Key": adminKey,
         "X-Admin-Actor": session.username,
+        "X-Admin-Actor-Token": actorToken,
       },
       signal: AbortSignal.timeout(ADMIN_FETCH_TIMEOUT_MS),
     });

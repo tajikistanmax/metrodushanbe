@@ -36,6 +36,7 @@ public class AdminUserService {
     private final AdminUserRepository repository;
     private final PasswordEncoder passwordEncoder;
     private final AuditService auditService;
+    private final AdminLoginGuard loginGuard;
     private final Clock clock;
 
     /**
@@ -47,10 +48,11 @@ public class AdminUserService {
     private final String dummyHash;
 
     public AdminUserService(AdminUserRepository repository, PasswordEncoder passwordEncoder,
-                            AuditService auditService, Clock clock) {
+                            AuditService auditService, AdminLoginGuard loginGuard, Clock clock) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
         this.auditService = auditService;
+        this.loginGuard = loginGuard;
         this.clock = clock;
         this.dummyHash = passwordEncoder.encode(UUID.randomUUID().toString());
     }
@@ -87,40 +89,64 @@ public class AdminUserService {
      * Проверяет логин и пароль. Любая причина отказа — один и тот же 401
      * {@code auth.invalid_credentials}; конкретика уходит только в аудит.
      *
+     * <h2>Неразличимость учёток (аудит-пункт 9)</h2>
+     * Ответ на «нет такого пользователя» и на «неверный пароль» одинаков и по коду,
+     * и по времени: для несуществующего логина всё равно выполняется сверка с
+     * фиктивным {@code dummyHash}, поэтому bcrypt тратит те же ~десятки миллисекунд,
+     * что и на реальную учётную запись. Без этого по времени ответа перебирались бы
+     * существующие логины. Блокировка {@code loginGuard} тоже ведётся по логину
+     * независимо от его существования — иначе сам факт lockout выдавал бы учётку.
+     *
+     * <h2>Защита от подбора (аудит-пункт 9)</h2>
+     * До сверки пароля проверяется {@code loginGuard.ensureNotLocked} (429 при
+     * блокировке); каждая неудача увеличивает счётчики через {@code registerFailure},
+     * успех — обнуляет их через {@code registerSuccess}.
+     *
      * <p>Неудачные попытки пишутся через {@code recordIndependently}: обычный
      * {@code record} присоединился бы к этой транзакции и откатился вместе с ней
      * при выбросе 401, то есть журнал не сохранил бы ни одной неудачной попытки.
+     *
+     * @param clientIp адрес клиента для счётчика IP+логин (может быть null/blank)
      */
     @Transactional
-    public AdminUserDto authenticate(AdminLoginRequest request) {
+    public AdminUserDto authenticate(AdminLoginRequest request, String clientIp) {
         String username = AdminUser.normalizeUsername(request.username());
+
+        // Блокировка проверяется ДО сверки пароля — иначе подбор не тормозится.
+        loginGuard.ensureNotLocked(username, clientIp);
+
         Optional<AdminUser> found = repository.findByUsername(username);
 
         // Холостая проверка выравнивает время ответа для неизвестного логина.
         if (found.isEmpty()) {
             passwordEncoder.matches(request.password(), dummyHash);
-            auditService.recordIndependently(username, "auth.login_failed", "admin_user", username,
-                    null, Map.of("reason", "unknown_user"));
+            registerFailure(username, clientIp, "unknown_user");
             throw invalidCredentials();
         }
 
         AdminUser user = found.get();
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            auditService.recordIndependently(username, "auth.login_failed", "admin_user", username,
-                    null, Map.of("reason", "bad_password"));
+            registerFailure(username, clientIp, "bad_password");
             throw invalidCredentials();
         }
         if (!user.isActive()) {
-            auditService.recordIndependently(username, "auth.login_failed", "admin_user", username,
-                    null, Map.of("reason", "inactive"));
+            registerFailure(username, clientIp, "inactive");
             throw invalidCredentials();
         }
 
+        loginGuard.registerSuccess(username, clientIp);
         user.markLoggedIn(OffsetDateTime.now(clock));
         AdminUser saved = repository.save(user);
         auditService.record(username, "auth.login", "admin_user", username,
                 null, Map.of("role", saved.getRole().code()));
         return toDto(saved);
+    }
+
+    /** Общая запись неудачи: сначала счётчик блокировки, затем событие аудита. */
+    private void registerFailure(String username, String clientIp, String reason) {
+        loginGuard.registerFailure(username, clientIp);
+        auditService.recordIndependently(username, "auth.login_failed", "admin_user", username,
+                null, Map.of("reason", reason));
     }
 
     @Transactional

@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { roleAtLeast } from "@/lib/auth";
 import { getAdminSession } from "@/lib/server-auth";
+import { createActorToken } from "@/lib/actor-token";
 import {
   ADMIN_API_BASE,
   ADMIN_IMPORT_TIMEOUT_MS,
@@ -110,6 +111,8 @@ export async function POST(request: Request, context: RouteContext) {
     config.fallbackSource,
   );
 
+  // Токен актора (аудит-пункт 5): backend подтверждает имя импортёра по подписи.
+  const actorToken = await createActorToken(session.username, session.accountVersion);
   try {
     const response = await fetch(upstream, {
       method: "POST",
@@ -119,6 +122,7 @@ export async function POST(request: Request, context: RouteContext) {
         "Content-Type": config.contentType,
         "X-Admin-Key": adminApiKey(),
         "X-Admin-Actor": session.username,
+        "X-Admin-Actor-Token": actorToken,
         "X-Import-Source": source,
       },
       body,

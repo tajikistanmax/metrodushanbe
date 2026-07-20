@@ -7,9 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
@@ -28,6 +30,7 @@ import tj.metro.dushanbe.audit.service.AuditService;
 import tj.metro.dushanbe.common.error.BadRequestException;
 import tj.metro.dushanbe.common.error.ForbiddenException;
 import tj.metro.dushanbe.common.error.NotFoundException;
+import tj.metro.dushanbe.common.error.TooManyRequestsException;
 import tj.metro.dushanbe.common.error.UnauthorizedException;
 import tj.metro.dushanbe.identity.domain.AdminRole;
 import tj.metro.dushanbe.identity.domain.AdminUser;
@@ -40,12 +43,16 @@ class AdminUserServiceTest {
 
     private final AdminUserRepository repository = mock(AdminUserRepository.class);
     private final AuditService auditService = mock(AuditService.class);
+    private final AdminLoginGuard loginGuard = mock(AdminLoginGuard.class);
 
     /** Настоящий BCrypt со стоимостью 4: проверяем реальное хеширование, но быстро. */
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(4);
 
     private final AdminUserService service = new AdminUserService(repository, passwordEncoder,
-            auditService, Clock.fixed(NOW, ZoneOffset.UTC));
+            auditService, loginGuard, Clock.fixed(NOW, ZoneOffset.UTC));
+
+    /** Любой адрес: важно, что он доходит до guard, а не конкретное значение. */
+    private static final String IP = "203.0.113.7";
 
     @Test
     void authenticateAcceptsValidCredentialsAndRecordsLogin() {
@@ -53,13 +60,17 @@ class AdminUserServiceTest {
         when(repository.findByUsername("operator1")).thenReturn(Optional.of(user));
         when(repository.save(user)).thenReturn(user);
 
-        var result = service.authenticate(new AdminLoginRequest("operator1", PASSWORD));
+        var result = service.authenticate(new AdminLoginRequest("operator1", PASSWORD), IP);
 
         assertEquals("operator1", result.username());
         assertEquals("operator", result.role());
         assertEquals(NOW.atOffset(ZoneOffset.UTC), user.getLastLoginAt());
         verify(auditService).record(eq("operator1"), eq("auth.login"), eq("admin_user"),
                 eq("operator1"), isNull(), any());
+        // Успех обнуляет счётчики подбора; блокировка при этом не трогается.
+        verify(loginGuard).ensureNotLocked("operator1", IP);
+        verify(loginGuard).registerSuccess("operator1", IP);
+        verify(loginGuard, never()).registerFailure(any(), any());
     }
 
     @Test
@@ -68,7 +79,7 @@ class AdminUserServiceTest {
         when(repository.findByUsername("operator1")).thenReturn(Optional.of(user));
         when(repository.save(user)).thenReturn(user);
 
-        var result = service.authenticate(new AdminLoginRequest("  OPERATOR1  ", PASSWORD));
+        var result = service.authenticate(new AdminLoginRequest("  OPERATOR1  ", PASSWORD), IP);
 
         assertEquals("operator1", result.username());
     }
@@ -79,10 +90,13 @@ class AdminUserServiceTest {
         when(repository.findByUsername("operator1")).thenReturn(Optional.of(user));
 
         UnauthorizedException error = assertThrows(UnauthorizedException.class,
-                () -> service.authenticate(new AdminLoginRequest("operator1", "wrong-password")));
+                () -> service.authenticate(new AdminLoginRequest("operator1", "wrong-password"), IP));
 
         assertEquals("auth.invalid_credentials", error.getCode());
         verify(repository, never()).save(any());
+        // Неудача увеличивает счётчик подбора (аудит-пункт 9).
+        verify(loginGuard).registerFailure("operator1", IP);
+        verify(loginGuard, never()).registerSuccess(any(), any());
     }
 
     @Test
@@ -90,10 +104,13 @@ class AdminUserServiceTest {
         when(repository.findByUsername("ghost")).thenReturn(Optional.empty());
 
         UnauthorizedException error = assertThrows(UnauthorizedException.class,
-                () -> service.authenticate(new AdminLoginRequest("ghost", PASSWORD)));
+                () -> service.authenticate(new AdminLoginRequest("ghost", PASSWORD), IP));
 
         // Тот же код, что и при неверном пароле — иначе логины перебираются по ответу.
         assertEquals("auth.invalid_credentials", error.getCode());
+        // Счётчик заводится и для несуществующего логина — иначе блокировка выдавала
+        // бы факт существования учётки (неразличимость, аудит-пункт 9).
+        verify(loginGuard).registerFailure("ghost", IP);
     }
 
     @Test
@@ -102,13 +119,26 @@ class AdminUserServiceTest {
         when(repository.findByUsername("retired")).thenReturn(Optional.of(user));
 
         UnauthorizedException error = assertThrows(UnauthorizedException.class,
-                () -> service.authenticate(new AdminLoginRequest("retired", PASSWORD)));
+                () -> service.authenticate(new AdminLoginRequest("retired", PASSWORD), IP));
 
         assertEquals("auth.invalid_credentials", error.getCode());
         // Независимая транзакция — иначе запись откатится вместе с 401.
         verify(auditService).recordIndependently(eq("retired"), eq("auth.login_failed"),
                 eq("admin_user"), eq("retired"), isNull(),
                 eq(java.util.Map.of("reason", "inactive")));
+    }
+
+    @Test
+    void authenticateRejectsWhenLockedBeforeTouchingRepository() {
+        doThrow(new TooManyRequestsException("auth.too_many_attempts", "locked", 900))
+                .when(loginGuard).ensureNotLocked("operator1", IP);
+
+        TooManyRequestsException error = assertThrows(TooManyRequestsException.class,
+                () -> service.authenticate(new AdminLoginRequest("operator1", PASSWORD), IP));
+
+        assertEquals("auth.too_many_attempts", error.getCode());
+        // Блокировка проверяется ДО сверки пароля: репозиторий не должен запрашиваться.
+        verifyNoInteractions(repository);
     }
 
     @Test

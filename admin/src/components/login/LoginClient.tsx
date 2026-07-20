@@ -118,9 +118,11 @@ export default function LoginClient() {
       ? t.errInvalid
       : state.error === "required"
         ? t.errRequired
-        : state.error === "unavailable"
-          ? t.errUnavailable
-          : null;
+        : state.error === "locked"
+          ? t.errLocked
+          : state.error === "unavailable"
+            ? t.errUnavailable
+            : null;
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-surface-dark">

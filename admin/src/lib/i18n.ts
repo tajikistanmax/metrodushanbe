@@ -455,6 +455,7 @@ export type Dict = {
     errInvalid: string;
     errRequired: string;
     errUnavailable: string;
+    errLocked: string;
     showPassword: string;
     hidePassword: string;
   };
@@ -1317,6 +1318,7 @@ const tg: Dict = {
     errInvalid: "Логин ё рамз нодуруст аст",
     errRequired: "Логин ва рамзро ворид кунед",
     errUnavailable: "Сервер дастрас нест. Каме баъдтар кӯшиш кунед.",
+    errLocked: "Кӯшишҳои зиёди воридшавӣ. Ҳисоб муваққатан баста шуд, каме баъдтар кӯшиш кунед.",
     showPassword: "Нишон додани рамз",
     hidePassword: "Пинҳон кардани рамз",
   },
@@ -2196,6 +2198,7 @@ const ru: Dict = {
     errInvalid: "Неверный логин или пароль",
     errRequired: "Введите логин и пароль",
     errUnavailable: "Сервер недоступен. Попробуйте позже.",
+    errLocked: "Слишком много попыток входа. Учётная запись временно заблокирована, повторите позже.",
     showPassword: "Показать пароль",
     hidePassword: "Скрыть пароль",
   },
@@ -3075,6 +3078,7 @@ const en: Dict = {
     errInvalid: "Invalid username or password",
     errRequired: "Enter username and password",
     errUnavailable: "Server unavailable. Please try again later.",
+    errLocked: "Too many login attempts. The account is temporarily locked, please try again later.",
     showPassword: "Show password",
     hidePassword: "Hide password",
   },

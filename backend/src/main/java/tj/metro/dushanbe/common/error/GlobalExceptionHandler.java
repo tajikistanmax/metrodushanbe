@@ -50,6 +50,15 @@ public class GlobalExceptionHandler {
                 .body(ApiError.of(requestId(request), ex.getCode(), ex.getMessage(), null));
     }
 
+    /** 429: превышен лимит попыток входа (lockout, аудит-пункт 9). */
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ApiError> handleTooManyRequests(TooManyRequestsException ex,
+                                                          HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(ex.getRetryAfterSeconds()))
+                .body(ApiError.of(requestId(request), ex.getCode(), ex.getMessage(), null));
+    }
+
     /** 400: доменная валидация параметров запроса (код из исключения, например alert.severity_invalid). */
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ApiError> handleBadRequest(BadRequestException ex, HttpServletRequest request) {

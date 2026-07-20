@@ -4,8 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.Clock;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
@@ -26,11 +31,32 @@ import tj.metro.dushanbe.identity.repository.AdminUserRepository;
  * Отсутствие/несовпадение ключа → 401 в едином envelope {@link ApiError}
  * (код {@code admin.unauthorized}).
  *
- * <p><b>ВНИМАНИЕ — временная dev-заглушка, НЕ прод-безопасность.</b> Это простая
- * проверка общего секрета из конфигурации без пользователей, ролей и MFA. Продовый
- * контур (ТЗ §6.1.7, §9.2) обязан использовать OAuth 2.0 + JWT (Keycloak), MFA для
- * admin/operator, RBAC + ABAC, TLS и anti-abuse. Заголовок {@code X-Admin-Actor}
- * (актор аудита) в dev принимается «на доверии» и в проде должен извлекаться из JWT.
+ * <p><b>ВНИМАНИЕ — это НЕ полноценная прод-безопасность.</b> Проверка общего секрета
+ * из конфигурации не заменяет OAuth 2.0 + JWT (Keycloak), MFA и ABAC, которых требует
+ * ТЗ §6.1.7, §9.2. Переход на внешнего эмитента остаётся открытым P0.
+ *
+ * <h2>Актор аудита (аудит-пункт 5)</h2>
+ * Раньше заголовок {@code X-Admin-Actor} принимался «на доверии»: обладатель общего
+ * {@code X-Admin-Key} мог назваться любым активным суперадмином, и журнал записал бы
+ * чужое имя. Теперь актор подтверждается подписанным токеном
+ * {@code X-Admin-Actor-Token} (см. {@link AdminActorTokenService}):
+ * <ul>
+ *   <li>подпись HMAC-SHA256 на секрете {@code app.admin.actor-token.secret}, отличном
+ *       от {@code X-Admin-Key} — компрометации одного недостаточно;</li>
+ *   <li>{@code sessionVersion} из токена сверяется с {@code admin_user.session_version},
+ *       поэтому отозванная сессия (смена роли, пароля, деактивация) перестаёт работать
+ *       немедленно, а не по истечении TTL;</li>
+ *   <li>после успешной проверки запрос заворачивается так, что контроллеры видят в
+ *       {@code X-Admin-Actor} ПОДТВЕРЖДЁННЫЙ логин — присланное значение заголовка
+ *       игнорируется целиком и подделать его нельзя.</li>
+ * </ul>
+ *
+ * <p><b>Режимы.</b> При {@code app.admin.actor-token.required=false} (dev, интеграционные
+ * тесты) сохраняется старое поведение: если токена нет, актор берётся из
+ * {@code X-Admin-Actor}. Но если токен ПРИСЛАН и невалиден — это уже попытка обмана,
+ * и запрос отклоняется в любом режиме. В prod-профиле свойство равно {@code true}:
+ * там голый заголовок не принимается, а отсутствие секрета делает контур
+ * fail-closed (401 на всё).
  *
  * <p>Порядок фильтра — сразу после {@link RequestIdFilter} (тот проставляет requestId),
  * чтобы 401-envelope содержал корректный requestId.
@@ -43,18 +69,26 @@ public class AdminKeyAuthFilter extends OncePerRequestFilter {
     public static final String HEADER = "X-Admin-Key";
     public static final String ACTOR_HEADER = "X-Admin-Actor";
 
+    /** Подписанный токен актора; в strict-режиме — единственный источник имени. */
+    public static final String ACTOR_TOKEN_HEADER = "X-Admin-Actor-Token";
+
     /** Защищаемый префикс (после context-path /api). */
     private static final String ADMIN_PREFIX = "/v1/admin";
 
     private final AdminAuthProperties properties;
     private final ObjectMapper objectMapper;
     private final AdminUserRepository userRepository;
+    private final AdminActorTokenService actorTokens;
 
     public AdminKeyAuthFilter(AdminAuthProperties properties, ObjectMapper objectMapper,
                               AdminUserRepository userRepository) {
         this.properties = properties;
         this.objectMapper = objectMapper;
         this.userRepository = userRepository;
+        // Не инжектируем бином намеренно (см. javadoc AdminActorTokenService):
+        // иначе @WebMvcTest-срезы без Clock-бина перестали бы подниматься. Свежесть
+        // токена — wall-clock, поэтому системных часов достаточно.
+        this.actorTokens = new AdminActorTokenService(properties, Clock.systemUTC());
     }
 
     @Override
@@ -75,22 +109,83 @@ public class AdminKeyAuthFilter extends OncePerRequestFilter {
         }
 
         String requestPath = path(request);
-        if (!requestPath.startsWith(ADMIN_PREFIX + "/auth/")) {
-            String actor = AdminUser.normalizeUsername(request.getHeader(ACTOR_HEADER));
-            var user = actor == null ? null : userRepository.findByUsername(actor).orElse(null);
-            if (user == null || !user.isActive()) {
-                writeError(request, response, HttpServletResponse.SC_UNAUTHORIZED,
-                        "auth.session_revoked", "Учётная запись оператора недействительна");
-                return;
-            }
-            AdminRole required = requiredRole(requestPath, request.getMethod());
-            if (!user.getRole().includes(required)) {
-                writeError(request, response, HttpServletResponse.SC_FORBIDDEN,
-                        "admin.forbidden", "Недостаточно прав для операции");
-                return;
-            }
+        // /auth/** — вход и проверка сессии: актора там ещё нет по определению,
+        // от подбора пароля этот участок защищает lockout (AdminLoginGuard).
+        if (requestPath.startsWith(ADMIN_PREFIX + "/auth/")) {
+            filterChain.doFilter(request, response);
+            return;
         }
-        filterChain.doFilter(request, response);
+
+        String rawToken = request.getHeader(ACTOR_TOKEN_HEADER);
+        boolean tokenPresented = rawToken != null && !rawToken.isBlank();
+        AdminActorClaims claims = null;
+        if (tokenPresented) {
+            claims = actorTokens.verify(rawToken).orElse(null);
+            if (claims == null) {
+                // Присланный, но неподтверждённый токен — это попытка обмана, а не
+                // «старый клиент»; на фолбэк по заголовку она права не даёт.
+                writeError(request, response, HttpServletResponse.SC_UNAUTHORIZED,
+                        "auth.actor_token_invalid", "Токен актора недействителен");
+                return;
+            }
+        } else if (actorTokens.isRequired()) {
+            writeError(request, response, HttpServletResponse.SC_UNAUTHORIZED,
+                    "auth.actor_token_required", "Требуется подписанный токен актора");
+            return;
+        }
+
+        String actor = claims != null
+                ? claims.username()
+                : AdminUser.normalizeUsername(request.getHeader(ACTOR_HEADER));
+        AdminUser user = actor == null ? null : userRepository.findByUsername(actor).orElse(null);
+        if (user == null || !user.isActive()) {
+            writeError(request, response, HttpServletResponse.SC_UNAUTHORIZED,
+                    "auth.session_revoked", "Учётная запись оператора недействительна");
+            return;
+        }
+        // Расхождение версий = сессия отозвана после выпуска токена (смена роли,
+        // пароля, деактивация). Ждать истечения TTL здесь нельзя: отзыв обязан
+        // действовать сразу, иначе разжалованный оператор доработает своё окно.
+        if (claims != null && claims.sessionVersion() != user.getSessionVersion()) {
+            writeError(request, response, HttpServletResponse.SC_UNAUTHORIZED,
+                    "auth.session_revoked", "Учётная запись оператора недействительна");
+            return;
+        }
+        AdminRole required = requiredRole(requestPath, request.getMethod());
+        if (!user.getRole().includes(required)) {
+            writeError(request, response, HttpServletResponse.SC_FORBIDDEN,
+                    "admin.forbidden", "Недостаточно прав для операции");
+            return;
+        }
+
+        // Контроллеры читают актора из X-Admin-Actor. Подменяем его подтверждённым
+        // логином — так двадцать контроллеров не нужно править, а присланное
+        // клиентом значение перестаёт влиять на журнал вообще.
+        filterChain.doFilter(claims == null ? request : new VerifiedActorRequest(request, actor),
+                response);
+    }
+
+    /** Отдаёт {@code X-Admin-Actor} с подтверждённым логином, игнорируя присланный. */
+    private static final class VerifiedActorRequest extends HttpServletRequestWrapper {
+
+        private final String actor;
+
+        private VerifiedActorRequest(HttpServletRequest request, String actor) {
+            super(request);
+            this.actor = actor;
+        }
+
+        @Override
+        public String getHeader(String name) {
+            return ACTOR_HEADER.equalsIgnoreCase(name) ? actor : super.getHeader(name);
+        }
+
+        @Override
+        public Enumeration<String> getHeaders(String name) {
+            return ACTOR_HEADER.equalsIgnoreCase(name)
+                    ? Collections.enumeration(List.of(actor))
+                    : super.getHeaders(name);
+        }
     }
 
     private static AdminRole requiredRole(String path, String method) {

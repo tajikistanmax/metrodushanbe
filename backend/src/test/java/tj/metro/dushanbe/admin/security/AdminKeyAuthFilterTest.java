@@ -1,8 +1,11 @@
 package tj.metro.dushanbe.admin.security;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -13,9 +16,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.time.Clock;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import tj.metro.dushanbe.identity.domain.AdminRole;
 import tj.metro.dushanbe.identity.domain.AdminUser;
 import tj.metro.dushanbe.identity.repository.AdminUserRepository;
@@ -124,5 +129,101 @@ class AdminKeyAuthFilterTest {
         when(request.getServletPath()).thenReturn(null);
         when(request.getRequestURI()).thenReturn("/v1/admin/lines");
         assertFalse(filter.shouldNotFilter(request));
+    }
+
+    // --- Токен актора (аудит-пункт 5) ---------------------------------------
+
+    private static final String ACTOR_SECRET = "actor-secret-for-tests-0123456789";
+
+    /** Служба выпуска токена с тем же секретом, что читает фильтр. */
+    private AdminActorTokenService issuer() {
+        return new AdminActorTokenService(properties, Clock.systemUTC());
+    }
+
+    @Test
+    void strictModeRejectsRequestWithoutActorToken() throws Exception {
+        properties.getActorToken().setSecret(ACTOR_SECRET);
+        properties.getActorToken().setRequired(true);
+        when(request.getServletPath()).thenReturn("/v1/admin/lines");
+        when(request.getHeader(AdminKeyAuthFilter.HEADER)).thenReturn("secret-key");
+        when(request.getMethod()).thenReturn("POST");
+
+        filter.doFilterInternal(request, response, chain);
+
+        verify(response).setStatus(401);
+        verify(chain, never()).doFilter(request, response);
+    }
+
+    @Test
+    void validActorTokenAuthorizesConfirmedActor() throws Exception {
+        properties.getActorToken().setSecret(ACTOR_SECRET);
+        properties.getActorToken().setRequired(true);
+        String token = issuer().issue("root", 0L, "nonce-1");
+        when(request.getServletPath()).thenReturn("/v1/admin/lines");
+        when(request.getHeader(AdminKeyAuthFilter.HEADER)).thenReturn("secret-key");
+        when(request.getHeader(AdminKeyAuthFilter.ACTOR_TOKEN_HEADER)).thenReturn(token);
+        when(request.getMethod()).thenReturn("POST");
+
+        filter.doFilterInternal(request, response, chain);
+
+        // Контроллер получает обёрнутый запрос с ПОДТВЕРЖДЁННЫМ актором в X-Admin-Actor.
+        ArgumentCaptor<HttpServletRequest> forwarded = ArgumentCaptor.forClass(HttpServletRequest.class);
+        verify(chain).doFilter(forwarded.capture(), eq(response));
+        assertEquals("root", forwarded.getValue().getHeader(AdminKeyAuthFilter.ACTOR_HEADER));
+    }
+
+    @Test
+    void forgedActorTokenSignedWithWrongSecretIsRejected() throws Exception {
+        properties.getActorToken().setSecret(ACTOR_SECRET);
+        properties.getActorToken().setRequired(true);
+        // Атакующий подписывает токен «root» ЧУЖИМ секретом — подделка имени актора.
+        AdminAuthProperties forgedProps = new AdminAuthProperties();
+        forgedProps.getActorToken().setSecret("some-other-secret-not-the-real-one");
+        String forged = new AdminActorTokenService(forgedProps, Clock.systemUTC())
+                .issue("root", 0L, "nonce-2");
+        when(request.getServletPath()).thenReturn("/v1/admin/lines");
+        when(request.getHeader(AdminKeyAuthFilter.HEADER)).thenReturn("secret-key");
+        when(request.getHeader(AdminKeyAuthFilter.ACTOR_TOKEN_HEADER)).thenReturn(forged);
+        when(request.getMethod()).thenReturn("POST");
+
+        filter.doFilterInternal(request, response, chain);
+
+        verify(response).setStatus(401);
+        verify(chain, never()).doFilter(request, response);
+    }
+
+    @Test
+    void presentedInvalidTokenIsRejectedEvenInNonStrictMode() throws Exception {
+        properties.getActorToken().setSecret(ACTOR_SECRET);
+        properties.getActorToken().setRequired(false);
+        when(request.getServletPath()).thenReturn("/v1/admin/lines");
+        when(request.getHeader(AdminKeyAuthFilter.HEADER)).thenReturn("secret-key");
+        when(request.getHeader(AdminKeyAuthFilter.ACTOR_TOKEN_HEADER)).thenReturn("garbage.token");
+        when(request.getHeader(AdminKeyAuthFilter.ACTOR_HEADER)).thenReturn("root");
+        when(request.getMethod()).thenReturn("POST");
+
+        filter.doFilterInternal(request, response, chain);
+
+        // Присланный, но негодный токен — это обман, а не «старый клиент»:
+        // фолбэк на голый заголовок не срабатывает.
+        verify(response).setStatus(401);
+        verify(chain, never()).doFilter(request, response);
+    }
+
+    @Test
+    void revokedSessionVersionIsRejected() throws Exception {
+        properties.getActorToken().setSecret(ACTOR_SECRET);
+        properties.getActorToken().setRequired(true);
+        // Токен выпущен для версии 5, а у учётной записи версия 0 (сессия отозвана).
+        String stale = issuer().issue("root", 5L, "nonce-3");
+        when(request.getServletPath()).thenReturn("/v1/admin/lines");
+        when(request.getHeader(AdminKeyAuthFilter.HEADER)).thenReturn("secret-key");
+        when(request.getHeader(AdminKeyAuthFilter.ACTOR_TOKEN_HEADER)).thenReturn(stale);
+        when(request.getMethod()).thenReturn("POST");
+
+        filter.doFilterInternal(request, response, chain);
+
+        verify(response).setStatus(401);
+        verify(chain, never()).doFilter(request, response);
     }
 }
