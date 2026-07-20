@@ -111,6 +111,14 @@ services:
       # чтобы обойти неоднозначность relaxed binding для ключа с дефисом (dev-key).
       # Значение согласовано с ADMIN_API_KEY у сервиса admin.
       SPRING_APPLICATION_JSON: '{"app":{"admin":{"dev-key":"${ADMIN_API_KEY:?ADMIN_API_KEY is required}"}}}'
+      # Демо-сид (аудит §23). Это приёмочный/демонстрационный контур, поэтому
+      # выдуманные линии, станции, новости, расписания и тарифы нужны — без них
+      # показывать нечего. Значение продублировано здесь ЯВНО, хотя совпадает с
+      # дефолтом application.yml: режим данных должен быть виден в описании стенда,
+      # а не выводиться из умолчаний. В production применяется профиль prod, где
+      # locations сведены к classpath:db/migration, а DemoSeedGuard падает на старте,
+      # если seed-каталог всё-таки просочился.
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/seed
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: metro
       MINIO_SECRET_KEY: metro-dev-key-change

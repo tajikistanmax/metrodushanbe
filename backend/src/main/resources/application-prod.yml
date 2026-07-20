@@ -14,6 +14,16 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: true
+    # КРИТИЧНО (аудит §23). Переопределяем locations из application.yml, где включён
+    # ещё и classpath:db/seed. Демо-сид содержит ВЫДУМАННЫЕ линии, станции, выходы,
+    # новости, расписания и праздники; на государственном портале они были бы
+    # опубликованы как официальные данные. В production применяется только схема —
+    # реальные данные вводятся через admin-консоль и конвейер импорта (ТЗ, раздел 13).
+    #
+    # Значение задано ЯВНО, а не удалением seed-каталога: сами файлы остаются в
+    # репозитории с прежними версиями и контрольными суммами, поэтому уже
+    # применённый seed на dev/демо-базах не ломает flyway validate.
+    locations: classpath:db/migration
 
 server:
   ssl:
@@ -44,6 +54,12 @@ app:
       username: ${ADMIN_BOOTSTRAP_USER:}
       password: ${ADMIN_BOOTSTRAP_PASSWORD:}
       display-name: ${ADMIN_BOOTSTRAP_DISPLAY_NAME:}
+    # Строгий режим актора (аудит-пункт 5): голый X-Admin-Actor больше не
+    # принимается — только подписанный токен. Пустой секрет = fail-closed (401 на
+    # все admin-write): без общего секрета консоль и backend не должны «доверять».
+    actor-token:
+      secret: ${ADMIN_ACTOR_TOKEN_SECRET}
+      required: true
 
 ai:
   llm:

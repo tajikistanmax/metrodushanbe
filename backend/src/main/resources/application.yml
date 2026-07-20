@@ -23,7 +23,19 @@ spring:
 
   flyway:
     enabled: true
-    locations: classpath:db/migration
+    # Два каталога с РАЗНЫМ смыслом (аудит §23):
+    #   db/migration — только схема; применяется во ВСЕХ средах, включая production;
+    #   db/seed      — демонстрационные данные (выдуманные линии, станции, новости,
+    #                  расписания, тарифы); применяется ТОЛЬКО вне production.
+    # Flyway объединяет все locations и сортирует миграции по версии глобально,
+    # поэтому сквозная нумерация V001…V027 сохраняется: dev получает V001,V002,V003…,
+    # а prod — ту же последовательность без seed-версий. Дублирование одной версии в
+    # двух каталогах запрещено (Flyway падает с «Found more than one migration»).
+    #
+    # Здесь (dev/test/демо-контур) seed ВКЛЮЧЁН намеренно: без него портал нечего показать.
+    # В production он выключен в application-prod.yml, и DemoSeedGuard проверяет это
+    # fail-closed на старте.
+    locations: classpath:db/migration,classpath:db/seed
 
 springdoc:
   api-docs:
@@ -54,6 +66,21 @@ app:
       username: ${ADMIN_BOOTSTRAP_USER:admin}
       password: ${ADMIN_BOOTSTRAP_PASSWORD:metro2026-dev-only}
       display-name: ${ADMIN_BOOTSTRAP_DISPLAY_NAME:Суперадминистратор (dev)}
+    # Подписанный токен актора аудита (аудит-пункт 5). В dev required=false:
+    # интеграционные тесты и dev-контур ходят с голым X-Admin-Actor. Секрет —
+    # общий с консолью (ADMIN_ACTOR_TOKEN_SECRET там же); в prod обязателен.
+    actor-token:
+      secret: ${ADMIN_ACTOR_TOKEN_SECRET:dev-actor-token-secret-change-me}
+      required: false
+      ttl: 2m
+      clock-skew: 30s
+    # Блокировка входа при подборе пароля (аудит-пункт 9).
+    lockout:
+      enabled: true
+      account-max-failures: 5
+      ip-user-max-failures: 10
+      window: 15m
+      lock-duration: 15m
   rate-limit:
     enabled: true
     capacity: 100
