@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 
 // Montserrat self-host через @fontsource: файлы бандлятся локально,
 // внешних запросов нет (dev-conventions.md, §5 и §8). Субсет cyrillic-ext
@@ -26,18 +27,24 @@ export const metadata: Metadata = {
  * рендерится без каркаса.
  */
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Nonce выдаётся на каждый запрос в src/proxy.ts. Скрипт темы вставляется
+  // через dangerouslySetInnerHTML, поэтому автоматическая простановка nonce
+  // силами Next на него не распространяется — передаём вручную, иначе строгая
+  // CSP заблокирует его и вернётся FOUC. Консоль и так рендерится динамически.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   // lang по умолчанию — tg; при смене языка <html lang> обновляется на клиенте
   // в I18nProvider. data-theme выставляется до гидратации инлайн-скриптом —
   // suppressHydrationWarning гасит diff атрибутов.
   return (
     <html lang="tg" className="h-full antialiased" suppressHydrationWarning>
       <body className="min-h-full">
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <ThemeProvider>
           <I18nProvider>
             <ToastProvider>{children}</ToastProvider>

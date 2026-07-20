@@ -39,7 +39,8 @@
 - Server Actions получили проверку ролей; tracking token обращения перенесён из
   постоянного `localStorage` в `sessionStorage`, поле ввода маскируется.
 - В web/admin добавлены root `error.tsx`, `loading.tsx`, `not-found.tsx` и базовые
-  security headers. CSP и `global-error.tsx` ещё остаются в backlog.
+  security headers; поверх них выставлена строгая nonce-CSP с `frame-ancestors`
+  и HSTS на TLS-периметре (см. пункт 10). `global-error.tsx` ещё в backlog.
 - `/news/[slug]` теперь загружается на сервере, различает backend outage и 404,
   вызывает `notFound()` и формирует metadata/Open Graph.
 - CI запускает Maven `verify`, публикует JaCoCo/dependency-check отчёты, OWASP
@@ -92,16 +93,46 @@
 
 ### Безопасность и авторизация
 
-5. Общий admin key позволяет выбрать имя любого активного superadmin; actor не
-   является криптографически привязанным к сессии backend.
+5. [Закрыто] Актор аудита привязан к сессии подписанным токеном. Консоль присылает
+   `X-Admin-Actor-Token` (HMAC-SHA256 на отдельном секрете `app.admin.actor-token.secret`
+   с username, sessionVersion, issuedAt, nonce и TTL 2 мин). `AdminKeyAuthFilter`
+   проверяет подпись через `MessageDigest.isEqual`, сверяет `sessionVersion` с
+   `admin_user.session_version` (отозванная сессия отклоняется сразу) и подменяет
+   `X-Admin-Actor` подтверждённым логином — присланное имя игнорируется. Strict-режим
+   (`app.admin.actor-token.required`) включён в prod-профиле, fail-closed при пустом
+   секрете; в dev/интеграционных тестах остаётся фолбэк на голый `X-Admin-Actor`.
+   ОГРАНИЧЕНИЕ: секрет общий симметричный — это НЕ OIDC (замена эмитента — открытый
+   P0 №4), replay в пределах TTL возможен.
 6. [Закрыто] Отозванная admin-cookie больше не создаёт цикл `/login → / → /login`.
 7. [Закрыто] XFF по умолчанию не доверяется, число IP-buckets ограничено.
 8. [Частично] Server Actions проверяют роли; полную route/method/UI матрицу всё
    ещё нужно закрепить table-driven тестом.
-9. Login не имеет отдельного строгого лимита по IP+username, lockout и MFA.
-10. Базовые nosniff/frame/referrer/permissions headers добавлены, tracking bearer
-    перенесён в sessionStorage. CSP с `frame-ancestors`, nonce/hash и HSTS на TLS edge
-    всё ещё отсутствуют.
+9. [Частично] Добавлены строгий лимит и lockout входа; MFA сознательно не делается
+   (требует внешнего провайдера — решение владельца). Два независимых счётчика неудач
+   в БД (`admin_login_attempt`, миграция V026, переживает перезапуск): по учётной
+   записи (порог 5) и по паре IP+username (порог 10), миграция V028 (номер V026 уже
+   был занят параллельной работой), окно и блокировка по 15 мин,
+   успех сбрасывает счётчик. Перечисление учёток закрыто: неизвестный логин и неверный
+   пароль дают один код `auth.invalid_credentials` и одинаковое время (сверка с
+   `dummyHash` для несуществующего пользователя), а счётчик ведётся по логину
+   независимо от его существования. Каждая неудача (`auth.login_failed`) и каждый
+   lockout (`auth.account_locked`) пишутся через `auditService.recordIndependently`
+   (REQUIRES_NEW, переживает откат 401). Блокировка — 429 `auth.too_many_attempts` с
+   `Retry-After`. ОСТАЁТСЯ: MFA (внешний блокер).
+10. [Закрыто] Базовые nosniff/frame/referrer/permissions headers дополнены
+    строгой Content-Security-Policy. В web и admin CSP собирается на каждый
+    запрос в `src/proxy.ts` с одноразовым nonce (`src/lib/csp.ts`): скрипты —
+    `'nonce-…' 'strict-dynamic'` без `'unsafe-inline'`, включая анти-FOUC скрипт
+    темы (nonce пробрасывается в `layout.tsx` через `headers()`); `frame-ancestors
+    'none'` закрывает clickjacking; карта разрешена точечно (`connect-src`/`img-src`
+    хоста стиля, `worker-src blob:`). Для style-атрибутов React (`style={{…}}`)
+    оставлен `'unsafe-inline'` только в `style-src-attr` — сами таблицы стилей
+    грузятся со своего origin. У backend `SecurityHeadersFilter` отдаёт API-CSP
+    `default-src 'none'; frame-ancestors 'none'` (Swagger UI в dev исключён).
+    HSTS выставляется только на настоящем TLS (scheme https или доверенный
+    `X-Forwarded-Proto`), на http-localhost — никогда. Опциональный
+    `CSP_REPORT_ONLY=1` переводит фронтовую политику в режим наблюдения без
+    внешнего report-uri.
 
 ### Бизнес-логика и кэш
 
@@ -126,8 +157,19 @@
 21. Закрыто: динамическая новость теперь имеет настоящий 404, metadata/OG и не
     маскирует backend outage под «не найдено».
 22. [Закрыто] Admin fetch/login/SSR запросы получили timeout.
-23. Demo seed-миграции всегда применяются в production и могут опубликовать
-    фиктивные станции, тарифы, новости и расписания как официальные данные.
+23. [Закрыто] Demo seed-миграции больше не применяются в production. Шесть seed-миграций
+    (V002, V004, V006, V008, V012, V016) перенесены из `db/migration` в отдельный каталог
+    `db/seed` без изменения версий и содержимого, поэтому контрольные суммы прежние и
+    существующие dev/демо-базы проходят `flyway validate` без `repair`. `application.yml`
+    (dev/тесты/демо) включает оба каталога, `application-prod.yml` — только `db/migration`.
+    Демо-тарифы `DEMO-SINGLE`/`DEMO-MONTHLY`, вставленные прямо в схемную V018, гасятся
+    новой V026 из `db/migration` и возвращаются в активное состояние только V027 из
+    `db/seed`. Режим данных виден на старте: `DemoSeedGuard` пишет
+    `Данные: ДЕМОНСТРАЦИОННЫЕ` / `Данные: только реальные` и в профиле `prod` не даёт
+    приложению подняться, если seed-каталог всё-таки попал в `spring.flyway.locations`.
+    Следствие, которое нужно закрыть операционно: чистая production-база стартует без
+    сети, новостей, расписаний, календаря праздников и активных тарифов — их вводят
+    через admin-консоль и конвейер импорта.
 
 ## P2 — существенные ошибки и технический долг
 

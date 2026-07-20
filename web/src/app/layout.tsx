@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 
 // Montserrat self-host через @fontsource: файлы бандлятся локально,
 // внешних запросов нет (dev-conventions.md, §5 и §8). Каждый импорт
@@ -36,11 +37,23 @@ export const viewport: Viewport = {
   themeColor: "#082742",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Nonce выдаётся на каждый запрос в src/proxy.ts. Скрипт темы вставляется
+  // через dangerouslySetInnerHTML, поэтому автоматическая простановка nonce
+  // силами Next на него не распространяется — передаём вручную, иначе строгая
+  // CSP заблокирует его и вернётся FOUC.
+  //
+  // Побочный эффект чтения headers(): всё дерево портала переходит в
+  // динамический рендер. Это осознанно и почти бесплатно — страницы портала
+  // суть тонкие оболочки над клиентскими компонентами, данные грузятся с API
+  // в браузере, так что на статике экономился лишь рендер пустого каркаса.
+  // Без динамики nonce взять неоткуда: пререндер происходит до запроса.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   // lang по умолчанию — tg; при смене языка <html lang> обновляется
   // на клиенте в I18nProvider. data-theme выставляется до гидратации
   // инлайн-скриптом — suppressHydrationWarning гасит diff атрибутов.
@@ -53,7 +66,7 @@ export default function RootLayout({
   return (
     <html lang="tg" className="h-full antialiased" suppressHydrationWarning>
       <body className="flex min-h-full flex-col">
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <ThemeProvider>
           <I18nProvider>
             <PwaRuntime />

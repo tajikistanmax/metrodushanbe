@@ -123,8 +123,20 @@ npm run dev
 | `ADMIN_BOOTSTRAP_USER` | `admin` только в dev | первичный локальный superadmin |
 | `ADMIN_BOOTSTRAP_PASSWORD` | `metro2026-dev-only` только в dev | первичный локальный пароль |
 | `ADMIN_SESSION_SECRET` | обязательное значение ≥32 символов | подпись сессионной cookie |
+| `CSP_REPORT_ONLY` | не задана (`1` — включить) | переводит Content-Security-Policy портала и консоли в режим наблюдения (`Content-Security-Policy-Report-Only`): нарушения пишутся в консоль DevTools, но не блокируются; внешний report-uri сознательно не подключён |
 
 Все dev-секреты обязательно заменяются в production.
+
+### Заголовки безопасности и CSP
+
+Портал (`web`) и консоль (`admin`) выставляют строгую Content-Security-Policy на
+каждый запрос в `src/proxy.ts` (Next 16 переименовал middleware → proxy) с
+одноразовым nonce из `src/lib/csp.ts`. Скрипты идут под `'nonce-… ' 'strict-dynamic'`
+без `'unsafe-inline'`; `frame-ancestors 'none'` запрещает встраивание в iframe.
+Карта MapLibre учтена: `connect-src`/`img-src` хоста `NEXT_PUBLIC_MAP_STYLE_URL`,
+`worker-src blob:`. HSTS выставляется только на настоящем TLS (не на http-localhost).
+Backend отдаёт API-CSP `default-src 'none'; frame-ancestors 'none'` из
+`SecurityHeadersFilter`. Для отладки политики используйте `CSP_REPORT_ONLY=1`.
 
 ## Проверка качества
 
